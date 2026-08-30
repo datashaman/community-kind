@@ -6,7 +6,9 @@ use App\Enums\TeamRole;
 use App\Models\Team;
 use App\Models\TeamInvitation;
 use App\Models\User;
+use Illuminate\Auth\Notifications\VerifyEmail;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Support\Facades\Notification;
 use Inertia\Testing\AssertableInertia as Assert;
 use Tests\TestCase;
 
@@ -56,5 +58,21 @@ class RegistrationTest extends TestCase
 
         $user = User::where('email', 'test@example.com')->first();
         $response->assertRedirect(route('dashboard'));
+    }
+
+    public function test_new_users_receive_an_email_verification_notification()
+    {
+        Notification::fake();
+
+        $this->post(route('register.store'), [
+            'name' => 'Test User',
+            'email' => 'test@example.com',
+            'password' => 'password',
+            'password_confirmation' => 'password',
+        ]);
+
+        $user = User::where('email', 'test@example.com')->firstOrFail();
+
+        Notification::assertSentTo($user, VerifyEmail::class);
     }
 }

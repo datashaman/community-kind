@@ -42,6 +42,25 @@ class TeamTest extends TestCase
         ]);
     }
 
+    public function test_team_names_must_produce_a_non_empty_slug()
+    {
+        $user = User::factory()->create();
+
+        $response = $this
+            ->actingAs($user)
+            ->post(route('teams.store'), [
+                'name' => '!!!',
+            ]);
+
+        $response->assertSessionHasErrors([
+            'name' => 'This team name must contain at least one letter or number.',
+        ]);
+
+        $this->assertDatabaseMissing('teams', [
+            'name' => '!!!',
+        ]);
+    }
+
     public function test_team_slug_uses_next_available_suffix()
     {
         $user = User::factory()->create();

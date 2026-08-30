@@ -35,6 +35,18 @@ class DashboardTest extends TestCase
         $response->assertOk();
     }
 
+    public function test_unverified_users_are_redirected_to_the_email_verification_screen()
+    {
+        $user = User::factory()->unverified()->create();
+        $team = $user->currentTeam;
+
+        $response = $this
+            ->actingAs($user)
+            ->get(route('dashboard'));
+
+        $response->assertRedirect(route('verification.notice'));
+    }
+
     public function test_dashboard_includes_pending_invitations_for_the_authenticated_user()
     {
         $owner = User::factory()->create(['name' => 'Taylor Otwell']);

@@ -24,22 +24,70 @@ run with a newer local PHP release. The supplied Laravel Sail runtime uses PHP
 
 ## Local setup
 
-Prerequisites: Docker Desktop (or compatible Docker Engine), Composer 2, PHP
-8.4 or newer for the initial dependency install, Node.js 24, and npm 11 or
-newer.
+Install these services and tools locally:
+
+- PHP 8.4 or newer with the `mbstring`, `pdo_pgsql`, and `redis` extensions
+- Composer 2
+- Node.js 24 and npm 11 or newer
+- PostgreSQL 18
+- Redis 7
+
+Create a PostgreSQL database and user for the application, then copy the
+environment file:
+
+```bash
+cp .env.example .env
+```
+
+Update these values in `.env` for the locally installed services. Replace the
+database credentials with the user and password you created:
+
+```dotenv
+APP_URL=http://localhost:8000
+DB_HOST=127.0.0.1
+DB_DATABASE=community_kind
+DB_USERNAME=community_kind
+DB_PASSWORD=your-local-password
+REDIS_HOST=127.0.0.1
+MAIL_MAILER=log
+```
+
+Install the dependencies and prepare the application:
+
+```bash
+composer install
+npm ci
+php artisan key:generate
+php artisan migrate
+```
+
+Start the Laravel application, queue worker, and frontend development server:
+
+```bash
+composer run dev
+```
+
+Open `http://localhost:8000`. To inspect email locally, replace the log mailer
+with an SMTP catcher such as Mailpit and update the `MAIL_*` values in `.env`.
+
+## Docker setup
+
+The repository retains an optional Laravel Sail environment. It requires
+Docker Desktop (or a compatible Docker Engine), Composer 2, and PHP 8.4 or
+newer for the initial dependency install.
 
 ```bash
 cp .env.example .env
 composer install
-npm ci
 ./vendor/bin/sail up -d
 ./vendor/bin/sail artisan key:generate
 ./vendor/bin/sail artisan migrate
+./vendor/bin/sail npm ci
 ./vendor/bin/sail npm run dev
 ```
 
-Open `http://localhost`. Mailpit is available at `http://localhost:8025` and
-the MinIO console at `http://localhost:8900`.
+Open `http://localhost`. Mailpit is available at `http://localhost:8025`, and
+the MinIO console is available at `http://localhost:8900`.
 
 To stop the environment:
 
