@@ -11,5 +11,10 @@ enum OrganisationAccessScope: string
     case Forms = 'forms';
     case Cache = 'cache';
     case Search = 'search';
+    case Files = 'files';
+    case Exports = 'exports';
+    case Reports = 'reports';
+    case Commands = 'commands';
+    case Audits = 'audits';
     case SignedLinks = 'signed_links';
 }

@@ -11,4 +11,7 @@ enum OrganisationLifecycleEventType: string
     case OwnershipTransferAccepted = 'ownership_transfer_accepted';
     case OwnershipTransferCancelled = 'ownership_transfer_cancelled';
     case SlugChanged = 'slug_changed';
+    case ProgramSearchRebuilt = 'program_search_rebuilt';
+    case ProgramReportGenerated = 'program_report_generated';
+    case ProgramExportGenerated = 'program_export_generated';
 }

@@ -7,6 +7,7 @@ use App\Http\Controllers\Organisations\OrganisationLifecycleController;
 use App\Http\Controllers\Organisations\OrganisationMemberController;
 use App\Http\Controllers\Organisations\OrganisationOwnershipTransferController;
 use App\Http\Controllers\Organisations\OrganisationSlugController;
+use App\Http\Controllers\Organisations\ProgramController;
 use App\Http\Controllers\Settings\OtherBrowserSessionController;
 use App\Http\Controllers\Settings\ProfileController;
 use App\Http\Controllers\Settings\RecoveryCodeAcknowledgementController;
@@ -16,6 +17,7 @@ use App\Http\Middleware\EnsureOrganisationMembership;
 use App\Http\Middleware\EnsureRecentMfa;
 use App\Http\Middleware\EnsureRecentPassword;
 use App\Http\Middleware\EnsureStaffSecurityRequirements;
+use App\Http\Middleware\UseOrganisationContext;
 use Illuminate\Support\Facades\Route;
 
 Route::middleware(['auth'])->group(function () {
@@ -60,7 +62,7 @@ Route::middleware(['auth', 'verified'])->group(function () {
             ->middleware([EnsureRecentPassword::class, EnsureRecentMfa::class])
             ->name('security.other-browser-sessions.destroy');
 
-        Route::middleware(EnsureOrganisationMembership::class)->group(function () {
+        Route::middleware([EnsureOrganisationMembership::class, UseOrganisationContext::class])->group(function () {
             Route::get('settings/organisations/{organisation}', [OrganisationController::class, 'edit'])->middleware(EnsureOrganisationAccess::class.':recovery')->name('organisations.edit');
             Route::patch('settings/organisations/{organisation}', [OrganisationController::class, 'update'])->middleware([EnsureOrganisationAccess::class.':administration', EnsureRecentPassword::class, EnsureRecentMfa::class])->name('organisations.update');
             Route::delete('settings/organisations/{organisation}', [OrganisationController::class, 'destroy'])->middleware([EnsureOrganisationAccess::class.':recovery', EnsureRecentPassword::class, EnsureRecentMfa::class])->name('organisations.destroy');
@@ -77,6 +79,12 @@ Route::middleware(['auth', 'verified'])->group(function () {
 
             Route::post('settings/organisations/{organisation}/invitations', [OrganisationInvitationController::class, 'store'])->middleware([EnsureOrganisationAccess::class.':administration', EnsureRecentPassword::class, EnsureRecentMfa::class])->name('organisations.invitations.store');
             Route::delete('settings/organisations/{organisation}/invitations/{invitation}', [OrganisationInvitationController::class, 'destroy'])->middleware([EnsureOrganisationAccess::class.':administration', EnsureRecentPassword::class, EnsureRecentMfa::class])->name('organisations.invitations.destroy');
+
+            Route::get('settings/organisations/{organisation}/programs/search', [ProgramController::class, 'search'])->middleware(EnsureOrganisationAccess::class)->name('organisations.programs.search');
+            Route::get('settings/organisations/{organisation}/programs/report', [ProgramController::class, 'report'])->middleware(EnsureOrganisationAccess::class)->name('organisations.programs.report');
+            Route::get('settings/organisations/{organisation}/programs/export', [ProgramController::class, 'export'])->middleware(EnsureOrganisationAccess::class)->name('organisations.programs.export');
+            Route::get('settings/organisations/{organisation}/programs/{program}', [ProgramController::class, 'show'])->middleware(EnsureOrganisationAccess::class)->name('organisations.programs.show');
+            Route::patch('settings/organisations/{organisation}/programs/{program}', [ProgramController::class, 'update'])->middleware(EnsureOrganisationAccess::class.':administration')->name('organisations.programs.update');
         });
     });
 });

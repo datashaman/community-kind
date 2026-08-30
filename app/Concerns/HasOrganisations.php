@@ -10,6 +10,7 @@ use App\Enums\OrganisationStatus;
 use App\Models\Membership;
 use App\Models\Organisation;
 use App\Models\Program;
+use App\OrganisationContext;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 use Illuminate\Database\Eloquent\Relations\HasMany;
@@ -152,10 +153,15 @@ trait HasOrganisations
     public function toUserOrganisations(bool $includeCurrent = false): Collection
     {
         return $this->organisationMemberships()
-            ->with(['organisation', 'programs'])
+            ->with('organisation')
             ->get()
             ->map(function (Membership $membership) use ($includeCurrent) {
                 $organisation = $membership->organisation;
+
+                app(OrganisationContext::class)->run(
+                    $organisation,
+                    fn () => $membership->load('programs'),
+                );
 
                 return ! $includeCurrent && $this->isCurrentOrganisation($organisation)
                     ? null

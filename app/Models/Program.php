@@ -2,12 +2,16 @@
 
 namespace App\Models;
 
+use App\Concerns\BelongsToOrganisation;
+use App\OrganisationContext;
 use Database\Factories\ProgramFactory;
 use Illuminate\Database\Eloquent\Attributes\Fillable;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\BelongsToMany;
+use Illuminate\Database\Eloquent\SoftDeletes;
+use Laravel\Scout\Searchable;
 
 /**
  * @property int $id
@@ -20,7 +24,7 @@ use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 class Program extends Model
 {
     /** @use HasFactory<ProgramFactory> */
-    use HasFactory;
+    use BelongsToOrganisation, HasFactory, Searchable, SoftDeletes;
 
     /**
      * Get the Organisation that owns the program.
@@ -39,6 +43,18 @@ class Program extends Model
      */
     public function memberships(): BelongsToMany
     {
-        return $this->belongsToMany(Membership::class, 'membership_program', 'program_id', 'membership_id');
+        return $this->belongsToMany(Membership::class, 'membership_program', 'program_id', 'membership_id')
+            ->withPivotValue('organisation_id', app(OrganisationContext::class)->id());
+    }
+
+    /** @return array<string, int|string> */
+    public function toSearchableArray(): array
+    {
+        return [
+            'id' => $this->id,
+            'organisation_id' => $this->organisation_id,
+            'name' => $this->name,
+            'slug' => $this->slug,
+        ];
     }
 }
