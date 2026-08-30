@@ -29,18 +29,19 @@ class AuthenticationTest extends TestCase
         $team = Team::factory()->create(['name' => 'Laravel Team']);
         $team->members()->attach($owner, ['role' => TeamRole::Owner->value]);
 
-        $invitation = TeamInvitation::factory()->create([
+        $token = 'login-invitation-token';
+        $invitation = TeamInvitation::factory()->forToken($token)->create([
             'team_id' => $team->id,
             'email' => 'invited@example.com',
             'invited_by' => $owner->id,
         ]);
 
-        $response = $this->get(route('login', ['invitation' => $invitation->code]));
+        $response = $this->get(route('login', ['invitation' => $token]));
 
         $response->assertOk();
         $response->assertInertia(fn (Assert $page) => $page
             ->component('auth/login')
-            ->where('teamInvitation.code', $invitation->code)
+            ->where('teamInvitation.code', $token)
             ->where('teamInvitation.teamName', 'Laravel Team'),
         );
     }
@@ -55,7 +56,7 @@ class AuthenticationTest extends TestCase
         ]);
 
         $this->assertAuthenticated();
-        $response->assertRedirect(route('dashboard'));
+        $response->assertRedirect(route('security.edit'));
     }
 
     public function test_users_with_two_factor_enabled_are_redirected_to_two_factor_challenge()

@@ -3,10 +3,13 @@
 namespace Tests\Feature\Teams;
 
 use App\Enums\TeamRole;
+use App\Http\Middleware\EnsureRecentMfa;
+use App\Http\Middleware\EnsureStaffSecurityRequirements;
 use App\Models\Team;
 use App\Models\TeamInvitation;
 use App\Models\User;
 use App\Notifications\Teams\TeamInvitation as TeamInvitationNotification;
+use Illuminate\Auth\Middleware\RequirePassword;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\Notification;
 use Tests\TestCase;
@@ -14,6 +17,17 @@ use Tests\TestCase;
 class TeamInvitationTest extends TestCase
 {
     use RefreshDatabase;
+
+    protected function setUp(): void
+    {
+        parent::setUp();
+
+        $this->withoutMiddleware([
+            EnsureStaffSecurityRequirements::class,
+            EnsureRecentMfa::class,
+            RequirePassword::class,
+        ]);
+    }
 
     public function test_team_invitations_can_be_created()
     {
@@ -48,35 +62,37 @@ class TeamInvitationTest extends TestCase
 
         $team->members()->attach($owner, ['role' => TeamRole::Owner->value]);
 
-        $invitation = TeamInvitation::factory()->create([
+        $token = 'existing-user-invitation-token';
+        $invitation = TeamInvitation::factory()->forToken($token)->create([
             'team_id' => $team->id,
             'email' => $invitedUser->email,
             'invited_by' => $owner->id,
         ]);
 
-        $mail = (new TeamInvitationNotification($invitation))->toMail($invitedUser);
+        $mail = (new TeamInvitationNotification($invitation, $token, true))->toMail($invitedUser);
 
-        $this->assertSame(route('login', ['invitation' => $invitation->code]), $mail->actionUrl);
+        $this->assertSame(route('login', ['invitation' => $token]), $mail->actionUrl);
         $this->assertStringContainsString('dashboard', implode(' ', $mail->introLines));
     }
 
-    public function test_invitation_email_for_unknown_users_uses_login_route()
+    public function test_invitation_email_for_unknown_users_uses_registration_route()
     {
         $owner = User::factory()->create();
         $team = Team::factory()->create();
 
         $team->members()->attach($owner, ['role' => TeamRole::Owner->value]);
 
-        $invitation = TeamInvitation::factory()->create([
+        $token = 'new-user-invitation-token';
+        $invitation = TeamInvitation::factory()->forToken($token)->create([
             'team_id' => $team->id,
             'email' => 'unknown@example.com',
             'invited_by' => $owner->id,
         ]);
 
-        $mail = (new TeamInvitationNotification($invitation))->toMail((object) []);
+        $mail = (new TeamInvitationNotification($invitation, $token, false))->toMail((object) []);
 
-        $this->assertSame(route('login', ['invitation' => $invitation->code]), $mail->actionUrl);
-        $this->assertStringContainsString('log in', strtolower(implode(' ', $mail->introLines)));
+        $this->assertSame(route('register', ['invitation' => $token]), $mail->actionUrl);
+        $this->assertStringContainsString('create', strtolower(implode(' ', $mail->introLines)));
     }
 
     public function test_team_invitations_can_be_created_by_admins()
@@ -209,9 +225,11 @@ class TeamInvitationTest extends TestCase
 
         $response->assertRedirect(route('teams.edit', $team));
 
-        $this->assertDatabaseMissing('team_invitations', [
+        $this->assertDatabaseHas('team_invitations', [
             'id' => $invitation->id,
+            'revoked_by' => $owner->id,
         ]);
+        $this->assertNotNull($invitation->fresh()->revoked_at);
     }
 
     public function test_team_invitations_can_be_accepted()
@@ -260,9 +278,11 @@ class TeamInvitationTest extends TestCase
 
         $response->assertRedirect(route('dashboard'));
 
-        $this->assertDatabaseMissing('team_invitations', [
+        $this->assertDatabaseHas('team_invitations', [
             'id' => $invitation->id,
+            'revoked_by' => $invitedUser->id,
         ]);
+        $this->assertNotNull($invitation->fresh()->revoked_at);
     }
 
     public function test_team_invitations_cannot_be_declined_by_uninvited_user()

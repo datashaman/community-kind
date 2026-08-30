@@ -3,8 +3,11 @@
 namespace Tests\Feature\Teams;
 
 use App\Enums\TeamRole;
+use App\Http\Middleware\EnsureRecentMfa;
+use App\Http\Middleware\EnsureStaffSecurityRequirements;
 use App\Models\Team;
 use App\Models\User;
+use Illuminate\Auth\Middleware\RequirePassword;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Inertia\Testing\AssertableInertia as Assert;
 use Tests\TestCase;
@@ -12,6 +15,17 @@ use Tests\TestCase;
 class TeamTest extends TestCase
 {
     use RefreshDatabase;
+
+    protected function setUp(): void
+    {
+        parent::setUp();
+
+        $this->withoutMiddleware([
+            EnsureStaffSecurityRequirements::class,
+            EnsureRecentMfa::class,
+            RequirePassword::class,
+        ]);
+    }
 
     public function test_the_teams_index_page_can_be_rendered()
     {

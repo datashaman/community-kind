@@ -4,7 +4,6 @@ import PasswordInput from '@/components/password-input';
 import TeamInvitationAlert from '@/components/team-invitation-alert';
 import TextLink from '@/components/text-link';
 import { Button } from '@/components/ui/button';
-import { Checkbox } from '@/components/ui/checkbox';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Spinner } from '@/components/ui/spinner';
@@ -42,6 +41,13 @@ export default function Login({
             >
                 {({ processing, errors }) => (
                     <>
+                        {teamInvitation && (
+                            <input
+                                type="hidden"
+                                name="invitation"
+                                value={teamInvitation.code}
+                            />
+                        )}
                         <div className="grid gap-6">
                             <div className="grid gap-2">
                                 <Label htmlFor="email">Email address</Label>
@@ -82,15 +88,6 @@ export default function Login({
                                 <InputError message={errors.password} />
                             </div>
 
-                            <div className="flex items-center space-x-3">
-                                <Checkbox
-                                    id="remember"
-                                    name="remember"
-                                    tabIndex={3}
-                                />
-                                <Label htmlFor="remember">Remember me</Label>
-                            </div>
-
                             <Button
                                 type="submit"
                                 className="mt-4 w-full"
@@ -103,20 +100,22 @@ export default function Login({
                             </Button>
                         </div>
 
-                        <div className="text-muted-foreground text-center text-sm">
-                            Don't have an account?{' '}
-                            <TextLink
-                                href={register({
-                                    query: {
-                                        invitation: teamInvitation?.code,
-                                    },
-                                })}
-                                data-test="register-link"
-                                tabIndex={5}
-                            >
-                                Sign up
-                            </TextLink>
-                        </div>
+                        {teamInvitation && (
+                            <div className="text-muted-foreground text-center text-sm">
+                                Need an account?{' '}
+                                <TextLink
+                                    href={register({
+                                        query: {
+                                            invitation: teamInvitation.code,
+                                        },
+                                    })}
+                                    data-test="register-link"
+                                    tabIndex={5}
+                                >
+                                    Create one from this invitation
+                                </TextLink>
+                            </div>
+                        )}
                     </>
                 )}
             </Form>

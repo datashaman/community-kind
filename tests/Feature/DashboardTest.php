@@ -3,6 +3,7 @@
 namespace Tests\Feature;
 
 use App\Enums\TeamRole;
+use App\Http\Middleware\EnsureStaffSecurityRequirements;
 use App\Models\Team;
 use App\Models\TeamInvitation;
 use App\Models\User;
@@ -13,6 +14,13 @@ use Tests\TestCase;
 class DashboardTest extends TestCase
 {
     use RefreshDatabase;
+
+    protected function setUp(): void
+    {
+        parent::setUp();
+
+        $this->withoutMiddleware(EnsureStaffSecurityRequirements::class);
+    }
 
     public function test_guests_are_redirected_to_the_login_page()
     {
@@ -69,7 +77,7 @@ class DashboardTest extends TestCase
         $response->assertInertia(fn (Assert $page) => $page
             ->component('dashboard')
             ->has('pendingInvitations', 1)
-            ->where('pendingInvitations.0.code', $invitation->code)
+            ->where('pendingInvitations.0.id', $invitation->id)
             ->where('pendingInvitations.0.inviterName', 'Taylor Otwell')
             ->where('pendingInvitations.0.team.name', 'Laravel Team')
             ->where('pendingInvitations.0.team.slug', $team->slug)

@@ -7,6 +7,7 @@ use App\Models\Team;
 use App\Models\TeamInvitation;
 use App\Models\User;
 use Illuminate\Database\Eloquent\Factories\Factory;
+use Illuminate\Support\Str;
 
 /**
  * @extends Factory<TeamInvitation>
@@ -20,7 +21,10 @@ class TeamInvitationFactory extends Factory
      */
     public function definition(): array
     {
+        $token = Str::random(64);
+
         return [
+            'token_hash' => hash('sha256', $token),
             'team_id' => Team::factory(),
             'email' => fake()->unique()->safeEmail(),
             'role' => TeamRole::Member,
@@ -47,6 +51,20 @@ class TeamInvitationFactory extends Factory
     {
         return $this->state(fn (array $attributes) => [
             'expires_at' => now()->subDay(),
+        ]);
+    }
+
+    public function revoked(): static
+    {
+        return $this->state(fn (array $attributes) => [
+            'revoked_at' => now(),
+        ]);
+    }
+
+    public function forToken(string $token): static
+    {
+        return $this->state(fn (array $attributes) => [
+            'token_hash' => hash('sha256', $token),
         ]);
     }
 

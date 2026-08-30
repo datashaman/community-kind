@@ -23,6 +23,7 @@ use Laravel\Fortify\TwoFactorAuthenticatable;
  * @property string|null $two_factor_secret
  * @property string|null $two_factor_recovery_codes
  * @property Carbon|null $two_factor_confirmed_at
+ * @property Carbon|null $recovery_codes_acknowledged_at
  * @property string|null $remember_token
  * @property int|null $current_team_id
  * @property Carbon|null $created_at
@@ -32,12 +33,21 @@ use Laravel\Fortify\TwoFactorAuthenticatable;
  * @property-read Collection<int, Membership> $teamMemberships
  * @property-read Collection<int, Team> $teams
  */
-#[Fillable(['name', 'email', 'password', 'current_team_id'])]
+#[Fillable(['name', 'email', 'password', 'current_team_id', 'recovery_codes_acknowledged_at'])]
 #[Hidden(['password', 'two_factor_secret', 'two_factor_recovery_codes', 'remember_token'])]
 class User extends Authenticatable implements MustVerifyEmail
 {
     /** @use HasFactory<UserFactory> */
     use HasFactory, HasTeams, Notifiable, TwoFactorAuthenticatable;
+
+    protected static function booted(): void
+    {
+        static::saving(function (User $user): void {
+            if ($user->exists && $user->isDirty(['two_factor_secret', 'two_factor_recovery_codes'])) {
+                $user->recovery_codes_acknowledged_at = null;
+            }
+        });
+    }
 
     /**
      * Get the attributes that should be cast.
@@ -50,6 +60,12 @@ class User extends Authenticatable implements MustVerifyEmail
             'email_verified_at' => 'datetime',
             'password' => 'hashed',
             'two_factor_confirmed_at' => 'datetime',
+            'recovery_codes_acknowledged_at' => 'datetime',
         ];
+    }
+
+    public function hasAcknowledgedRecoveryCodes(): bool
+    {
+        return $this->recovery_codes_acknowledged_at !== null;
     }
 }

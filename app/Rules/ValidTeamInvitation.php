@@ -28,20 +28,8 @@ class ValidTeamInvitation implements ValidationRule
             return;
         }
 
-        if ($value->isAccepted()) {
-            $fail(__('This invitation has already been accepted.'));
-
-            return;
-        }
-
-        if ($value->isExpired()) {
-            $fail(__('This invitation has expired.'));
-
-            return;
-        }
-
-        if (strtolower($value->email) !== strtolower($this->user->email)) {
-            $fail(__('This invitation was sent to a different email address.'));
+        if (! $value->isPending() || ! $value->isFor($this->user)) {
+            $fail(__('This invitation is invalid or unavailable.'));
         }
     }
 }
