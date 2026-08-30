@@ -6,6 +6,7 @@ use App\Enums\OrganisationStatus;
 use App\Models\Organisation;
 use App\Models\Program;
 use App\Models\User;
+use App\OrganisationContext;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\Schema;
 use Inertia\Testing\AssertableInertia as Assert;
@@ -45,8 +46,10 @@ it('assigns one operational role and program access independently of ownership',
     $owner = User::factory()->create();
     $member = User::factory()->create();
     $organisation = Organisation::factory()->create();
-    $housing = Program::factory()->for($organisation)->create(['name' => 'Housing']);
-    $food = Program::factory()->for($organisation)->create(['name' => 'Food']);
+    [$housing, $food] = app(OrganisationContext::class)->run($organisation, fn (): array => [
+        Program::factory()->for($organisation)->create(['name' => 'Housing']),
+        Program::factory()->for($organisation)->create(['name' => 'Food']),
+    ]);
 
     $organisation->memberships()->create([
         'user_id' => $owner->id,
@@ -67,12 +70,14 @@ it('assigns one operational role and program access independently of ownership',
         ]);
 
     $response->assertRedirect(route('organisations.edit', $organisation));
-    expect($owner->fresh()->ownsOrganisation($organisation))->toBeTrue()
-        ->and($owner->organisationRole($organisation))->toBeNull()
-        ->and($owner->hasProgramAccess($housing))->toBeFalse()
-        ->and($member->fresh()->organisationRole($organisation))->toBe(OrganisationRole::ProgramManager)
-        ->and($member->hasProgramAccess($housing))->toBeTrue()
-        ->and($member->hasProgramAccess($food))->toBeFalse();
+    app(OrganisationContext::class)->run($organisation, function () use ($owner, $member, $organisation, $housing, $food): void {
+        expect($owner->fresh()->ownsOrganisation($organisation))->toBeTrue()
+            ->and($owner->organisationRole($organisation))->toBeNull()
+            ->and($owner->hasProgramAccess($housing))->toBeFalse()
+            ->and($member->fresh()->organisationRole($organisation))->toBe(OrganisationRole::ProgramManager)
+            ->and($member->hasProgramAccess($housing))->toBeTrue()
+            ->and($member->hasProgramAccess($food))->toBeFalse();
+    });
 });
 
 it('lets organisation administrators manage member roles without granting ownership', function () {
@@ -106,7 +111,10 @@ it('rejects program access from another organisation without changing the member
     $member = User::factory()->create();
     $organisation = Organisation::factory()->create();
     $otherOrganisation = Organisation::factory()->create();
-    $otherProgram = Program::factory()->for($otherOrganisation)->create();
+    $otherProgram = app(OrganisationContext::class)->run(
+        $otherOrganisation,
+        fn (): Program => Program::factory()->for($otherOrganisation)->create(),
+    );
 
     $organisation->memberships()->create([
         'user_id' => $owner->id,
@@ -131,27 +139,41 @@ it('rejects program access from another organisation without changing the member
         ->assertSessionHasErrors([
             'program_ids.0' => 'The selected program is not available for this organisation.',
         ]);
-    expect($membership->fresh()->role)->toBe(OrganisationRole::CaseWorker)
-        ->and($membership->programs()->count())->toBe(0);
+    app(OrganisationContext::class)->run($organisation, function () use ($membership): void {
+        expect($membership->fresh()->role)->toBe(OrganisationRole::CaseWorker)
+            ->and($membership->programs()->count())->toBe(0);
+    });
 });
 
 it('switches to a fresh destination dashboard and recomputes organisation context', function () {
     $user = User::factory()->create();
     $firstOrganisation = Organisation::factory()->active()->create(['name' => 'HarbourKind']);
     $secondOrganisation = Organisation::factory()->active()->create(['name' => 'NeighbourLink']);
-    $firstProgram = Program::factory()->for($firstOrganisation)->create();
-    $secondProgram = Program::factory()->for($secondOrganisation)->create();
+    $firstProgram = app(OrganisationContext::class)->run(
+        $firstOrganisation,
+        fn (): Program => Program::factory()->for($firstOrganisation)->create(),
+    );
+    $secondProgram = app(OrganisationContext::class)->run(
+        $secondOrganisation,
+        fn (): Program => Program::factory()->for($secondOrganisation)->create(),
+    );
 
     $firstMembership = $firstOrganisation->memberships()->create([
         'user_id' => $user->id,
         'role' => OrganisationRole::ProgramManager,
     ]);
-    $firstMembership->programs()->attach($firstProgram);
+    app(OrganisationContext::class)->run(
+        $firstOrganisation,
+        fn () => $firstMembership->programs()->attach($firstProgram),
+    );
     $secondMembership = $secondOrganisation->memberships()->create([
         'user_id' => $user->id,
         'role' => OrganisationRole::ExecutiveViewer,
     ]);
-    $secondMembership->programs()->attach($secondProgram);
+    app(OrganisationContext::class)->run(
+        $secondOrganisation,
+        fn () => $secondMembership->programs()->attach($secondProgram),
+    );
     $user->switchOrganisation($firstOrganisation);
 
     $response = $this

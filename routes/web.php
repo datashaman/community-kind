@@ -5,6 +5,7 @@ use App\Http\Controllers\Organisations\OrganisationInvitationController;
 use App\Http\Middleware\EnsureOrganisationAccess;
 use App\Http\Middleware\EnsureOrganisationMembership;
 use App\Http\Middleware\EnsureStaffSecurityRequirements;
+use App\Http\Middleware\UseOrganisationContext;
 use App\Models\Organisation;
 use Illuminate\Contracts\View\View;
 use Illuminate\Http\Response;
@@ -25,7 +26,7 @@ Route::get('/source-and-licence/license', fn (): Response => response(
 ))->name('source-and-licence.license');
 
 Route::prefix('{current_organisation}')
-    ->middleware(['auth', 'verified', EnsureStaffSecurityRequirements::class, EnsureOrganisationMembership::class, EnsureOrganisationAccess::class.':full'])
+    ->middleware(['auth', 'verified', EnsureStaffSecurityRequirements::class, EnsureOrganisationMembership::class, UseOrganisationContext::class, EnsureOrganisationAccess::class.':full'])
     ->group(function () {
         Route::get('dashboard', DashboardController::class)->name('dashboard');
     });

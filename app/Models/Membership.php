@@ -3,6 +3,7 @@
 namespace App\Models;
 
 use App\Enums\OrganisationRole;
+use App\OrganisationContext;
 use Illuminate\Database\Eloquent\Attributes\Fillable;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\BelongsToMany;
@@ -64,7 +65,8 @@ class Membership extends Pivot
      */
     public function programs(): BelongsToMany
     {
-        return $this->belongsToMany(Program::class, 'membership_program', 'membership_id', 'program_id');
+        return $this->belongsToMany(Program::class, 'membership_program', 'membership_id', 'program_id')
+            ->withPivotValue('organisation_id', app(OrganisationContext::class)->id());
     }
 
     /**
