@@ -70,37 +70,51 @@ class SecurityTest extends TestCase
             );
     }
 
+    public function test_appearance_page_does_not_require_mfa()
+    {
+        config(['auth.mfa_required' => true]);
+        $user = User::factory()->create();
+
+        $this->actingAs($user)
+            ->get(route('appearance.edit'))
+            ->assertInertia(fn (Assert $page) => $page
+                ->component('settings/appearance'),
+            );
+    }
+
     public function test_password_can_be_updated()
     {
-        $user = User::factory()->create();
+        $user = User::factory()->withTwoFactor()->create();
 
         $response = $this
             ->actingAs($user)
+            ->withSession(['auth.mfa_confirmed_at' => time()])
             ->from(route('security.edit'))
             ->put(route('user-password.update'), [
                 'current_password' => 'password',
-                'password' => 'new-password',
-                'password_confirmation' => 'new-password',
+                'password' => 'new-secure-password',
+                'password_confirmation' => 'new-secure-password',
             ]);
 
         $response
             ->assertSessionHasNoErrors()
             ->assertRedirect(route('security.edit'));
 
-        $this->assertTrue(Hash::check('new-password', $user->refresh()->password));
+        $this->assertTrue(Hash::check('new-secure-password', $user->refresh()->password));
     }
 
     public function test_correct_password_must_be_provided_to_update_password()
     {
-        $user = User::factory()->create();
+        $user = User::factory()->withTwoFactor()->create();
 
         $response = $this
             ->actingAs($user)
+            ->withSession(['auth.mfa_confirmed_at' => time()])
             ->from(route('security.edit'))
             ->put(route('user-password.update'), [
                 'current_password' => 'wrong-password',
-                'password' => 'new-password',
-                'password_confirmation' => 'new-password',
+                'password' => 'new-secure-password',
+                'password_confirmation' => 'new-secure-password',
             ]);
 
         $response

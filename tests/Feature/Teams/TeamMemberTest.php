@@ -3,6 +3,10 @@
 namespace Tests\Feature\Teams;
 
 use App\Enums\TeamRole;
+use App\Http\Middleware\EnsureRecentMfa;
+use App\Http\Middleware\EnsureRecentPassword;
+use App\Http\Middleware\EnsureStaffSecurityRequirements;
+use App\Http\Middleware\ProtectSensitiveFortifyRoutes;
 use App\Models\Team;
 use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
@@ -11,6 +15,18 @@ use Tests\TestCase;
 class TeamMemberTest extends TestCase
 {
     use RefreshDatabase;
+
+    protected function setUp(): void
+    {
+        parent::setUp();
+
+        $this->withoutMiddleware([
+            EnsureStaffSecurityRequirements::class,
+            EnsureRecentMfa::class,
+            EnsureRecentPassword::class,
+            ProtectSensitiveFortifyRoutes::class,
+        ]);
+    }
 
     public function test_team_member_roles_can_be_updated_by_owners()
     {

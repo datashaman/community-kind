@@ -2,9 +2,12 @@
 
 namespace App\Providers;
 
+use App\Actions\Fortify\CaptureTeamInvitation;
 use App\Actions\Fortify\CreateNewUser;
+use App\Actions\Fortify\DiscardRememberedLogin;
 use App\Actions\Fortify\ResetUserPassword;
 use App\Http\Responses\LoginResponse;
+use App\Http\Responses\PasswordConfirmedResponse;
 use App\Http\Responses\RegisterResponse;
 use App\Http\Responses\TwoFactorLoginResponse;
 use App\Http\Responses\VerifyEmailResponse;
@@ -15,7 +18,12 @@ use Illuminate\Support\Facades\RateLimiter;
 use Illuminate\Support\ServiceProvider;
 use Illuminate\Support\Str;
 use Inertia\Inertia;
+use Laravel\Fortify\Actions\AttemptToAuthenticate;
+use Laravel\Fortify\Actions\CanonicalizeUsername;
+use Laravel\Fortify\Actions\PrepareAuthenticatedSession;
+use Laravel\Fortify\Actions\RedirectIfTwoFactorAuthenticatable;
 use Laravel\Fortify\Contracts\LoginResponse as LoginResponseContract;
+use Laravel\Fortify\Contracts\PasswordConfirmedResponse as PasswordConfirmedResponseContract;
 use Laravel\Fortify\Contracts\RegisterResponse as RegisterResponseContract;
 use Laravel\Fortify\Contracts\TwoFactorLoginResponse as TwoFactorLoginResponseContract;
 use Laravel\Fortify\Contracts\VerifyEmailResponse as VerifyEmailResponseContract;
@@ -30,6 +38,7 @@ class FortifyServiceProvider extends ServiceProvider
     public function register(): void
     {
         $this->app->singleton(LoginResponseContract::class, LoginResponse::class);
+        $this->app->singleton(PasswordConfirmedResponseContract::class, PasswordConfirmedResponse::class);
         $this->app->singleton(RegisterResponseContract::class, RegisterResponse::class);
         $this->app->singleton(TwoFactorLoginResponseContract::class, TwoFactorLoginResponse::class);
         $this->app->singleton(VerifyEmailResponseContract::class, VerifyEmailResponse::class);
@@ -41,6 +50,7 @@ class FortifyServiceProvider extends ServiceProvider
     public function boot(): void
     {
         $this->configureActions();
+        $this->configureAuthenticationPipeline();
         $this->configureViews();
         $this->configureRateLimiting();
     }
@@ -52,6 +62,18 @@ class FortifyServiceProvider extends ServiceProvider
     {
         Fortify::resetUserPasswordsUsing(ResetUserPassword::class);
         Fortify::createUsersUsing(CreateNewUser::class);
+    }
+
+    private function configureAuthenticationPipeline(): void
+    {
+        Fortify::authenticateThrough(fn () => [
+            CaptureTeamInvitation::class,
+            DiscardRememberedLogin::class,
+            config('fortify.lowercase_usernames') ? CanonicalizeUsername::class : null,
+            Features::enabled(Features::twoFactorAuthentication()) ? RedirectIfTwoFactorAuthenticatable::class : null,
+            AttemptToAuthenticate::class,
+            PrepareAuthenticatedSession::class,
+        ]);
     }
 
     /**
@@ -78,9 +100,15 @@ class FortifyServiceProvider extends ServiceProvider
             'status' => $request->session()->get('status'),
         ]));
 
-        Fortify::registerView(fn (Request $request) => Inertia::render('auth/register', [
-            'teamInvitation' => $this->teamInvitation($request),
-        ]));
+        Fortify::registerView(function (Request $request) {
+            $teamInvitation = $this->teamInvitation($request);
+
+            abort_if($teamInvitation === null, 404);
+
+            return Inertia::render('auth/register', [
+                'teamInvitation' => $teamInvitation,
+            ]);
+        });
 
         Fortify::twoFactorChallengeView(fn () => Inertia::render('auth/two-factor-challenge'));
 
@@ -93,8 +121,11 @@ class FortifyServiceProvider extends ServiceProvider
     private function configureRateLimiting(): void
     {
         RateLimiter::for('two-factor', function (Request $request) {
-            return Limit::perMinute(5)->by($request->session()->get('login.id'));
+            return Limit::perMinute(5)->by($request->session()->get('login.id').'|'.$request->ip());
         });
+
+        RateLimiter::for('verification', fn (Request $request) => Limit::perMinute(5)
+            ->by($request->user()?->getAuthIdentifier().'|'.$request->ip()));
 
         RateLimiter::for('login', function (Request $request) {
             $throttleKey = Str::transliterate(Str::lower($request->input(Fortify::username())).'|'.$request->ip());
@@ -107,7 +138,7 @@ class FortifyServiceProvider extends ServiceProvider
     /**
      * Get the pending team invitation context for auth pages.
      *
-     * @return array{code: string, teamName: string}|null
+     * @return array{code: string, email: string, teamName: string}|null
      */
     private function teamInvitation(Request $request): ?array
     {
@@ -117,21 +148,15 @@ class FortifyServiceProvider extends ServiceProvider
             return null;
         }
 
-        $invitation = TeamInvitation::query()
-            ->with('team')
-            ->where('code', $invitationCode)
-            ->whereNull('accepted_at')
-            ->where(fn ($query) => $query
-                ->whereNull('expires_at')
-                ->orWhere('expires_at', '>=', now()))
-            ->first();
+        $invitation = TeamInvitation::findByToken($invitationCode)?->load('team');
 
-        if (! $invitation) {
+        if (! $invitation?->isPending()) {
             return null;
         }
 
         return [
-            'code' => $invitation->code,
+            'code' => $invitationCode,
+            'email' => $invitation->email,
             'teamName' => $invitation->team->name,
         ];
     }

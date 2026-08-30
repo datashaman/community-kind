@@ -17,13 +17,14 @@ class DashboardController extends Controller
             ->with(['inviter', 'team'])
             ->whereRaw('LOWER(email) = ?', [$email])
             ->whereNull('accepted_at')
+            ->whereNull('revoked_at')
             ->where(fn ($query) => $query
                 ->whereNull('expires_at')
                 ->orWhere('expires_at', '>=', now()))
             ->latest()
             ->get()
             ->map(fn (TeamInvitation $invitation) => [
-                'code' => $invitation->code,
+                'id' => $invitation->id,
                 'inviterName' => $invitation->inviter->name,
                 'team' => [
                     'name' => $invitation->team->name,

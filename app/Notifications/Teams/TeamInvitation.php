@@ -4,21 +4,21 @@ namespace App\Notifications\Teams;
 
 use App\Models\TeamInvitation as TeamInvitationModel;
 use Illuminate\Bus\Queueable;
-use Illuminate\Contracts\Queue\ShouldQueue;
 use Illuminate\Notifications\Messages\MailMessage;
 use Illuminate\Notifications\Notification;
 
-class TeamInvitation extends Notification implements ShouldQueue
+class TeamInvitation extends Notification
 {
     use Queueable;
 
     /**
      * Create a new notification instance.
      */
-    public function __construct(public TeamInvitationModel $invitation)
-    {
-        //
-    }
+    public function __construct(
+        public TeamInvitationModel $invitation,
+        public string $token,
+        public bool $existingUser,
+    ) {}
 
     /**
      * Get the notification's delivery channels.
@@ -38,16 +38,21 @@ class TeamInvitation extends Notification implements ShouldQueue
         $team = $this->invitation->team;
         $inviter = $this->invitation->inviter;
 
+        $route = $this->existingUser ? 'login' : 'register';
+        $action = $this->existingUser ? __('Log in') : __('Create account');
+
         return (new MailMessage)
             ->subject(__("You've been invited to join :teamName", ['teamName' => $team->name]))
             ->line(__(':inviterName has invited you to join the :teamName team.', [
                 'inviterName' => $inviter->name,
                 'teamName' => $team->name,
             ]))
-            ->line(__('Log in and visit your dashboard to accept or decline this invitation.'))
+            ->line($this->existingUser
+                ? __('Log in and visit your dashboard to accept or decline this invitation.')
+                : __('Create your account with this invitation, then verify your email address to continue.'))
             ->action(
-                __('Log in'),
-                route('login', ['invitation' => $this->invitation->code]),
+                $action,
+                route($route, ['invitation' => $this->token]),
             );
     }
 

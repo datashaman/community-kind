@@ -3,17 +3,34 @@
 namespace Tests\Feature\Teams;
 
 use App\Enums\TeamRole;
+use App\Http\Middleware\EnsureRecentMfa;
+use App\Http\Middleware\EnsureRecentPassword;
+use App\Http\Middleware\EnsureStaffSecurityRequirements;
+use App\Http\Middleware\ProtectSensitiveFortifyRoutes;
 use App\Models\Team;
 use App\Models\TeamInvitation;
 use App\Models\User;
 use App\Notifications\Teams\TeamInvitation as TeamInvitationNotification;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\Notification;
+use Inertia\Testing\AssertableInertia as Assert;
 use Tests\TestCase;
 
 class TeamInvitationTest extends TestCase
 {
     use RefreshDatabase;
+
+    protected function setUp(): void
+    {
+        parent::setUp();
+
+        $this->withoutMiddleware([
+            EnsureStaffSecurityRequirements::class,
+            EnsureRecentMfa::class,
+            EnsureRecentPassword::class,
+            ProtectSensitiveFortifyRoutes::class,
+        ]);
+    }
 
     public function test_team_invitations_can_be_created()
     {
@@ -48,35 +65,37 @@ class TeamInvitationTest extends TestCase
 
         $team->members()->attach($owner, ['role' => TeamRole::Owner->value]);
 
-        $invitation = TeamInvitation::factory()->create([
+        $token = 'existing-user-invitation-token';
+        $invitation = TeamInvitation::factory()->forToken($token)->create([
             'team_id' => $team->id,
             'email' => $invitedUser->email,
             'invited_by' => $owner->id,
         ]);
 
-        $mail = (new TeamInvitationNotification($invitation))->toMail($invitedUser);
+        $mail = (new TeamInvitationNotification($invitation, $token, true))->toMail($invitedUser);
 
-        $this->assertSame(route('login', ['invitation' => $invitation->code]), $mail->actionUrl);
+        $this->assertSame(route('login', ['invitation' => $token]), $mail->actionUrl);
         $this->assertStringContainsString('dashboard', implode(' ', $mail->introLines));
     }
 
-    public function test_invitation_email_for_unknown_users_uses_login_route()
+    public function test_invitation_email_for_unknown_users_uses_registration_route()
     {
         $owner = User::factory()->create();
         $team = Team::factory()->create();
 
         $team->members()->attach($owner, ['role' => TeamRole::Owner->value]);
 
-        $invitation = TeamInvitation::factory()->create([
+        $token = 'new-user-invitation-token';
+        $invitation = TeamInvitation::factory()->forToken($token)->create([
             'team_id' => $team->id,
             'email' => 'unknown@example.com',
             'invited_by' => $owner->id,
         ]);
 
-        $mail = (new TeamInvitationNotification($invitation))->toMail((object) []);
+        $mail = (new TeamInvitationNotification($invitation, $token, false))->toMail((object) []);
 
-        $this->assertSame(route('login', ['invitation' => $invitation->code]), $mail->actionUrl);
-        $this->assertStringContainsString('log in', strtolower(implode(' ', $mail->introLines)));
+        $this->assertSame(route('register', ['invitation' => $token]), $mail->actionUrl);
+        $this->assertStringContainsString('create', strtolower(implode(' ', $mail->introLines)));
     }
 
     public function test_team_invitations_can_be_created_by_admins()
@@ -172,6 +191,51 @@ class TeamInvitationTest extends TestCase
         $response->assertSessionHasErrors('email');
     }
 
+    public function test_revoked_invitations_can_be_reissued()
+    {
+        Notification::fake();
+
+        $owner = User::factory()->create();
+        $team = Team::factory()->create();
+        $team->members()->attach($owner, ['role' => TeamRole::Owner->value]);
+        TeamInvitation::factory()->revoked()->create([
+            'team_id' => $team->id,
+            'email' => 'invited@example.com',
+            'invited_by' => $owner->id,
+        ]);
+
+        $response = $this
+            ->actingAs($owner)
+            ->post(route('teams.invitations.store', $team), [
+                'email' => 'invited@example.com',
+                'role' => TeamRole::Member->value,
+            ]);
+
+        $response->assertRedirect(route('teams.edit', $team));
+        $this->assertDatabaseCount('team_invitations', 2);
+        Notification::assertCount(1);
+    }
+
+    public function test_revoked_invitations_are_not_shown_as_pending()
+    {
+        $owner = User::factory()->create();
+        $team = Team::factory()->create();
+        $team->members()->attach($owner, ['role' => TeamRole::Owner->value]);
+        TeamInvitation::factory()->revoked()->create([
+            'team_id' => $team->id,
+            'invited_by' => $owner->id,
+        ]);
+
+        $response = $this
+            ->actingAs($owner)
+            ->get(route('teams.edit', $team));
+
+        $response->assertInertia(fn (Assert $page) => $page
+            ->component('teams/edit')
+            ->has('invitations', 0),
+        );
+    }
+
     public function test_team_invitations_cannot_be_created_by_members()
     {
         $owner = User::factory()->create();
@@ -209,9 +273,11 @@ class TeamInvitationTest extends TestCase
 
         $response->assertRedirect(route('teams.edit', $team));
 
-        $this->assertDatabaseMissing('team_invitations', [
+        $this->assertDatabaseHas('team_invitations', [
             'id' => $invitation->id,
+            'revoked_by' => $owner->id,
         ]);
+        $this->assertNotNull($invitation->fresh()->revoked_at);
     }
 
     public function test_team_invitations_can_be_accepted()
@@ -260,9 +326,11 @@ class TeamInvitationTest extends TestCase
 
         $response->assertRedirect(route('dashboard'));
 
-        $this->assertDatabaseMissing('team_invitations', [
+        $this->assertDatabaseHas('team_invitations', [
             'id' => $invitation->id,
+            'revoked_by' => $invitedUser->id,
         ]);
+        $this->assertNotNull($invitation->fresh()->revoked_at);
     }
 
     public function test_team_invitations_cannot_be_declined_by_uninvited_user()

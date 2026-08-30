@@ -98,10 +98,11 @@ class ProfileUpdateTest extends TestCase
 
     public function test_user_can_delete_their_account()
     {
-        $user = User::factory()->create();
+        $user = User::factory()->withTwoFactor()->create();
 
         $response = $this
             ->actingAs($user)
+            ->withSession(['auth.mfa_confirmed_at' => time()])
             ->delete(route('profile.destroy'), [
                 'password' => 'password',
             ]);
@@ -116,10 +117,11 @@ class ProfileUpdateTest extends TestCase
 
     public function test_correct_password_must_be_provided_to_delete_account()
     {
-        $user = User::factory()->create();
+        $user = User::factory()->withTwoFactor()->create();
 
         $response = $this
             ->actingAs($user)
+            ->withSession(['auth.mfa_confirmed_at' => time()])
             ->from(route('profile.edit'))
             ->delete(route('profile.destroy'), [
                 'password' => 'wrong-password',

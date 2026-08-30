@@ -9,10 +9,15 @@ import { Label } from '@/components/ui/label';
 import { edit } from '@/routes/security';
 import type { Props as ManageTwoFactorProps } from '@/components/manage-two-factor';
 import ManageTwoFactor from '@/components/manage-two-factor';
+import { acknowledge } from '@/routes/security/recovery-codes';
+import { destroy as destroyOtherBrowserSessions } from '@/routes/security/other-browser-sessions';
 
 // oxfmt-ignore
 type Props = {
     passwordRules: string;
+    recoveryCodesAcknowledged?: boolean;
+    required?: 'mfa' | 'recovery-codes' | null;
+    otherBrowserSessionCount: number;
 } & ManageTwoFactorProps;
 
 export default function Security(props: Props) {
@@ -126,6 +131,64 @@ export default function Security(props: Props) {
                 requiresConfirmation={props.requiresConfirmation}
                 twoFactorEnabled={props.twoFactorEnabled}
             />
+
+            {props.twoFactorEnabled && !props.recoveryCodesAcknowledged && (
+                <div className="space-y-6 rounded-lg border p-6">
+                    <Heading
+                        variant="small"
+                        title="Save your recovery codes"
+                        description="Store the recovery codes above somewhere safe, then acknowledge that you can recover your account. Staff features remain locked until this is complete."
+                    />
+
+                    <Form {...acknowledge.form()}>
+                        {({ processing, errors }) => (
+                            <div className="space-y-4">
+                                <label className="flex items-start gap-3 text-sm">
+                                    <input
+                                        type="checkbox"
+                                        name="acknowledged"
+                                        value="1"
+                                        className="mt-1 size-4"
+                                        required
+                                    />
+                                    <span>
+                                        I have saved my recovery codes in a
+                                        secure location.
+                                    </span>
+                                </label>
+                                <InputError message={errors.acknowledged} />
+                                <Button disabled={processing}>
+                                    Acknowledge recovery codes
+                                </Button>
+                            </div>
+                        )}
+                    </Form>
+                </div>
+            )}
+
+            {props.recoveryCodesAcknowledged && (
+                <div className="space-y-6">
+                    <Heading
+                        variant="small"
+                        title="Browser sessions"
+                        description={`${props.otherBrowserSessionCount} other active browser ${props.otherBrowserSessionCount === 1 ? 'session' : 'sessions'} found`}
+                    />
+
+                    <Form {...destroyOtherBrowserSessions.form()}>
+                        {({ processing }) => (
+                            <Button
+                                variant="destructive"
+                                disabled={
+                                    processing ||
+                                    props.otherBrowserSessionCount === 0
+                                }
+                            >
+                                Revoke other browser sessions
+                            </Button>
+                        )}
+                    </Form>
+                </div>
+            )}
         </>
     );
 }

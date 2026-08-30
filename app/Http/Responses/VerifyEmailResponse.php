@@ -2,20 +2,27 @@
 
 namespace App\Http\Responses;
 
-use App\Http\Responses\Concerns\RedirectsToCurrentTeam;
+use App\Actions\Teams\AcceptTeamInvitation;
+use App\Models\TeamInvitation;
 use Illuminate\Http\JsonResponse;
 use Laravel\Fortify\Contracts\VerifyEmailResponse as VerifyEmailResponseContract;
-use Laravel\Fortify\Fortify;
 use Symfony\Component\HttpFoundation\Response;
 
 class VerifyEmailResponse implements VerifyEmailResponseContract
 {
-    use RedirectsToCurrentTeam;
+    public function __construct(private AcceptTeamInvitation $acceptInvitation) {}
 
     public function toResponse($request): Response
     {
+        $invitationId = $request->session()->pull('auth.pending_team_invitation_id');
+        $invitation = is_numeric($invitationId) ? TeamInvitation::find($invitationId) : null;
+
+        if ($invitation?->isPending() && $invitation->isFor($request->user())) {
+            $this->acceptInvitation->handle($request->user(), $invitation);
+        }
+
         return $request->wantsJson()
             ? new JsonResponse('', 204)
-            : redirect()->intended($this->redirectPathForCurrentTeam($request, Fortify::redirects('email-verification')).'?verified=1');
+            : to_route('security.edit', ['verified' => 1]);
     }
 }
