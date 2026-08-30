@@ -15,6 +15,10 @@ class EnsureStaffSecurityRequirements
      */
     public function handle(Request $request, Closure $next): Response
     {
+        if (! config('auth.mfa_required')) {
+            return $next($request);
+        }
+
         $user = $request->user();
 
         abort_if($user === null, 403);

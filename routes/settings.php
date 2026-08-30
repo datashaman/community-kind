@@ -46,9 +46,9 @@ Route::middleware(['auth', 'verified'])->group(function () {
         ->middleware([EnsureStaffSecurityRequirements::class, EnsureRecentMfa::class, 'throttle:6,1'])
         ->name('user-password.update');
 
-    Route::middleware(EnsureStaffSecurityRequirements::class)->group(function () {
-        Route::inertia('settings/appearance', 'settings/appearance')->name('appearance.edit');
+    Route::inertia('settings/appearance', 'settings/appearance')->name('appearance.edit');
 
+    Route::middleware(EnsureStaffSecurityRequirements::class)->group(function () {
         Route::get('settings/teams', [TeamController::class, 'index'])->name('teams.index');
         Route::post('settings/teams', [TeamController::class, 'store'])->name('teams.store');
 

@@ -10,6 +10,10 @@ use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Notification;
 use Laravel\Fortify\Contracts\TwoFactorAuthenticationProvider;
 
+beforeEach(function () {
+    config(['auth.mfa_required' => true]);
+});
+
 test('issued invitations store only a hash and expire after 72 hours', function () {
     $inviter = User::factory()->create();
     $team = Team::factory()->create();
@@ -44,6 +48,17 @@ test('operational routes require confirmed MFA and recovery-code acknowledgement
     $this->actingAs($user->refresh())
         ->get(route('dashboard'))
         ->assertRedirect(route('security.edit', ['required' => 'recovery-codes']));
+});
+
+test('login redirects to required MFA onboarding when enforcement is enabled', function () {
+    $user = User::factory()->create();
+
+    $response = $this->post(route('login.store'), [
+        'email' => $user->email,
+        'password' => 'password',
+    ]);
+
+    $response->assertRedirect(route('security.edit', ['required' => 'mfa']));
 });
 
 test('staff who completed security onboarding can use operational routes', function () {

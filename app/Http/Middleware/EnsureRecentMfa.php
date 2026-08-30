@@ -15,6 +15,10 @@ class EnsureRecentMfa
      */
     public function handle(Request $request, Closure $next): Response
     {
+        if (! config('auth.mfa_required')) {
+            return $next($request);
+        }
+
         $confirmedAt = $request->session()->get('auth.mfa_confirmed_at');
         $timeout = (int) config('auth.mfa_timeout', 900);
 

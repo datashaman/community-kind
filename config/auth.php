@@ -116,6 +116,11 @@ return [
 
     'mfa_timeout' => env('AUTH_MFA_TIMEOUT', 900),
 
+    'mfa_required' => env(
+        'AUTH_MFA_REQUIRED',
+        in_array(env('APP_ENV'), ['staging', 'production'], true),
+    ),
+
     'session_absolute_timeout' => env('AUTH_SESSION_ABSOLUTE_TIMEOUT', 43200),
 
 ];

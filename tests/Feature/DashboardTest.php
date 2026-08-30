@@ -3,8 +3,6 @@
 namespace Tests\Feature;
 
 use App\Enums\TeamRole;
-use App\Http\Middleware\EnsureStaffSecurityRequirements;
-use App\Http\Middleware\ProtectSensitiveFortifyRoutes;
 use App\Models\Team;
 use App\Models\TeamInvitation;
 use App\Models\User;
@@ -15,16 +13,6 @@ use Tests\TestCase;
 class DashboardTest extends TestCase
 {
     use RefreshDatabase;
-
-    protected function setUp(): void
-    {
-        parent::setUp();
-
-        $this->withoutMiddleware([
-            EnsureStaffSecurityRequirements::class,
-            ProtectSensitiveFortifyRoutes::class,
-        ]);
-    }
 
     public function test_guests_are_redirected_to_the_login_page()
     {

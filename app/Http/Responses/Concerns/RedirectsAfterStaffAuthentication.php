@@ -26,8 +26,12 @@ trait RedirectsAfterStaffAuthentication
 
         $this->acceptPendingInvitation($request, $acceptTeamInvitation);
 
-        if (! $user->hasEnabledTwoFactorAuthentication() || ! $user->hasAcknowledgedRecoveryCodes()) {
-            return to_route('security.edit');
+        if (config('auth.mfa_required') && ! $user->hasEnabledTwoFactorAuthentication()) {
+            return to_route('security.edit', ['required' => 'mfa']);
+        }
+
+        if (config('auth.mfa_required') && ! $user->hasAcknowledgedRecoveryCodes()) {
+            return to_route('security.edit', ['required' => 'recovery-codes']);
         }
 
         return redirect()->intended($this->redirectPathForCurrentTeam($request, $fallback));

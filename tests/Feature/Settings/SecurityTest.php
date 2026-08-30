@@ -70,6 +70,18 @@ class SecurityTest extends TestCase
             );
     }
 
+    public function test_appearance_page_does_not_require_mfa()
+    {
+        config(['auth.mfa_required' => true]);
+        $user = User::factory()->create();
+
+        $this->actingAs($user)
+            ->get(route('appearance.edit'))
+            ->assertInertia(fn (Assert $page) => $page
+                ->component('settings/appearance'),
+            );
+    }
+
     public function test_password_can_be_updated()
     {
         $user = User::factory()->withTwoFactor()->create();
