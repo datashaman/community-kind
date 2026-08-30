@@ -1,6 +1,7 @@
 <?php
 
 use App\Http\Controllers\Auth\MfaChallengeController;
+use App\Http\Controllers\Organisations\MembershipHoldController;
 use App\Http\Controllers\Organisations\OrganisationController;
 use App\Http\Controllers\Organisations\OrganisationInvitationController;
 use App\Http\Controllers\Organisations\OrganisationLifecycleController;
@@ -76,6 +77,8 @@ Route::middleware(['auth', 'verified'])->group(function () {
 
             Route::patch('settings/organisations/{organisation}/members/{user}', [OrganisationMemberController::class, 'update'])->middleware([EnsureOrganisationAccess::class.':administration', EnsureRecentPassword::class, EnsureRecentMfa::class])->name('organisations.members.update');
             Route::delete('settings/organisations/{organisation}/members/{user}', [OrganisationMemberController::class, 'destroy'])->middleware([EnsureOrganisationAccess::class.':administration', EnsureRecentPassword::class, EnsureRecentMfa::class])->name('organisations.members.destroy');
+            Route::post('settings/organisations/{organisation}/members/{user}/holds', [MembershipHoldController::class, 'store'])->middleware([EnsureOrganisationAccess::class.':administration', EnsureRecentPassword::class, EnsureRecentMfa::class])->name('organisations.members.holds.store');
+            Route::delete('settings/organisations/{organisation}/members/{user}/holds/{hold}', [MembershipHoldController::class, 'destroy'])->middleware([EnsureOrganisationAccess::class.':administration', EnsureRecentPassword::class, EnsureRecentMfa::class])->name('organisations.members.holds.destroy');
 
             Route::post('settings/organisations/{organisation}/invitations', [OrganisationInvitationController::class, 'store'])->middleware([EnsureOrganisationAccess::class.':administration', EnsureRecentPassword::class, EnsureRecentMfa::class])->name('organisations.invitations.store');
             Route::delete('settings/organisations/{organisation}/invitations/{invitation}', [OrganisationInvitationController::class, 'destroy'])->middleware([EnsureOrganisationAccess::class.':administration', EnsureRecentPassword::class, EnsureRecentMfa::class])->name('organisations.invitations.destroy');

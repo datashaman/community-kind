@@ -45,6 +45,7 @@ class OrganisationInvitationTest extends TestCase
             ->actingAs($owner)
             ->post(route('organisations.invitations.store', $organisation), [
                 'email' => 'invited@example.com',
+                'new_person_name' => 'Invited Person',
                 'role' => OrganisationRole::CaseWorker->value,
             ]);
 
@@ -113,6 +114,7 @@ class OrganisationInvitationTest extends TestCase
             ->actingAs($admin)
             ->post(route('organisations.invitations.store', $organisation), [
                 'email' => 'invited@example.com',
+                'new_person_name' => 'Invited Person',
                 'role' => OrganisationRole::CaseWorker->value,
             ]);
 
@@ -134,6 +136,7 @@ class OrganisationInvitationTest extends TestCase
             ->actingAs($admin)
             ->post(route('organisations.invitations.store', $organisation), [
                 'email' => 'invited@example.com',
+                'new_person_name' => 'Invited Person',
                 'role' => 'owner',
             ]);
 
@@ -161,6 +164,7 @@ class OrganisationInvitationTest extends TestCase
             ->actingAs($owner)
             ->post(route('organisations.invitations.store', $organisation), [
                 'email' => 'member@example.com',
+                'new_person_name' => 'Existing Member',
                 'role' => OrganisationRole::CaseWorker->value,
             ]);
 
@@ -185,6 +189,7 @@ class OrganisationInvitationTest extends TestCase
             ->actingAs($owner)
             ->post(route('organisations.invitations.store', $organisation), [
                 'email' => 'invited@example.com',
+                'new_person_name' => 'Invited Person',
                 'role' => OrganisationRole::CaseWorker->value,
             ]);
 
@@ -208,6 +213,7 @@ class OrganisationInvitationTest extends TestCase
             ->actingAs($owner)
             ->post(route('organisations.invitations.store', $organisation), [
                 'email' => 'invited@example.com',
+                'new_person_name' => 'Invited Person',
                 'role' => OrganisationRole::CaseWorker->value,
             ]);
 
@@ -249,6 +255,7 @@ class OrganisationInvitationTest extends TestCase
             ->actingAs($member)
             ->post(route('organisations.invitations.store', $organisation), [
                 'email' => 'invited@example.com',
+                'new_person_name' => 'Invited Person',
                 'role' => OrganisationRole::CaseWorker->value,
             ]);
 

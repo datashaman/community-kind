@@ -17,6 +17,10 @@ beforeEach(function () {
 test('issued invitations store only a hash and expire after 72 hours', function () {
     $inviter = User::factory()->create();
     $organisation = Organisation::factory()->create();
+    $organisation->memberships()->create([
+        'user_id' => $inviter->id,
+        'is_owner' => true,
+    ]);
 
     $issued = app(IssueOrganisationInvitation::class)->handle(
         $organisation,
@@ -80,6 +84,7 @@ test('sensitive organisation actions require a recent MFA confirmation', functio
         ->withSession(['auth.password_confirmed_at' => time()])
         ->post(route('organisations.invitations.store', $organisation), [
             'email' => 'invited@example.com',
+            'new_person_name' => 'Invited Person',
             'role' => OrganisationRole::CaseWorker->value,
         ])
         ->assertRedirect(route('mfa.confirm'));
@@ -202,6 +207,7 @@ test('password confirmation after a mutation returns to its safe form page', fun
         ->from($formUrl)
         ->post(route('organisations.invitations.store', $organisation), [
             'email' => 'invited@example.com',
+            'new_person_name' => 'Invited Person',
             'role' => OrganisationRole::CaseWorker->value,
         ])
         ->assertRedirect(route('password.confirm'));
@@ -224,6 +230,7 @@ test('MFA confirmation after a mutation returns to its safe form page', function
         ->from($formUrl)
         ->post(route('organisations.invitations.store', $organisation), [
             'email' => 'invited@example.com',
+            'new_person_name' => 'Invited Person',
             'role' => OrganisationRole::CaseWorker->value,
         ])
         ->assertRedirect(route('mfa.confirm'));

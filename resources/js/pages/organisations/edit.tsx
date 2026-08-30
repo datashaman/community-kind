@@ -1,5 +1,5 @@
 import { Form, Head, router } from '@inertiajs/react';
-import { ChevronDown, Mail, ShieldAlert, UserPlus, X } from 'lucide-react';
+import { Mail, Plus, ShieldAlert, UserPlus, X } from 'lucide-react';
 import { useMemo, useState } from 'react';
 import CancelInvitationModal from '@/components/cancel-invitation-modal';
 import DeleteOrganisationModal from '@/components/delete-organisation-modal';
@@ -10,13 +10,6 @@ import RemoveMemberModal from '@/components/remove-member-modal';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
-import { Checkbox } from '@/components/ui/checkbox';
-import {
-    DropdownMenu,
-    DropdownMenuContent,
-    DropdownMenuItem,
-    DropdownMenuTrigger,
-} from '@/components/ui/dropdown-menu';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import {
@@ -30,6 +23,10 @@ import { edit, index, update } from '@/routes/organisations';
 import { update as updateLifecycle } from '@/routes/organisations/lifecycle';
 import { update as updateMember } from '@/routes/organisations/members';
 import {
+    destroy as releaseMembershipHold,
+    store as createMembershipHold,
+} from '@/routes/organisations/members/holds';
+import {
     store as storeOwnershipTransfer,
     update as acceptOwnershipTransfer,
 } from '@/routes/organisations/ownership-transfers';
@@ -39,7 +36,9 @@ import type {
     OrganisationOwnerCandidate,
     OrganisationOwnershipTransfer,
     ProgramOption,
+    PersonPartyOption,
     RoleOption,
+    RoleAssignment,
     Organisation,
     OrganisationInvitation,
     OrganisationMember,
@@ -53,6 +52,7 @@ type Props = {
     permissions: OrganisationPermissions;
     availableRoles: RoleOption[];
     programs: ProgramOption[];
+    personParties: PersonPartyOption[];
     allowedTransitions: string[];
     ownerCandidates: OrganisationOwnerCandidate[];
     ownershipTransfer: OrganisationOwnershipTransfer | null;
@@ -66,6 +66,7 @@ export default function OrganisationEdit({
     permissions,
     availableRoles,
     programs,
+    personParties,
     allowedTransitions,
     ownerCandidates,
     ownershipTransfer,
@@ -95,32 +96,6 @@ export default function OrganisationEdit({
         status
             .replaceAll('_', ' ')
             .replace(/^./, (letter) => letter.toUpperCase());
-
-    const updateMemberRole = (member: OrganisationMember, newRole: string) => {
-        router.visit(updateMember([organisation.slug, member.id]), {
-            data: { role: newRole, program_ids: member.program_ids },
-            preserveScroll: true,
-        });
-    };
-
-    const updateMemberProgram = (
-        member: OrganisationMember,
-        programId: number,
-        checked: boolean,
-    ) => {
-        if (!member.role) {
-            return;
-        }
-
-        const programIds = checked
-            ? [...member.program_ids, programId]
-            : member.program_ids.filter((id) => id !== programId);
-
-        router.visit(updateMember([organisation.slug, member.id]), {
-            data: { role: member.role, program_ids: programIds },
-            preserveScroll: true,
-        });
-    };
 
     const confirmRemoveMember = (member: OrganisationMember) => {
         setMemberToRemove(member);
@@ -419,43 +394,6 @@ export default function OrganisationEdit({
                                             </Badge>
                                         ) : null}
 
-                                        {permissions.canUpdateMember ? (
-                                            <DropdownMenu>
-                                                <DropdownMenuTrigger asChild>
-                                                    <Button
-                                                        variant="outline"
-                                                        size="sm"
-                                                        data-test="member-role-trigger"
-                                                    >
-                                                        {member.role_label}
-                                                        <ChevronDown className="ml-2 h-4 w-4 opacity-50" />
-                                                    </Button>
-                                                </DropdownMenuTrigger>
-                                                <DropdownMenuContent>
-                                                    {availableRoles.map(
-                                                        (role) => (
-                                                            <DropdownMenuItem
-                                                                key={role.value}
-                                                                data-test="member-role-option"
-                                                                onSelect={() =>
-                                                                    updateMemberRole(
-                                                                        member,
-                                                                        role.value,
-                                                                    )
-                                                                }
-                                                            >
-                                                                {role.label}
-                                                            </DropdownMenuItem>
-                                                        ),
-                                                    )}
-                                                </DropdownMenuContent>
-                                            </DropdownMenu>
-                                        ) : (
-                                            <Badge variant="outline">
-                                                {member.role_label}
-                                            </Badge>
-                                        )}
-
                                         {!member.is_owner &&
                                         permissions.canRemoveMember ? (
                                             <TooltipProvider>
@@ -483,49 +421,24 @@ export default function OrganisationEdit({
                                     </div>
                                 </div>
 
-                                {programs.length > 0 ? (
-                                    <div className="border-t pt-4">
-                                        <p className="mb-3 text-sm font-medium">
-                                            Program access
-                                        </p>
-                                        <div className="flex flex-wrap gap-x-6 gap-y-3">
-                                            {programs.map((program) => (
-                                                <Label
-                                                    key={program.id}
-                                                    className="flex items-center gap-2 font-normal"
-                                                >
-                                                    <Checkbox
-                                                        data-test="member-program-checkbox"
-                                                        checked={member.program_ids.includes(
-                                                            program.id,
-                                                        )}
-                                                        disabled={
-                                                            !permissions.canUpdateMember ||
-                                                            !member.role
-                                                        }
-                                                        onCheckedChange={(
-                                                            checked,
-                                                        ) =>
-                                                            updateMemberProgram(
-                                                                member,
-                                                                program.id,
-                                                                checked ===
-                                                                    true,
-                                                            )
-                                                        }
-                                                    />
-                                                    {program.name}
-                                                </Label>
-                                            ))}
-                                        </div>
-                                        {!member.role ? (
-                                            <p className="text-muted-foreground mt-2 text-xs">
-                                                Assign an operational role
-                                                before granting program access.
-                                            </p>
-                                        ) : null}
-                                    </div>
-                                ) : null}
+                                <div className="border-t pt-4">
+                                    <p className="text-muted-foreground mb-3 text-xs">
+                                        Person Party:{' '}
+                                        {member.person_party.display_name}
+                                    </p>
+                                    <MemberRoleAssignments
+                                        organisation={organisation}
+                                        member={member}
+                                        availableRoles={availableRoles}
+                                        programs={programs}
+                                    />
+                                    {permissions.canUpdateMember ? (
+                                        <MembershipHoldControls
+                                            organisation={organisation}
+                                            member={member}
+                                        />
+                                    ) : null}
+                                </div>
                             </div>
                         ))}
                     </div>
@@ -555,7 +468,16 @@ export default function OrganisationEdit({
                                                 {invitation.email}
                                             </div>
                                             <div className="text-muted-foreground text-sm">
-                                                {invitation.role_label}
+                                                {invitation.person_name} ·{' '}
+                                                {invitation.role_assignments
+                                                    .map(
+                                                        (assignment) =>
+                                                            `${assignment.role_label} (${assignment.scope_label})`,
+                                                    )
+                                                    .join(', ')}
+                                                {invitation.offers_ownership
+                                                    ? ' · Owner responsibility offered'
+                                                    : ''}
                                             </div>
                                         </div>
                                     </div>
@@ -620,6 +542,9 @@ export default function OrganisationEdit({
                 <InviteMemberModal
                     organisation={organisation}
                     availableRoles={availableRoles}
+                    programs={programs}
+                    personParties={personParties}
+                    canOfferOwnership={permissions.canTransferOwnership}
                     open={inviteDialogOpen}
                     onOpenChange={setInviteDialogOpen}
                 />
@@ -647,6 +572,219 @@ export default function OrganisationEdit({
                 />
             ) : null}
         </>
+    );
+}
+
+function MemberRoleAssignments({
+    organisation,
+    member,
+    availableRoles,
+    programs,
+}: {
+    organisation: Organisation;
+    member: OrganisationMember;
+    availableRoles: RoleOption[];
+    programs: ProgramOption[];
+}) {
+    const [role, setRole] = useState<RoleOption['value']>('case_worker');
+    const [programId, setProgramId] = useState('');
+
+    const saveAssignments = (assignments: RoleAssignment[]) => {
+        router.visit(updateMember([organisation.slug, member.id]), {
+            data: {
+                role_assignments: assignments.map((assignment) => ({
+                    role: assignment.role,
+                    program_id: assignment.program_id,
+                })),
+            },
+            preserveScroll: true,
+        });
+    };
+
+    const addAssignment = () => {
+        const roleOption = availableRoles.find(
+            (option) => option.value === role,
+        );
+        const program = programs.find(
+            (option) => option.id === Number(programId),
+        );
+
+        saveAssignments([
+            ...member.role_assignments,
+            {
+                role,
+                role_label: roleOption?.label ?? role,
+                program_id: programId === '' ? null : Number(programId),
+                scope_label: program?.name ?? 'Organisation-wide',
+            },
+        ]);
+    };
+
+    return (
+        <div className="space-y-3">
+            <p className="text-sm font-medium">Operational roles</p>
+            <div className="flex flex-wrap gap-2">
+                {member.role_assignments.length === 0 ? (
+                    <span className="text-muted-foreground text-sm">
+                        No operational role
+                    </span>
+                ) : null}
+                {member.role_assignments.map((assignment) => (
+                    <Badge
+                        key={`${assignment.role}-${assignment.program_id ?? 'organisation'}`}
+                        variant="outline"
+                        className="gap-1"
+                    >
+                        {assignment.role_label} · {assignment.scope_label}
+                        {member.can_manage_roles ? (
+                            <button
+                                type="button"
+                                aria-label={`Remove ${assignment.role_label} at ${assignment.scope_label}`}
+                                onClick={() =>
+                                    saveAssignments(
+                                        member.role_assignments.filter(
+                                            (candidate) =>
+                                                candidate.id !== assignment.id,
+                                        ),
+                                    )
+                                }
+                            >
+                                <X className="size-3" />
+                            </button>
+                        ) : null}
+                    </Badge>
+                ))}
+            </div>
+
+            {member.can_manage_roles ? (
+                <div className="flex flex-wrap gap-2">
+                    <select
+                        value={role}
+                        onChange={(event) => {
+                            const nextRole = event.target
+                                .value as RoleOption['value'];
+                            setRole(nextRole);
+
+                            if (nextRole === 'organisation_administrator') {
+                                setProgramId('');
+                            }
+                        }}
+                        className="border-input bg-background h-9 rounded-md border px-3 text-sm"
+                    >
+                        {availableRoles.map((option) => (
+                            <option key={option.value} value={option.value}>
+                                {option.label}
+                            </option>
+                        ))}
+                    </select>
+                    <select
+                        value={programId}
+                        disabled={role === 'organisation_administrator'}
+                        onChange={(event) => setProgramId(event.target.value)}
+                        className="border-input bg-background h-9 rounded-md border px-3 text-sm"
+                    >
+                        <option value="">Organisation-wide</option>
+                        {programs.map((program) => (
+                            <option key={program.id} value={program.id}>
+                                {program.name}
+                            </option>
+                        ))}
+                    </select>
+                    <Button
+                        type="button"
+                        variant="outline"
+                        onClick={addAssignment}
+                    >
+                        <Plus /> Add assignment
+                    </Button>
+                </div>
+            ) : null}
+        </div>
+    );
+}
+
+function MembershipHoldControls({
+    organisation,
+    member,
+}: {
+    organisation: Organisation;
+    member: OrganisationMember;
+}) {
+    if (!member.can_manage_hold) {
+        return null;
+    }
+
+    if (member.hold) {
+        return (
+            <div className="border-destructive/30 mt-4 flex items-center justify-between rounded-md border p-3">
+                <div>
+                    <p className="text-sm font-medium">Membership on hold</p>
+                    <p className="text-muted-foreground text-xs">
+                        {member.hold.reason} · Review{' '}
+                        {new Date(member.hold.review_at).toLocaleString()}
+                    </p>
+                </div>
+                <Form
+                    {...releaseMembershipHold.form([
+                        organisation.slug,
+                        member.id,
+                        member.hold.id,
+                    ])}
+                >
+                    {({ processing }) => (
+                        <Button
+                            type="submit"
+                            variant="outline"
+                            size="sm"
+                            disabled={processing}
+                        >
+                            Release hold
+                        </Button>
+                    )}
+                </Form>
+            </div>
+        );
+    }
+
+    const defaultReviewAt = new Date(Date.now() + 24 * 60 * 60 * 1000)
+        .toISOString()
+        .slice(0, 16);
+
+    return (
+        <Form
+            {...createMembershipHold.form([organisation.slug, member.id])}
+            className="mt-4 grid gap-2 rounded-md border p-3 sm:grid-cols-[1fr_auto_auto]"
+        >
+            {({ errors, processing }) => (
+                <>
+                    <div>
+                        <Input
+                            name="reason"
+                            placeholder="Reason for temporary hold"
+                            minLength={10}
+                            required
+                        />
+                        <InputError message={errors.reason} />
+                    </div>
+                    <div>
+                        <Input
+                            type="datetime-local"
+                            name="review_at"
+                            defaultValue={defaultReviewAt}
+                            required
+                        />
+                        <InputError message={errors.review_at} />
+                    </div>
+                    <Button
+                        type="submit"
+                        variant="outline"
+                        disabled={processing}
+                    >
+                        Place hold
+                    </Button>
+                </>
+            )}
+        </Form>
     );
 }
 

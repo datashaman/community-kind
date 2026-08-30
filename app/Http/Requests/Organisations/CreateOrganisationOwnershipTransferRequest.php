@@ -31,7 +31,9 @@ class CreateOrganisationOwnershipTransferRequest extends FormRequest
             'nominee_user_id' => [
                 'required',
                 'integer',
-                Rule::exists('organisation_members', 'user_id')->where('organisation_id', $organisationId),
+                Rule::exists('organisation_members', 'user_id')
+                    ->where('organisation_id', $organisationId)
+                    ->whereNull('ended_at'),
             ],
         ];
     }

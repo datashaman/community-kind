@@ -5,9 +5,11 @@ namespace App\Models;
 use App\Enums\OrganisationRole;
 use Database\Factories\OrganisationInvitationFactory;
 use Illuminate\Database\Eloquent\Attributes\Fillable;
+use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Support\Carbon;
 
 /**
@@ -16,6 +18,9 @@ use Illuminate\Support\Carbon;
  * @property int $organisation_id
  * @property string $email
  * @property OrganisationRole $role
+ * @property int|null $person_party_id
+ * @property string|null $new_person_name
+ * @property bool $offers_ownership
  * @property int $invited_by
  * @property Carbon|null $expires_at
  * @property Carbon|null $accepted_at
@@ -25,8 +30,10 @@ use Illuminate\Support\Carbon;
  * @property Carbon|null $updated_at
  * @property-read Organisation $organisation
  * @property-read User $inviter
+ * @property-read Party|null $personParty
+ * @property-read Collection<int, OrganisationInvitationRoleAssignment> $roleAssignments
  */
-#[Fillable(['token_hash', 'organisation_id', 'email', 'role', 'invited_by', 'expires_at', 'accepted_at', 'revoked_at', 'revoked_by'])]
+#[Fillable(['token_hash', 'organisation_id', 'email', 'person_party_id', 'new_person_name', 'role', 'offers_ownership', 'invited_by', 'expires_at', 'accepted_at', 'revoked_at', 'revoked_by'])]
 class OrganisationInvitation extends Model
 {
     /** @use HasFactory<OrganisationInvitationFactory> */
@@ -57,6 +64,18 @@ class OrganisationInvitation extends Model
     public function inviter(): BelongsTo
     {
         return $this->belongsTo(User::class, 'invited_by');
+    }
+
+    /** @return BelongsTo<Party, $this> */
+    public function personParty(): BelongsTo
+    {
+        return $this->belongsTo(Party::class, 'person_party_id')->withTrashed();
+    }
+
+    /** @return HasMany<OrganisationInvitationRoleAssignment, $this> */
+    public function roleAssignments(): HasMany
+    {
+        return $this->hasMany(OrganisationInvitationRoleAssignment::class);
     }
 
     /**
@@ -102,6 +121,7 @@ class OrganisationInvitation extends Model
     {
         return [
             'role' => OrganisationRole::class,
+            'offers_ownership' => 'boolean',
             'expires_at' => 'datetime',
             'accepted_at' => 'datetime',
             'revoked_at' => 'datetime',

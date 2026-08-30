@@ -20,6 +20,9 @@ export default function OrganisationInvitationAlert({
             <AlertDescription className="text-blue-900 dark:text-blue-100">
                 {action} to join the "{invitation.organisationName}"
                 organisation.
+                {invitation.offersOwnership
+                    ? ' By continuing, you also accept Organisation Owner responsibility.'
+                    : ''}
             </AlertDescription>
         </Alert>
     );

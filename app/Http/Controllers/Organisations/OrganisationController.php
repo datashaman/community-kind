@@ -8,11 +8,13 @@ use App\Actions\Organisations\TransitionOrganisationStatus;
 use App\Enums\OrganisationOwnershipTransferStatus;
 use App\Enums\OrganisationRole;
 use App\Enums\OrganisationStatus;
+use App\Enums\PartyKind;
 use App\Http\Controllers\Controller;
 use App\Http\Requests\Organisations\DeleteOrganisationRequest;
 use App\Http\Requests\Organisations\SaveOrganisationRequest;
 use App\Models\Membership;
 use App\Models\Organisation;
+use App\Models\OrganisationInvitationRoleAssignment;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
@@ -60,7 +62,7 @@ class OrganisationController extends Controller
             canRecover: $resolveOrganisationAccess->allowsStaffCapability($organisation, $user, 'recovery'),
         );
         $memberships = $organisation->memberships()
-            ->with(['user', 'programs'])
+            ->with(['user', 'personParty', 'roleAssignments.program', 'holds'])
             ->get();
         $pendingOwnershipTransfer = $organisation->ownershipTransfers()
             ->with(['nominatedBy', 'nominee'])
@@ -79,7 +81,7 @@ class OrganisationController extends Controller
                 'status' => $organisation->status->value,
             ],
             'members' => $memberships
-                ->map(function (Membership $membership) {
+                ->map(function (Membership $membership) use ($organisation, $permissions, $user) {
                     $member = $membership->user;
 
                     return [
@@ -87,10 +89,34 @@ class OrganisationController extends Controller
                         'name' => $member->name,
                         'email' => $member->email,
                         'avatar' => $member->avatar ?? null,
+                        'person_party' => [
+                            'id' => $membership->personParty->id,
+                            'display_name' => $membership->personParty->display_name,
+                        ],
+                        'role_assignments' => $membership->roleAssignments
+                            ->whereNull('ended_at')
+                            ->map(fn ($assignment) => [
+                                'id' => $assignment->id,
+                                'role' => $assignment->role->value,
+                                'role_label' => $assignment->role->label(),
+                                'program_id' => $assignment->program_id,
+                                'scope_label' => $assignment->program_id === null
+                                    ? __('Organisation-wide')
+                                    : $assignment->program->name,
+                            ])
+                            ->values(),
                         'role' => $membership->role?->value,
                         'role_label' => $membership->role?->label() ?? __('No operational role'),
                         'is_owner' => $membership->is_owner,
                         'program_ids' => $membership->programs->sortBy('name')->pluck('id')->values()->all(),
+                        'can_manage_roles' => $permissions->canUpdateMember
+                            && ($user->ownsOrganisation($organisation) || ! $member->is($user)),
+                        'can_manage_hold' => $permissions->canUpdateMember
+                            && ! $member->is($user)
+                            && (! $membership->is_owner || $user->ownsOrganisation($organisation)),
+                        'hold' => $membership->holds
+                            ->first(fn ($hold) => $hold->isActive())
+                            ?->only(['id', 'reason', 'review_at', 'expires_at']),
                     ];
                 }),
             'programs' => $organisation->programs()
@@ -102,16 +128,32 @@ class OrganisationController extends Controller
                 ->where(fn ($query) => $query
                     ->whereNull('expires_at')
                     ->orWhere('expires_at', '>=', now()))
+                ->with(['personParty', 'roleAssignments.program'])
                 ->get()
                 ->map(fn ($invitation) => [
                     'id' => $invitation->id,
                     'email' => $invitation->email,
-                    'role' => $invitation->role->value,
-                    'role_label' => $invitation->role->label(),
+                    'person_name' => $invitation->person_party_id === null
+                        ? $invitation->new_person_name
+                        : $invitation->personParty->display_name,
+                    'offers_ownership' => $invitation->offers_ownership,
+                    'role_assignments' => $invitation->roleAssignments
+                        ->map($this->toInvitationRoleAssignment(...))
+                        ->values()
+                        ->all(),
                     'created_at' => $invitation->created_at->toISOString(),
                 ]),
             'permissions' => $permissions,
-            'availableRoles' => OrganisationRole::assignable(),
+            'availableRoles' => collect(OrganisationRole::assignable())
+                ->when(
+                    ! $user->ownsOrganisation($organisation),
+                    fn ($roles) => $roles->reject(fn (array $role) => $role['value'] === OrganisationRole::OrganisationAdministrator->value),
+                )
+                ->values(),
+            'personParties' => $organisation->parties()
+                ->where('kind', PartyKind::Person->value)
+                ->orderBy('display_name')
+                ->get(['id', 'display_name']),
             'allowedTransitions' => $user->ownsOrganisation($organisation)
                 ? collect($organisation->status->allowedTransitions())
                     ->reject(fn (OrganisationStatus $status) => in_array($status, [
@@ -203,7 +245,7 @@ class OrganisationController extends Controller
                 ->firstOrFail();
 
             abort_if(
-                $membership->is_owner && $organisation->owners()->count() <= 1,
+                $membership->is_owner && ! $organisation->hasOtherCapableOwner($membership),
                 403,
                 __('The last organisation owner cannot leave.'),
             );
@@ -213,7 +255,7 @@ class OrganisationController extends Controller
                 ? $user->fallbackOrganisation($organisation)
                 : null;
 
-            $membership->delete();
+            $membership->end();
 
             if ($wasCurrentOrganisation) {
                 if ($fallbackOrganisation) {
@@ -250,5 +292,18 @@ class OrganisationController extends Controller
         ]);
 
         return to_route('organisations.edit', $organisation);
+    }
+
+    /** @return array{role: string, role_label: string, program_id: int|null, scope_label: string} */
+    private function toInvitationRoleAssignment(OrganisationInvitationRoleAssignment $assignment): array
+    {
+        $programId = $assignment->program_id;
+
+        return [
+            'role' => $assignment->role->value,
+            'role_label' => $assignment->role->label(),
+            'program_id' => $programId,
+            'scope_label' => $programId === null ? 'Organisation-wide' : $assignment->program->name,
+        ];
     }
 }

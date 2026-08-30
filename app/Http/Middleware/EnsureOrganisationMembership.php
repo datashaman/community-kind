@@ -40,14 +40,11 @@ class EnsureOrganisationMembership
             return;
         }
 
-        $role = $user->organisationRole($organisation);
-
         $requiredRole = OrganisationRole::tryFrom($minimumRole);
 
         abort_if(
             $requiredRole === null ||
-            $role === null ||
-            $role !== $requiredRole,
+            ! $user->hasOrganisationRole($organisation, $requiredRole),
             403,
         );
     }

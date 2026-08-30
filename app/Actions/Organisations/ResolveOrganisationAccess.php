@@ -36,7 +36,7 @@ class ResolveOrganisationAccess
     {
         $access = $this->handle($organisation, OrganisationAccessScope::Staff);
         $isAdministrator = $user?->ownsOrganisation($organisation)
-            || $user?->organisationRole($organisation) === OrganisationRole::OrganisationAdministrator;
+            || $user?->hasOrganisationRole($organisation, OrganisationRole::OrganisationAdministrator);
 
         return match ($capability) {
             'full' => $access === OrganisationAccessLevel::Full,

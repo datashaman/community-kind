@@ -1,4 +1,5 @@
 import { Form } from '@inertiajs/react';
+import { Plus, X } from 'lucide-react';
 import { useState } from 'react';
 import InputError from '@/components/input-error';
 import { Button } from '@/components/ui/button';
@@ -21,11 +22,20 @@ import {
     SelectValue,
 } from '@/components/ui/select';
 import { store as storeInvitation } from '@/routes/organisations/invitations';
-import type { RoleOption, Organisation } from '@/types';
+import { Checkbox } from '@/components/ui/checkbox';
+import type {
+    Organisation,
+    PersonPartyOption,
+    ProgramOption,
+    RoleOption,
+} from '@/types';
 
 type Props = {
     organisation: Organisation;
     availableRoles: RoleOption[];
+    programs: ProgramOption[];
+    personParties: PersonPartyOption[];
+    canOfferOwnership: boolean;
     open: boolean;
     onOpenChange: (open: boolean) => void;
 };
@@ -33,17 +43,23 @@ type Props = {
 export default function InviteMemberModal({
     organisation,
     availableRoles,
+    programs,
+    personParties,
+    canOfferOwnership,
     open,
     onOpenChange,
 }: Props) {
-    const [inviteRole, setInviteRole] =
-        useState<RoleOption['value']>('case_worker');
+    const [partyChoice, setPartyChoice] = useState('new');
+    const [assignments, setAssignments] = useState([
+        { role: 'case_worker', programId: '' },
+    ]);
 
     const handleOpenChange = (nextOpen: boolean) => {
         onOpenChange(nextOpen);
 
         if (!nextOpen) {
-            setInviteRole('case_worker');
+            setPartyChoice('new');
+            setAssignments([{ role: 'case_worker', programId: '' }]);
         }
     };
 
@@ -60,7 +76,7 @@ export default function InviteMemberModal({
                         <>
                             <DialogHeader>
                                 <DialogTitle>
-                                    Invite a organisation member
+                                    Invite an organisation member
                                 </DialogTitle>
                                 <DialogDescription>
                                     Send an invitation to join this
@@ -83,33 +99,185 @@ export default function InviteMemberModal({
                                 </div>
 
                                 <div className="grid gap-2">
-                                    <Label htmlFor="role">Role</Label>
+                                    <Label htmlFor="person_party_id">
+                                        Person Party
+                                    </Label>
                                     <Select
-                                        name="role"
-                                        data-test="invite-role"
-                                        value={inviteRole}
-                                        onValueChange={(value) =>
-                                            setInviteRole(
-                                                value as RoleOption['value'],
-                                            )
-                                        }
+                                        value={partyChoice}
+                                        onValueChange={setPartyChoice}
                                     >
                                         <SelectTrigger className="w-full">
-                                            <SelectValue placeholder="Select a role" />
+                                            <SelectValue />
                                         </SelectTrigger>
                                         <SelectContent>
-                                            {availableRoles.map((role) => (
+                                            <SelectItem value="new">
+                                                Create a new person Party
+                                            </SelectItem>
+                                            {personParties.map((party) => (
                                                 <SelectItem
-                                                    key={role.value}
-                                                    value={role.value}
+                                                    key={party.id}
+                                                    value={String(party.id)}
                                                 >
-                                                    {role.label}
+                                                    {party.display_name}
                                                 </SelectItem>
                                             ))}
                                         </SelectContent>
                                     </Select>
-                                    <InputError message={errors.role} />
+                                    {partyChoice === 'new' ? (
+                                        <Input
+                                            name="new_person_name"
+                                            placeholder="Person's full name"
+                                            required
+                                        />
+                                    ) : (
+                                        <input
+                                            type="hidden"
+                                            name="person_party_id"
+                                            value={partyChoice}
+                                        />
+                                    )}
+                                    <InputError
+                                        message={
+                                            errors.person_party_id ??
+                                            errors.new_person_name
+                                        }
+                                    />
                                 </div>
+
+                                <div className="grid gap-3">
+                                    <div className="flex items-center justify-between">
+                                        <Label>Initial role assignments</Label>
+                                        <Button
+                                            type="button"
+                                            variant="outline"
+                                            size="sm"
+                                            onClick={() =>
+                                                setAssignments((current) => [
+                                                    ...current,
+                                                    {
+                                                        role: 'case_worker',
+                                                        programId: '',
+                                                    },
+                                                ])
+                                            }
+                                        >
+                                            <Plus /> Add role
+                                        </Button>
+                                    </div>
+                                    {assignments.map((assignment, index) => (
+                                        <div
+                                            key={index}
+                                            className="grid grid-cols-[1fr_1fr_auto] gap-2"
+                                        >
+                                            <select
+                                                name={`role_assignments[${index}][role]`}
+                                                value={assignment.role}
+                                                onChange={(event) =>
+                                                    setAssignments((current) =>
+                                                        current.map(
+                                                            (
+                                                                item,
+                                                                itemIndex,
+                                                            ) =>
+                                                                itemIndex ===
+                                                                index
+                                                                    ? {
+                                                                          ...item,
+                                                                          role: event
+                                                                              .target
+                                                                              .value,
+                                                                      }
+                                                                    : item,
+                                                        ),
+                                                    )
+                                                }
+                                                className="border-input bg-background h-9 rounded-md border px-3 text-sm"
+                                            >
+                                                {availableRoles.map((role) => (
+                                                    <option
+                                                        key={role.value}
+                                                        value={role.value}
+                                                    >
+                                                        {role.label}
+                                                    </option>
+                                                ))}
+                                            </select>
+                                            <select
+                                                name={`role_assignments[${index}][program_id]`}
+                                                value={assignment.programId}
+                                                disabled={
+                                                    assignment.role ===
+                                                    'organisation_administrator'
+                                                }
+                                                onChange={(event) =>
+                                                    setAssignments((current) =>
+                                                        current.map(
+                                                            (
+                                                                item,
+                                                                itemIndex,
+                                                            ) =>
+                                                                itemIndex ===
+                                                                index
+                                                                    ? {
+                                                                          ...item,
+                                                                          programId:
+                                                                              event
+                                                                                  .target
+                                                                                  .value,
+                                                                      }
+                                                                    : item,
+                                                        ),
+                                                    )
+                                                }
+                                                className="border-input bg-background h-9 rounded-md border px-3 text-sm"
+                                            >
+                                                <option value="">
+                                                    Organisation-wide
+                                                </option>
+                                                {programs.map((program) => (
+                                                    <option
+                                                        key={program.id}
+                                                        value={program.id}
+                                                    >
+                                                        {program.name}
+                                                    </option>
+                                                ))}
+                                            </select>
+                                            <Button
+                                                type="button"
+                                                variant="ghost"
+                                                size="icon"
+                                                disabled={
+                                                    assignments.length === 1
+                                                }
+                                                onClick={() =>
+                                                    setAssignments((current) =>
+                                                        current.filter(
+                                                            (_, itemIndex) =>
+                                                                itemIndex !==
+                                                                index,
+                                                        ),
+                                                    )
+                                                }
+                                            >
+                                                <X />
+                                            </Button>
+                                        </div>
+                                    ))}
+                                    <InputError
+                                        message={errors.role_assignments}
+                                    />
+                                </div>
+
+                                {canOfferOwnership ? (
+                                    <Label className="flex items-center gap-2 font-normal">
+                                        <Checkbox
+                                            name="offers_ownership"
+                                            value="1"
+                                        />
+                                        Offer Organisation Owner responsibility
+                                    </Label>
+                                ) : null}
                             </div>
 
                             <DialogFooter className="gap-2">

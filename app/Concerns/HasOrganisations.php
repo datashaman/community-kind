@@ -10,6 +10,7 @@ use App\Enums\OrganisationStatus;
 use App\Models\Membership;
 use App\Models\Organisation;
 use App\Models\Program;
+use App\Models\RoleAssignment;
 use App\OrganisationContext;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\BelongsToMany;
@@ -28,7 +29,8 @@ trait HasOrganisations
     public function organisations(): BelongsToMany
     {
         return $this->belongsToMany(Organisation::class, 'organisation_members', 'user_id', 'organisation_id')
-            ->withPivot(['role', 'is_owner'])
+            ->withPivot(['id', 'person_party_id', 'role', 'is_owner', 'accepted_at', 'ended_at'])
+            ->wherePivotNull('ended_at')
             ->withTimestamps();
     }
 
@@ -46,7 +48,8 @@ trait HasOrganisations
             'id',
             'id',
             'organisation_id',
-        )->where('organisation_members.is_owner', true);
+        )->where('organisation_members.is_owner', true)
+            ->whereNull('organisation_members.ended_at');
     }
 
     /**
@@ -55,6 +58,12 @@ trait HasOrganisations
      * @return HasMany<Membership, $this>
      */
     public function organisationMemberships(): HasMany
+    {
+        return $this->hasMany(Membership::class, 'user_id')->whereNull('ended_at');
+    }
+
+    /** @return HasMany<Membership, $this> */
+    public function organisationMembershipHistory(): HasMany
     {
         return $this->hasMany(Membership::class, 'user_id');
     }
@@ -113,7 +122,10 @@ trait HasOrganisations
             return false;
         }
 
-        return $membership->is_owner;
+        return $membership->is_owner && ! app(OrganisationContext::class)->run(
+            $organisation,
+            fn () => $membership->isHeld(),
+        );
     }
 
     /**
@@ -121,7 +133,32 @@ trait HasOrganisations
      */
     public function organisationRole(Organisation $organisation): ?OrganisationRole
     {
-        return $this->organisationMembership($organisation)?->role;
+        $membership = $this->organisationMembership($organisation);
+
+        if ($membership === null) {
+            return null;
+        }
+
+        return app(OrganisationContext::class)->run($organisation, function () use ($membership): ?OrganisationRole {
+            if ($membership->isHeld()) {
+                return null;
+            }
+
+            return $membership->roleAssignments()
+                ->whereNull('ended_at')
+                ->orderByRaw("CASE role WHEN 'organisation_administrator' THEN 0 ELSE 1 END")
+                ->first()?->role;
+        });
+    }
+
+    public function hasOrganisationRole(Organisation $organisation, OrganisationRole $role, ?Program $program = null): bool
+    {
+        $membership = $this->organisationMembership($organisation);
+
+        return $membership !== null && app(OrganisationContext::class)->run(
+            $organisation,
+            fn () => $membership->hasRole($role, $program),
+        );
     }
 
     /**
@@ -139,10 +176,26 @@ trait HasOrganisations
      */
     public function hasProgramAccess(Program $program): bool
     {
-        return $this->organisationMemberships()
-            ->where('organisation_id', $program->organisation_id)
-            ->whereHas('programs', fn ($query) => $query->whereKey($program->id))
-            ->exists();
+        $membership = $this->organisationMembership($program->organisation);
+
+        if ($membership === null) {
+            return false;
+        }
+
+        return app(OrganisationContext::class)->run($program->organisation, function () use ($membership, $program): bool {
+            if ($membership->isHeld()) {
+                return false;
+            }
+
+            if ($membership->programs()->exists()) {
+                return $membership->programs()->whereKey($program->id)->exists();
+            }
+
+            return $membership->roleAssignments()
+                ->whereNull('ended_at')
+                ->where(fn ($query) => $query->whereNull('program_id')->orWhere('program_id', $program->id))
+                ->exists();
+        });
     }
 
     /**
@@ -160,7 +213,7 @@ trait HasOrganisations
 
                 app(OrganisationContext::class)->run(
                     $organisation,
-                    fn () => $membership->load('programs'),
+                    fn () => $membership->load(['programs', 'roleAssignments']),
                 );
 
                 return ! $includeCurrent && $this->isCurrentOrganisation($organisation)
@@ -177,7 +230,10 @@ trait HasOrganisations
     public function toUserOrganisation(Organisation $organisation, ?Membership $membership = null): UserOrganisation
     {
         $membership ??= $this->organisationMembership($organisation);
-        $role = $membership?->role;
+        $roleAssignment = $membership?->roleAssignments
+            ->whereNull('ended_at')
+            ->first();
+        $role = $roleAssignment?->role;
 
         return new UserOrganisation(
             id: $organisation->id,
@@ -187,9 +243,15 @@ trait HasOrganisations
             roleLabel: $role?->label(),
             isOwner: $membership !== null && $membership->is_owner,
             status: $organisation->status->value,
-            programIds: $membership === null
-                ? []
-                : $membership->programs->sortBy('id')->pluck('id')->values()->all(),
+            programIds: $membership === null ? [] : $membership->roleAssignments
+                ->whereNull('ended_at')
+                ->whereNotNull('program_id')
+                ->pluck('program_id')
+                ->merge($membership->programs->pluck('id'))
+                ->unique()
+                ->sort()
+                ->values()
+                ->all(),
             isCurrent: $this->isCurrentOrganisation($organisation),
         );
     }
@@ -229,7 +291,26 @@ trait HasOrganisations
      */
     public function hasOrganisationPermission(Organisation $organisation, OrganisationPermission $permission): bool
     {
-        return $this->ownsOrganisation($organisation)
-            || ($this->organisationRole($organisation)?->hasPermission($permission) ?? false);
+        if ($this->ownsOrganisation($organisation)) {
+            return true;
+        }
+
+        $membership = $this->organisationMembership($organisation);
+
+        if ($membership === null) {
+            return false;
+        }
+
+        return app(OrganisationContext::class)->run($organisation, function () use ($membership, $permission): bool {
+            if ($membership->isHeld()) {
+                return false;
+            }
+
+            return $membership->roleAssignments()
+                ->whereNull('ended_at')
+                ->whereNull('program_id')
+                ->get()
+                ->contains(fn (RoleAssignment $assignment) => $assignment->role->hasPermission($permission));
+        });
     }
 }

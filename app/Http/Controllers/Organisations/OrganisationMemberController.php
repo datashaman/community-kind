@@ -27,16 +27,29 @@ class OrganisationMemberController extends Controller
                 ->lockForUpdate()
                 ->firstOrFail();
 
-            $membership->update([
-                'role' => OrganisationRole::from($request->validated('role')),
-            ]);
+            $endedAt = now();
+            $membership->roleAssignments()->whereNull('ended_at')->update(['ended_at' => $endedAt]);
 
-            if ($request->has('program_ids')) {
-                $membership->programs()->sync($request->validated('program_ids', []));
-            }
+            $assignments = collect($request->roleAssignments());
+            $membership->roleAssignments()->createMany(
+                $assignments->map(fn (array $assignment) => [
+                    'organisation_id' => $organisation->id,
+                    'role' => OrganisationRole::from($assignment['role']),
+                    'program_id' => $assignment['program_id'],
+                ])->all(),
+            );
+
+            $membership->update([
+                'role' => $assignments->first() === null
+                    ? null
+                    : OrganisationRole::from($assignments->first()['role']),
+            ]);
+            $membership->programs()->sync(
+                $assignments->pluck('program_id')->filter()->unique()->values()->all(),
+            );
         });
 
-        Inertia::flash('toast', ['type' => 'success', 'message' => __('Member role updated.')]);
+        Inertia::flash('toast', ['type' => 'success', 'message' => __('Member roles updated.')]);
 
         return to_route('organisations.edit', ['organisation' => $organisation->slug]);
     }
@@ -56,12 +69,12 @@ class OrganisationMemberController extends Controller
                 ->firstOrFail();
 
             abort_if(
-                $membership->is_owner && $organisation->owners()->count() <= 1,
+                $membership->is_owner && ! $organisation->hasOtherCapableOwner($membership),
                 403,
                 __('The last organisation owner cannot be removed.'),
             );
 
-            $membership->delete();
+            $membership->end();
 
             if ($user->isCurrentOrganisation($organisation)) {
                 $fallbackOrganisation = $user->fallbackOrganisation($organisation);

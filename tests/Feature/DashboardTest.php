@@ -57,6 +57,8 @@ class DashboardTest extends TestCase
         $invitation = OrganisationInvitation::factory()->create([
             'organisation_id' => $organisation->id,
             'email' => 'invited@example.com',
+            'new_person_name' => 'Invited Person',
+            'offers_ownership' => true,
             'invited_by' => $owner->id,
         ]);
 
@@ -70,6 +72,10 @@ class DashboardTest extends TestCase
             ->has('pendingInvitations', 1)
             ->where('pendingInvitations.0.id', $invitation->id)
             ->where('pendingInvitations.0.inviterName', 'Taylor Otwell')
+            ->where('pendingInvitations.0.personName', 'Invited Person')
+            ->where('pendingInvitations.0.offersOwnership', true)
+            ->where('pendingInvitations.0.roleAssignments.0.roleLabel', 'Case worker')
+            ->where('pendingInvitations.0.roleAssignments.0.scopeLabel', 'Organisation-wide')
             ->where('pendingInvitations.0.organisation.name', 'Laravel Organisation')
             ->where('pendingInvitations.0.organisation.slug', $organisation->slug)
             ->missing('pendingInvitations.0.organisationName'),

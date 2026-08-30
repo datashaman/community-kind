@@ -4,7 +4,6 @@ namespace App\Http\Controllers\Organisations;
 
 use App\Actions\Organisations\AcceptOrganisationInvitation;
 use App\Actions\Organisations\IssueOrganisationInvitation;
-use App\Enums\OrganisationRole;
 use App\Http\Controllers\Controller;
 use App\Http\Requests\Organisations\CreateOrganisationInvitationRequest;
 use App\Http\Requests\Organisations\RespondToOrganisationInvitationRequest;
@@ -31,7 +30,10 @@ class OrganisationInvitationController extends Controller
             $organisation,
             $request->user(),
             $request->validated('email'),
-            OrganisationRole::from($request->validated('role')),
+            $request->integer('person_party_id') ?: null,
+            $request->validated('new_person_name'),
+            $request->validated('role_assignments'),
+            $request->boolean('offers_ownership'),
         );
 
         Notification::route('mail', $issuedInvitation->invitation->email)

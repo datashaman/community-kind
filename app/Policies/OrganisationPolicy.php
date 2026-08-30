@@ -61,12 +61,13 @@ class OrganisationPolicy
      */
     public function leave(User $user, Organisation $organisation): bool
     {
-        if (! $user->belongsToOrganisation($organisation)) {
+        $membership = $user->organisationMembership($organisation);
+
+        if ($membership === null) {
             return false;
         }
 
-        return ! $user->ownsOrganisation($organisation)
-            || $organisation->owners()->whereKeyNot($user->id)->exists();
+        return ! $membership->is_owner || $organisation->hasOtherCapableOwner($membership);
     }
 
     /**

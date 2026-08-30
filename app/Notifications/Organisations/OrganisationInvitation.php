@@ -47,9 +47,13 @@ class OrganisationInvitation extends Notification
                 'inviterName' => $inviter->name,
                 'organisationName' => $organisation->name,
             ]))
+            ->when(
+                $this->invitation->offers_ownership,
+                fn (MailMessage $message) => $message->line(__('This invitation also asks you to accept Organisation Owner responsibility.')),
+            )
             ->line($this->existingUser
-                ? __('Log in and visit your dashboard to accept or decline this invitation.')
-                : __('Create your account with this invitation, then verify your email address to continue.'))
+                ? __('Log in with this invitation to accept it, or decline it from your dashboard.')
+                : __('Create your account with this invitation, then verify your email address to accept it.'))
             ->action(
                 $action,
                 route($route, ['invitation' => $this->token]),

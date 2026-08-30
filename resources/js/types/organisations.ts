@@ -22,17 +22,20 @@ export type OrganisationMember = {
     name: string;
     email: string;
     avatar?: string | null;
-    role: OrganisationRole | null;
-    role_label: string;
+    person_party: PersonPartyOption;
+    role_assignments: RoleAssignment[];
     is_owner: boolean;
-    program_ids: number[];
+    can_manage_roles: boolean;
+    can_manage_hold: boolean;
+    hold: MembershipHold | null;
 };
 
 export type OrganisationInvitation = {
     id: number;
     email: string;
-    role: OrganisationRole;
-    role_label: string;
+    person_name: string;
+    offers_ownership: boolean;
+    role_assignments: RoleAssignment[];
     created_at: string;
 };
 
@@ -40,11 +43,18 @@ export type OrganisationInvitationContext = {
     code: string;
     email: string;
     organisationName: string;
+    offersOwnership: boolean;
 };
 
 export type DashboardInvitation = {
     id: number;
     inviterName: string;
+    personName: string;
+    offersOwnership: boolean;
+    roleAssignments: Array<{
+        roleLabel: string;
+        scopeLabel: string;
+    }>;
     organisation: {
         name: string;
         slug: string;
@@ -95,4 +105,24 @@ export type RoleOption = {
 export type ProgramOption = {
     id: number;
     name: string;
+};
+
+export type PersonPartyOption = {
+    id: number;
+    display_name: string;
+};
+
+export type RoleAssignment = {
+    id?: number;
+    role: OrganisationRole;
+    role_label: string;
+    program_id: number | null;
+    scope_label: string;
+};
+
+export type MembershipHold = {
+    id: number;
+    reason: string;
+    review_at: string;
+    expires_at: string | null;
 };
