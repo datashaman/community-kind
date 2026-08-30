@@ -4,17 +4,11 @@ namespace App\Enums;
 
 enum TeamRole: string
 {
-    /** @deprecated Existing fixtures only. Ownership is stored separately. */
-    case Owner = 'owner';
     case TeamAdministrator = 'team_administrator';
     case ProgramManager = 'program_manager';
     case CaseWorker = 'case_worker';
     case EngagementOfficer = 'engagement_officer';
     case ExecutiveViewer = 'executive_viewer';
-
-    public const Admin = self::TeamAdministrator;
-
-    public const Member = self::CaseWorker;
 
     /**
      * Get the display label for the role.
@@ -22,7 +16,6 @@ enum TeamRole: string
     public function label(): string
     {
         return match ($this) {
-            self::Owner => 'Owner',
             self::TeamAdministrator => 'Team administrator',
             self::ProgramManager => 'Program manager',
             self::CaseWorker => 'Case worker',
@@ -39,7 +32,6 @@ enum TeamRole: string
     public function permissions(): array
     {
         return match ($this) {
-            self::Owner => TeamPermission::cases(),
             self::TeamAdministrator => [
                 TeamPermission::UpdateTeam,
                 TeamPermission::AddMember,
@@ -61,14 +53,13 @@ enum TeamRole: string
     }
 
     /**
-     * Get the roles that can be assigned to team members (excludes Owner).
+     * Get the operational roles that can be assigned to Team members.
      *
      * @return array<array{value: string, label: string}>
      */
     public static function assignable(): array
     {
         return collect(self::cases())
-            ->filter(fn (self $role) => $role !== self::Owner)
             ->map(fn (self $role) => ['value' => $role->value, 'label' => $role->label()])
             ->values()
             ->toArray();

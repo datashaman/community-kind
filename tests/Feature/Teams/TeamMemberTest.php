@@ -34,19 +34,19 @@ class TeamMemberTest extends TestCase
         $member = User::factory()->create();
         $team = Team::factory()->create();
 
-        $team->members()->attach($owner, ['role' => TeamRole::Owner->value]);
-        $team->members()->attach($member, ['role' => TeamRole::Member->value]);
+        $team->members()->attach($owner, ['is_owner' => true]);
+        $team->members()->attach($member, ['role' => TeamRole::CaseWorker->value]);
 
         $response = $this
             ->actingAs($owner)
             ->patch(route('teams.members.update', [$team, $member]), [
-                'role' => TeamRole::Admin->value,
+                'role' => TeamRole::TeamAdministrator->value,
             ]);
 
         $response->assertRedirect(route('teams.edit', $team));
 
         $this->assertEquals(
-            TeamRole::Admin->value,
+            TeamRole::TeamAdministrator->value,
             $team->members()->where('user_id', $member->id)->first()->pivot->role->value,
         );
     }
@@ -58,14 +58,14 @@ class TeamMemberTest extends TestCase
         $member = User::factory()->create();
         $team = Team::factory()->create();
 
-        $team->members()->attach($owner, ['role' => TeamRole::Owner->value]);
+        $team->members()->attach($owner, ['is_owner' => true]);
         $team->members()->attach($programManager, ['role' => TeamRole::ProgramManager->value]);
-        $team->members()->attach($member, ['role' => TeamRole::Member->value]);
+        $team->members()->attach($member, ['role' => TeamRole::CaseWorker->value]);
 
         $response = $this
             ->actingAs($programManager)
             ->patch(route('teams.members.update', [$team, $member]), [
-                'role' => TeamRole::Admin->value,
+                'role' => TeamRole::TeamAdministrator->value,
             ]);
 
         $response->assertForbidden();
@@ -77,8 +77,8 @@ class TeamMemberTest extends TestCase
         $member = User::factory()->create();
         $team = Team::factory()->create();
 
-        $team->members()->attach($owner, ['role' => TeamRole::Owner->value]);
-        $team->members()->attach($member, ['role' => TeamRole::Member->value]);
+        $team->members()->attach($owner, ['is_owner' => true]);
+        $team->members()->attach($member, ['role' => TeamRole::CaseWorker->value]);
 
         $response = $this
             ->actingAs($owner)
@@ -96,9 +96,9 @@ class TeamMemberTest extends TestCase
         $member = User::factory()->create();
         $team = Team::factory()->create();
 
-        $team->members()->attach($owner, ['role' => TeamRole::Owner->value]);
+        $team->members()->attach($owner, ['is_owner' => true]);
         $team->members()->attach($programManager, ['role' => TeamRole::ProgramManager->value]);
-        $team->members()->attach($member, ['role' => TeamRole::Member->value]);
+        $team->members()->attach($member, ['role' => TeamRole::CaseWorker->value]);
 
         $response = $this
             ->actingAs($programManager)
@@ -112,7 +112,7 @@ class TeamMemberTest extends TestCase
         $owner = User::factory()->create();
         $team = Team::factory()->create();
 
-        $team->members()->attach($owner, ['role' => TeamRole::Owner->value]);
+        $team->members()->attach($owner, ['is_owner' => true]);
 
         $response = $this
             ->actingAs($owner)
@@ -129,19 +129,19 @@ class TeamMemberTest extends TestCase
         $member = User::factory()->create();
         $team = Team::factory()->create();
 
-        $team->members()->attach($owner, ['role' => TeamRole::Owner->value]);
-        $team->members()->attach($member, ['role' => TeamRole::Member->value]);
+        $team->members()->attach($owner, ['is_owner' => true]);
+        $team->members()->attach($member, ['role' => TeamRole::CaseWorker->value]);
 
         $response = $this
             ->actingAs($owner)
             ->patch(route('teams.members.update', [$team, $member]), [
-                'role' => TeamRole::Owner->value,
+                'role' => 'owner',
             ]);
 
         $response->assertSessionHasErrors('role');
 
         $this->assertEquals(
-            TeamRole::Member->value,
+            TeamRole::CaseWorker->value,
             $team->members()->where('user_id', $member->id)->first()->pivot->role->value,
         );
     }
@@ -153,8 +153,8 @@ class TeamMemberTest extends TestCase
         $remainingTeam = $member->currentTeam;
         $team = Team::factory()->create();
 
-        $team->members()->attach($owner, ['role' => TeamRole::Owner->value]);
-        $team->members()->attach($member, ['role' => TeamRole::Member->value]);
+        $team->members()->attach($owner, ['is_owner' => true]);
+        $team->members()->attach($member, ['role' => TeamRole::CaseWorker->value]);
 
         $member->update(['current_team_id' => $team->id]);
 

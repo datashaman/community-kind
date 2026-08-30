@@ -187,3 +187,35 @@ it('forbids access to a team that the user has not joined', function () {
         ->get(route('teams.edit', $otherTeam))
         ->assertForbidden();
 });
+
+it('clears current team context when leaving the only team', function () {
+    $user = User::factory()->create();
+    $team = $user->currentTeam;
+    $user->teamMembership($team)->update([
+        'is_owner' => false,
+        'role' => TeamRole::CaseWorker,
+    ]);
+
+    $response = $this
+        ->actingAs($user)
+        ->delete(route('teams.leave', $team));
+
+    $response->assertRedirect(route('teams.index'));
+    expect($user->fresh()->current_team_id)->toBeNull()
+        ->and($user->fresh()->belongsToTeam($team))->toBeFalse();
+});
+
+it('clears current team context when deleting the only team', function () {
+    $user = User::factory()->create();
+    $team = $user->currentTeam;
+
+    $response = $this
+        ->actingAs($user)
+        ->withSession(['auth.password_confirmed_at' => now()->timestamp])
+        ->delete(route('teams.destroy', $team), [
+            'name' => $team->name,
+        ]);
+
+    $response->assertRedirect(route('teams.index'));
+    expect($user->fresh()->current_team_id)->toBeNull();
+});

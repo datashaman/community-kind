@@ -2,7 +2,6 @@
 
 namespace Tests\Feature\Auth;
 
-use App\Enums\TeamRole;
 use App\Models\Team;
 use App\Models\TeamInvitation;
 use App\Models\User;
@@ -27,7 +26,7 @@ class AuthenticationTest extends TestCase
     {
         $owner = User::factory()->create();
         $team = Team::factory()->create(['name' => 'Laravel Team']);
-        $team->members()->attach($owner, ['role' => TeamRole::Owner->value]);
+        $team->members()->attach($owner, ['is_owner' => true]);
 
         $token = 'login-invitation-token';
         $invitation = TeamInvitation::factory()->forToken($token)->create([

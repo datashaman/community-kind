@@ -121,7 +121,7 @@ trait HasTeams
             return false;
         }
 
-        return $membership->is_owner || $membership->role === TeamRole::Owner;
+        return $membership->is_owner;
     }
 
     /**
@@ -147,9 +147,10 @@ trait HasTeams
      */
     public function hasProgramAccess(Program $program): bool
     {
-        $membership = $this->teamMembership($program->team);
-
-        return $membership?->programs()->whereKey($program->id)->exists() ?? false;
+        return $this->teamMemberships()
+            ->where('team_id', $program->team_id)
+            ->whereHas('programs', fn ($query) => $query->whereKey($program->id))
+            ->exists();
     }
 
     /**
@@ -159,9 +160,16 @@ trait HasTeams
      */
     public function toUserTeams(bool $includeCurrent = false): Collection
     {
-        return $this->teams()
+        return $this->teamMemberships()
+            ->with(['team', 'programs'])
             ->get()
-            ->map(fn (Team $team) => ! $includeCurrent && $this->isCurrentTeam($team) ? null : $this->toUserTeam($team))
+            ->map(function (Membership $membership) use ($includeCurrent) {
+                $team = $membership->team;
+
+                return ! $includeCurrent && $this->isCurrentTeam($team)
+                    ? null
+                    : $this->toUserTeam($team, $membership);
+            })
             ->filter()
             ->values();
     }
@@ -169,10 +177,10 @@ trait HasTeams
     /**
      * Get the user's team as a UserTeam object.
      */
-    public function toUserTeam(Team $team): UserTeam
+    public function toUserTeam(Team $team, ?Membership $membership = null): UserTeam
     {
-        $role = $this->teamRole($team);
-        $membership = $this->teamMembership($team);
+        $membership ??= $this->teamMembership($team);
+        $role = $membership?->role;
 
         return new UserTeam(
             id: $team->id,
@@ -185,7 +193,7 @@ trait HasTeams
             status: $team->status->value,
             programIds: $membership === null
                 ? []
-                : $membership->programs()->orderBy('programs.id')->pluck('programs.id')->all(),
+                : $membership->programs->sortBy('id')->pluck('id')->values()->all(),
             isCurrent: $this->isCurrentTeam($team),
         );
     }

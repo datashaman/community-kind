@@ -58,21 +58,23 @@ class TeamController extends Controller
                 'isPersonal' => $team->is_personal,
                 'status' => $team->status->value,
             ],
-            'members' => $team->members()->get()->map(function (User $member) {
-                /** @var Membership $membership */
-                $membership = $member->getRelation('pivot');
+            'members' => $team->memberships()
+                ->with(['user', 'programs'])
+                ->get()
+                ->map(function (Membership $membership) {
+                    $member = $membership->user;
 
-                return [
-                    'id' => $member->id,
-                    'name' => $member->name,
-                    'email' => $member->email,
-                    'avatar' => $member->avatar ?? null,
-                    'role' => $membership->role?->value,
-                    'role_label' => $membership->role?->label() ?? __('No operational role'),
-                    'is_owner' => $membership->is_owner,
-                    'program_ids' => $membership->programs()->orderBy('programs.name')->pluck('programs.id')->all(),
-                ];
-            }),
+                    return [
+                        'id' => $member->id,
+                        'name' => $member->name,
+                        'email' => $member->email,
+                        'avatar' => $member->avatar ?? null,
+                        'role' => $membership->role?->value,
+                        'role_label' => $membership->role?->label() ?? __('No operational role'),
+                        'is_owner' => $membership->is_owner,
+                        'program_ids' => $membership->programs->sortBy('name')->pluck('id')->values()->all(),
+                    ];
+                }),
             'programs' => $team->programs()
                 ->orderBy('name')
                 ->get(['id', 'name']),
@@ -135,8 +137,9 @@ class TeamController extends Controller
         Gate::authorize('leave', $team);
 
         $user = $request->user();
+        $wasCurrentTeam = $user->isCurrentTeam($team);
 
-        $fallbackTeam = $user->isCurrentTeam($team)
+        $fallbackTeam = $wasCurrentTeam
             ? $user->fallbackTeam($team)
             : null;
 
@@ -144,8 +147,13 @@ class TeamController extends Controller
             ->where('user_id', $user->id)
             ->delete();
 
-        if ($fallbackTeam) {
-            $user->switchTeam($fallbackTeam);
+        if ($wasCurrentTeam) {
+            if ($fallbackTeam) {
+                $user->switchTeam($fallbackTeam);
+            } else {
+                $user->update(['current_team_id' => null]);
+                $user->unsetRelation('currentTeam');
+            }
         }
 
         Inertia::flash('toast', ['type' => 'success', 'message' => __('You left the team ":name"', ['name' => $team->name])]);
@@ -159,7 +167,8 @@ class TeamController extends Controller
     public function destroy(DeleteTeamRequest $request, Team $team): RedirectResponse
     {
         $user = $request->user();
-        $fallbackTeam = $user->isCurrentTeam($team)
+        $wasCurrentTeam = $user->isCurrentTeam($team);
+        $fallbackTeam = $wasCurrentTeam
             ? $user->fallbackTeam($team)
             : null;
 
@@ -181,8 +190,13 @@ class TeamController extends Controller
             $team->delete();
         });
 
-        if ($fallbackTeam) {
-            $user->switchTeam($fallbackTeam);
+        if ($wasCurrentTeam) {
+            if ($fallbackTeam) {
+                $user->switchTeam($fallbackTeam);
+            } else {
+                $user->update(['current_team_id' => null]);
+                $user->unsetRelation('currentTeam');
+            }
         }
 
         Inertia::flash('toast', ['type' => 'success', 'message' => __('Team deleted.')]);

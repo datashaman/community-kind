@@ -27,7 +27,7 @@ class TeamInvitationFactory extends Factory
             'token_hash' => hash('sha256', $token),
             'team_id' => Team::factory(),
             'email' => fake()->unique()->safeEmail(),
-            'role' => TeamRole::Member,
+            'role' => TeamRole::CaseWorker,
             'invited_by' => User::factory(),
             'expires_at' => null,
             'accepted_at' => null,

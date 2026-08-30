@@ -2,7 +2,6 @@
 
 namespace Tests\Feature;
 
-use App\Enums\TeamRole;
 use App\Models\Team;
 use App\Models\TeamInvitation;
 use App\Models\User;
@@ -53,7 +52,7 @@ class DashboardTest extends TestCase
         $invitedUser = User::factory()->create(['email' => 'invited@example.com']);
         $team = Team::factory()->create(['name' => 'Laravel Team']);
 
-        $team->members()->attach($owner, ['role' => TeamRole::Owner->value]);
+        $team->members()->attach($owner, ['is_owner' => true]);
 
         $invitation = TeamInvitation::factory()->create([
             'team_id' => $team->id,
@@ -83,7 +82,7 @@ class DashboardTest extends TestCase
         $invitedUser = User::factory()->create(['email' => 'invited@example.com']);
         $team = Team::factory()->create();
 
-        $team->members()->attach($owner, ['role' => TeamRole::Owner->value]);
+        $team->members()->attach($owner, ['is_owner' => true]);
 
         TeamInvitation::factory()->accepted()->create([
             'team_id' => $team->id,
@@ -108,7 +107,7 @@ class DashboardTest extends TestCase
         $invitedUser = User::factory()->create(['email' => 'invited@example.com']);
         $team = Team::factory()->create();
 
-        $team->members()->attach($owner, ['role' => TeamRole::Owner->value]);
+        $team->members()->attach($owner, ['is_owner' => true]);
 
         $invitation = TeamInvitation::factory()->expired()->create([
             'team_id' => $team->id,
@@ -137,7 +136,7 @@ class DashboardTest extends TestCase
         $invitedUser = User::factory()->create(['email' => 'invited@example.com']);
         $team = Team::factory()->create();
 
-        $team->members()->attach($owner, ['role' => TeamRole::Owner->value]);
+        $team->members()->attach($owner, ['is_owner' => true]);
 
         $invitation = TeamInvitation::factory()->expired()->create([
             'team_id' => $team->id,

@@ -22,7 +22,7 @@ test('issued invitations store only a hash and expire after 72 hours', function 
         $team,
         $inviter,
         'INVITED@example.com',
-        TeamRole::Member,
+        TeamRole::CaseWorker,
     );
 
     expect($issued->invitation->token_hash)
@@ -74,13 +74,13 @@ test('sensitive team actions require a recent MFA confirmation', function () {
 
     $owner = User::factory()->withTwoFactor()->create();
     $team = Team::factory()->create();
-    $team->members()->attach($owner, ['role' => TeamRole::Owner->value]);
+    $team->members()->attach($owner, ['is_owner' => true]);
 
     $this->actingAs($owner)
         ->withSession(['auth.password_confirmed_at' => time()])
         ->post(route('teams.invitations.store', $team), [
             'email' => 'invited@example.com',
-            'role' => TeamRole::Member->value,
+            'role' => TeamRole::CaseWorker->value,
         ])
         ->assertRedirect(route('mfa.confirm'));
 
@@ -195,14 +195,14 @@ test('password confirmation after a mutation returns to its safe form page', fun
 
     $owner = User::factory()->withTwoFactor()->create();
     $team = Team::factory()->create();
-    $team->members()->attach($owner, ['role' => TeamRole::Owner->value]);
+    $team->members()->attach($owner, ['is_owner' => true]);
     $formUrl = route('teams.edit', $team);
 
     $this->actingAs($owner)
         ->from($formUrl)
         ->post(route('teams.invitations.store', $team), [
             'email' => 'invited@example.com',
-            'role' => TeamRole::Member->value,
+            'role' => TeamRole::CaseWorker->value,
         ])
         ->assertRedirect(route('password.confirm'));
 
@@ -216,7 +216,7 @@ test('MFA confirmation after a mutation returns to its safe form page', function
 
     $owner = User::factory()->withTwoFactor()->create();
     $team = Team::factory()->create();
-    $team->members()->attach($owner, ['role' => TeamRole::Owner->value]);
+    $team->members()->attach($owner, ['is_owner' => true]);
     $formUrl = route('teams.edit', $team);
 
     $this->actingAs($owner)
@@ -224,7 +224,7 @@ test('MFA confirmation after a mutation returns to its safe form page', function
         ->from($formUrl)
         ->post(route('teams.invitations.store', $team), [
             'email' => 'invited@example.com',
-            'role' => TeamRole::Member->value,
+            'role' => TeamRole::CaseWorker->value,
         ])
         ->assertRedirect(route('mfa.confirm'));
 

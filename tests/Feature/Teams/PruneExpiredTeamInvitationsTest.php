@@ -2,7 +2,6 @@
 
 namespace Tests\Feature\Teams;
 
-use App\Enums\TeamRole;
 use App\Models\Team;
 use App\Models\TeamInvitation;
 use App\Models\User;
@@ -20,7 +19,7 @@ class PruneExpiredTeamInvitationsTest extends TestCase
         $owner = User::factory()->create();
         $team = Team::factory()->create();
 
-        $team->members()->attach($owner, ['role' => TeamRole::Owner->value]);
+        $team->members()->attach($owner, ['is_owner' => true]);
 
         $expiredInvitation = TeamInvitation::factory()->expired()->create([
             'team_id' => $team->id,

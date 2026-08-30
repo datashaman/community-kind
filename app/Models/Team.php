@@ -3,7 +3,6 @@
 namespace App\Models;
 
 use App\Concerns\GeneratesUniqueTeamSlugs;
-use App\Enums\TeamRole;
 use App\Enums\TeamStatus;
 use Database\Factories\TeamFactory;
 use Illuminate\Database\Eloquent\Attributes\Fillable;
@@ -65,9 +64,7 @@ class Team extends Model
     public function owner(): ?Model
     {
         return $this->members()
-            ->where(fn ($query) => $query
-                ->where('team_members.is_owner', true)
-                ->orWhere('team_members.role', TeamRole::Owner->value))
+            ->wherePivot('is_owner', true)
             ->first();
     }
 
