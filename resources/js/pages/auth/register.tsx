@@ -1,7 +1,7 @@
 import { Form, Head } from '@inertiajs/react';
 import InputError from '@/components/input-error';
 import PasswordInput from '@/components/password-input';
-import TeamInvitationAlert from '@/components/team-invitation-alert';
+import OrganisationInvitationAlert from '@/components/organisation-invitation-alert';
 import TextLink from '@/components/text-link';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -9,14 +9,17 @@ import { Label } from '@/components/ui/label';
 import { Spinner } from '@/components/ui/spinner';
 import { login } from '@/routes';
 import { store } from '@/routes/register';
-import type { TeamInvitationContext } from '@/types';
+import type { OrganisationInvitationContext } from '@/types';
 
 type Props = {
     passwordRules: string;
-    teamInvitation?: TeamInvitationContext | null;
+    organisationInvitation?: OrganisationInvitationContext | null;
 };
 
-export default function Register({ passwordRules, teamInvitation }: Props) {
+export default function Register({
+    passwordRules,
+    organisationInvitation,
+}: Props) {
     return (
         <>
             <Head title="Register" />
@@ -31,11 +34,11 @@ export default function Register({ passwordRules, teamInvitation }: Props) {
                         <input
                             type="hidden"
                             name="invitation"
-                            value={teamInvitation?.code ?? ''}
+                            value={organisationInvitation?.code ?? ''}
                         />
-                        {teamInvitation && (
-                            <TeamInvitationAlert
-                                invitation={teamInvitation}
+                        {organisationInvitation && (
+                            <OrganisationInvitationAlert
+                                invitation={organisationInvitation}
                                 action="Register"
                             />
                         )}
@@ -68,7 +71,7 @@ export default function Register({ passwordRules, teamInvitation }: Props) {
                                     tabIndex={2}
                                     autoComplete="email"
                                     name="email"
-                                    value={teamInvitation?.email ?? ''}
+                                    value={organisationInvitation?.email ?? ''}
                                     readOnly
                                 />
                                 <InputError message={errors.email} />
@@ -121,16 +124,16 @@ export default function Register({ passwordRules, teamInvitation }: Props) {
                             Already have an account?{' '}
                             <TextLink
                                 href={
-                                    teamInvitation
+                                    organisationInvitation
                                         ? login.url({
                                               query: {
                                                   invitation:
-                                                      teamInvitation.code,
+                                                      organisationInvitation.code,
                                               },
                                           })
                                         : login()
                                 }
-                                data-test="team-invitation-login-link"
+                                data-test="organisation-invitation-login-link"
                                 tabIndex={6}
                             >
                                 Log in

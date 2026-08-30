@@ -1,9 +1,9 @@
 <?php
 
 use App\Http\Controllers\DashboardController;
-use App\Http\Controllers\Teams\TeamInvitationController;
+use App\Http\Controllers\Organisations\OrganisationInvitationController;
+use App\Http\Middleware\EnsureOrganisationMembership;
 use App\Http\Middleware\EnsureStaffSecurityRequirements;
-use App\Http\Middleware\EnsureTeamMembership;
 use Illuminate\Contracts\View\View;
 use Illuminate\Http\Response;
 use Illuminate\Support\Facades\File;
@@ -21,15 +21,15 @@ Route::get('/source-and-licence/license', fn (): Response => response(
     headers: ['Content-Type' => 'text/plain; charset=UTF-8'],
 ))->name('source-and-licence.license');
 
-Route::prefix('{current_team}')
-    ->middleware(['auth', 'verified', EnsureStaffSecurityRequirements::class, EnsureTeamMembership::class])
+Route::prefix('{current_organisation}')
+    ->middleware(['auth', 'verified', EnsureStaffSecurityRequirements::class, EnsureOrganisationMembership::class])
     ->group(function () {
         Route::get('dashboard', DashboardController::class)->name('dashboard');
     });
 
 Route::middleware(['auth', 'verified'])->group(function () {
-    Route::post('invitations/{invitation}/accept', [TeamInvitationController::class, 'accept'])->name('invitations.accept');
-    Route::delete('invitations/{invitation}', [TeamInvitationController::class, 'decline'])->name('invitations.decline');
+    Route::post('invitations/{invitation}/accept', [OrganisationInvitationController::class, 'accept'])->name('invitations.accept');
+    Route::delete('invitations/{invitation}', [OrganisationInvitationController::class, 'decline'])->name('invitations.decline');
 });
 
 require __DIR__.'/settings.php';

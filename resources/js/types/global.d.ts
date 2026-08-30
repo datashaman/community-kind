@@ -1,5 +1,5 @@
 import type { Auth } from '@/types/auth';
-import type { Team } from '@/types/teams';
+import type { Organisation } from '@/types/organisations';
 
 declare module 'react' {
     interface InputHTMLAttributes<T> {
@@ -13,8 +13,9 @@ declare module '@inertiajs/core' {
             name: string;
             auth: Auth;
             sidebarOpen: boolean;
-            currentTeam: Team | null;
-            teams: Team[];
+            canCreateOrganisation: boolean;
+            currentOrganisation: Organisation | null;
+            organisations: Organisation[];
             [key: string]: unknown;
         };
     }

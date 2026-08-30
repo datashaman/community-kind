@@ -2,9 +2,8 @@
 
 namespace Tests\Feature\Auth;
 
-use App\Enums\TeamRole;
-use App\Models\Team;
-use App\Models\TeamInvitation;
+use App\Models\Organisation;
+use App\Models\OrganisationInvitation;
 use App\Models\User;
 use Illuminate\Auth\Notifications\VerifyEmail;
 use Illuminate\Foundation\Testing\RefreshDatabase;
@@ -23,15 +22,15 @@ class RegistrationTest extends TestCase
         $response->assertNotFound();
     }
 
-    public function test_registration_screen_includes_team_invitation_context()
+    public function test_registration_screen_includes_organisation_invitation_context()
     {
         $owner = User::factory()->create();
-        $team = Team::factory()->create(['name' => 'Laravel Team']);
-        $team->members()->attach($owner, ['role' => TeamRole::Owner->value]);
+        $organisation = Organisation::factory()->create(['name' => 'Laravel Organisation']);
+        $organisation->members()->attach($owner, ['is_owner' => true]);
 
         $token = 'registration-screen-invitation-token';
-        $invitation = TeamInvitation::factory()->forToken($token)->create([
-            'team_id' => $team->id,
+        $invitation = OrganisationInvitation::factory()->forToken($token)->create([
+            'organisation_id' => $organisation->id,
             'email' => 'invited@example.com',
             'invited_by' => $owner->id,
         ]);
@@ -41,20 +40,20 @@ class RegistrationTest extends TestCase
         $response->assertOk();
         $response->assertInertia(fn (Assert $page) => $page
             ->component('auth/register')
-            ->where('teamInvitation.code', $token)
-            ->where('teamInvitation.email', 'invited@example.com')
-            ->where('teamInvitation.teamName', 'Laravel Team'),
+            ->where('organisationInvitation.code', $token)
+            ->where('organisationInvitation.email', 'invited@example.com')
+            ->where('organisationInvitation.organisationName', 'Laravel Organisation'),
         );
     }
 
     public function test_new_users_can_register()
     {
         $owner = User::factory()->create();
-        $team = Team::factory()->create();
-        $team->members()->attach($owner, ['role' => TeamRole::Owner->value]);
+        $organisation = Organisation::factory()->create();
+        $organisation->members()->attach($owner, ['is_owner' => true]);
         $token = 'new-user-registration-token';
-        TeamInvitation::factory()->forToken($token)->create([
-            'team_id' => $team->id,
+        OrganisationInvitation::factory()->forToken($token)->create([
+            'organisation_id' => $organisation->id,
             'email' => 'test@example.com',
             'invited_by' => $owner->id,
         ]);
@@ -78,10 +77,10 @@ class RegistrationTest extends TestCase
         Notification::fake();
 
         $owner = User::factory()->create();
-        $team = Team::factory()->create();
+        $organisation = Organisation::factory()->create();
         $token = 'notification-registration-token';
-        TeamInvitation::factory()->forToken($token)->create([
-            'team_id' => $team->id,
+        OrganisationInvitation::factory()->forToken($token)->create([
+            'organisation_id' => $organisation->id,
             'email' => 'test@example.com',
             'invited_by' => $owner->id,
         ]);
@@ -102,10 +101,10 @@ class RegistrationTest extends TestCase
     public function test_registration_rejects_an_email_other_than_the_invited_address(): void
     {
         $owner = User::factory()->create();
-        $team = Team::factory()->create();
+        $organisation = Organisation::factory()->create();
         $token = 'email-bound-registration-token';
-        TeamInvitation::factory()->forToken($token)->create([
-            'team_id' => $team->id,
+        OrganisationInvitation::factory()->forToken($token)->create([
+            'organisation_id' => $organisation->id,
             'email' => 'invited@example.com',
             'invited_by' => $owner->id,
         ]);

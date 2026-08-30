@@ -2,7 +2,7 @@
 
 namespace App\Http\Responses;
 
-use App\Models\TeamInvitation;
+use App\Models\OrganisationInvitation;
 use Illuminate\Http\JsonResponse;
 use Laravel\Fortify\Contracts\RegisterResponse as RegisterResponseContract;
 use Symfony\Component\HttpFoundation\Response;
@@ -11,10 +11,10 @@ class RegisterResponse implements RegisterResponseContract
 {
     public function toResponse($request): Response
     {
-        $invitation = TeamInvitation::findByToken($request->string('invitation')->toString());
+        $invitation = OrganisationInvitation::findByToken($request->string('invitation')->toString());
 
         if ($invitation?->isPending()) {
-            $request->session()->put('auth.pending_team_invitation_id', $invitation->id);
+            $request->session()->put('auth.pending_organisation_invitation_id', $invitation->id);
         }
 
         return $request->wantsJson()

@@ -42,11 +42,15 @@ export default function Dashboard({ pendingInvitations = [] }: Props) {
     );
 }
 
-Dashboard.layout = (props: { currentTeam?: { slug: string } | null }) => ({
+Dashboard.layout = (props: {
+    currentOrganisation?: { slug: string } | null;
+}) => ({
     breadcrumbs: [
         {
             title: 'Dashboard',
-            href: props.currentTeam ? dashboard(props.currentTeam.slug) : '/',
+            href: props.currentOrganisation
+                ? dashboard(props.currentOrganisation.slug)
+                : '/',
         },
     ],
 });

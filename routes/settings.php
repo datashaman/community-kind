@@ -1,17 +1,17 @@
 <?php
 
 use App\Http\Controllers\Auth\MfaChallengeController;
+use App\Http\Controllers\Organisations\OrganisationController;
+use App\Http\Controllers\Organisations\OrganisationInvitationController;
+use App\Http\Controllers\Organisations\OrganisationMemberController;
 use App\Http\Controllers\Settings\OtherBrowserSessionController;
 use App\Http\Controllers\Settings\ProfileController;
 use App\Http\Controllers\Settings\RecoveryCodeAcknowledgementController;
 use App\Http\Controllers\Settings\SecurityController;
-use App\Http\Controllers\Teams\TeamController;
-use App\Http\Controllers\Teams\TeamInvitationController;
-use App\Http\Controllers\Teams\TeamMemberController;
+use App\Http\Middleware\EnsureOrganisationMembership;
 use App\Http\Middleware\EnsureRecentMfa;
 use App\Http\Middleware\EnsureRecentPassword;
 use App\Http\Middleware\EnsureStaffSecurityRequirements;
-use App\Http\Middleware\EnsureTeamMembership;
 use Illuminate\Support\Facades\Route;
 
 Route::middleware(['auth'])->group(function () {
@@ -49,25 +49,25 @@ Route::middleware(['auth', 'verified'])->group(function () {
     Route::inertia('settings/appearance', 'settings/appearance')->name('appearance.edit');
 
     Route::middleware(EnsureStaffSecurityRequirements::class)->group(function () {
-        Route::get('settings/teams', [TeamController::class, 'index'])->name('teams.index');
-        Route::post('settings/teams', [TeamController::class, 'store'])->name('teams.store');
+        Route::get('settings/organisations', [OrganisationController::class, 'index'])->name('organisations.index');
+        Route::post('settings/organisations', [OrganisationController::class, 'store'])->name('organisations.store');
 
         Route::delete('settings/security/other-browser-sessions', OtherBrowserSessionController::class)
             ->middleware([EnsureRecentPassword::class, EnsureRecentMfa::class])
             ->name('security.other-browser-sessions.destroy');
 
-        Route::middleware(EnsureTeamMembership::class)->group(function () {
-            Route::get('settings/teams/{team}', [TeamController::class, 'edit'])->name('teams.edit');
-            Route::patch('settings/teams/{team}', [TeamController::class, 'update'])->middleware([EnsureRecentPassword::class, EnsureRecentMfa::class])->name('teams.update');
-            Route::delete('settings/teams/{team}', [TeamController::class, 'destroy'])->middleware([EnsureRecentPassword::class, EnsureRecentMfa::class])->name('teams.destroy');
-            Route::post('settings/teams/{team}/switch', [TeamController::class, 'switch'])->name('teams.switch');
-            Route::delete('settings/teams/{team}/leave', [TeamController::class, 'leave'])->name('teams.leave');
+        Route::middleware(EnsureOrganisationMembership::class)->group(function () {
+            Route::get('settings/organisations/{organisation}', [OrganisationController::class, 'edit'])->name('organisations.edit');
+            Route::patch('settings/organisations/{organisation}', [OrganisationController::class, 'update'])->middleware([EnsureRecentPassword::class, EnsureRecentMfa::class])->name('organisations.update');
+            Route::delete('settings/organisations/{organisation}', [OrganisationController::class, 'destroy'])->middleware([EnsureRecentPassword::class, EnsureRecentMfa::class])->name('organisations.destroy');
+            Route::post('settings/organisations/{organisation}/switch', [OrganisationController::class, 'switch'])->name('organisations.switch');
+            Route::delete('settings/organisations/{organisation}/leave', [OrganisationController::class, 'leave'])->name('organisations.leave');
 
-            Route::patch('settings/teams/{team}/members/{user}', [TeamMemberController::class, 'update'])->middleware([EnsureRecentPassword::class, EnsureRecentMfa::class])->name('teams.members.update');
-            Route::delete('settings/teams/{team}/members/{user}', [TeamMemberController::class, 'destroy'])->middleware([EnsureRecentPassword::class, EnsureRecentMfa::class])->name('teams.members.destroy');
+            Route::patch('settings/organisations/{organisation}/members/{user}', [OrganisationMemberController::class, 'update'])->middleware([EnsureRecentPassword::class, EnsureRecentMfa::class])->name('organisations.members.update');
+            Route::delete('settings/organisations/{organisation}/members/{user}', [OrganisationMemberController::class, 'destroy'])->middleware([EnsureRecentPassword::class, EnsureRecentMfa::class])->name('organisations.members.destroy');
 
-            Route::post('settings/teams/{team}/invitations', [TeamInvitationController::class, 'store'])->middleware([EnsureRecentPassword::class, EnsureRecentMfa::class])->name('teams.invitations.store');
-            Route::delete('settings/teams/{team}/invitations/{invitation}', [TeamInvitationController::class, 'destroy'])->middleware([EnsureRecentPassword::class, EnsureRecentMfa::class])->name('teams.invitations.destroy');
+            Route::post('settings/organisations/{organisation}/invitations', [OrganisationInvitationController::class, 'store'])->middleware([EnsureRecentPassword::class, EnsureRecentMfa::class])->name('organisations.invitations.store');
+            Route::delete('settings/organisations/{organisation}/invitations/{invitation}', [OrganisationInvitationController::class, 'destroy'])->middleware([EnsureRecentPassword::class, EnsureRecentMfa::class])->name('organisations.invitations.destroy');
         });
     });
 });

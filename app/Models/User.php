@@ -2,7 +2,7 @@
 
 namespace App\Models;
 
-use App\Concerns\HasTeams;
+use App\Concerns\HasOrganisations;
 use Database\Factories\UserFactory;
 use Illuminate\Contracts\Auth\MustVerifyEmail;
 use Illuminate\Database\Eloquent\Attributes\Fillable;
@@ -25,20 +25,20 @@ use Laravel\Fortify\TwoFactorAuthenticatable;
  * @property Carbon|null $two_factor_confirmed_at
  * @property Carbon|null $recovery_codes_acknowledged_at
  * @property string|null $remember_token
- * @property int|null $current_team_id
+ * @property int|null $current_organisation_id
  * @property Carbon|null $created_at
  * @property Carbon|null $updated_at
- * @property-read Team|null $currentTeam
- * @property-read Collection<int, Team> $ownedTeams
- * @property-read Collection<int, Membership> $teamMemberships
- * @property-read Collection<int, Team> $teams
+ * @property-read Organisation|null $currentOrganisation
+ * @property-read Collection<int, Organisation> $ownedOrganisations
+ * @property-read Collection<int, Membership> $organisationMemberships
+ * @property-read Collection<int, Organisation> $organisations
  */
-#[Fillable(['name', 'email', 'password', 'current_team_id', 'recovery_codes_acknowledged_at'])]
+#[Fillable(['name', 'email', 'password', 'current_organisation_id', 'recovery_codes_acknowledged_at'])]
 #[Hidden(['password', 'two_factor_secret', 'two_factor_recovery_codes', 'remember_token'])]
 class User extends Authenticatable implements MustVerifyEmail
 {
     /** @use HasFactory<UserFactory> */
-    use HasFactory, HasTeams, Notifiable, TwoFactorAuthenticatable;
+    use HasFactory, HasOrganisations, Notifiable, TwoFactorAuthenticatable;
 
     protected static function booted(): void
     {

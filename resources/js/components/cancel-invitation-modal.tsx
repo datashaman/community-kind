@@ -10,18 +10,18 @@ import {
     DialogHeader,
     DialogTitle,
 } from '@/components/ui/dialog';
-import { destroy as destroyInvitation } from '@/routes/teams/invitations';
-import type { Team, TeamInvitation } from '@/types';
+import { destroy as destroyInvitation } from '@/routes/organisations/invitations';
+import type { Organisation, OrganisationInvitation } from '@/types';
 
 type Props = {
-    team: Team;
-    invitation: TeamInvitation | null;
+    organisation: Organisation;
+    invitation: OrganisationInvitation | null;
     open: boolean;
     onOpenChange: (open: boolean) => void;
 };
 
 export default function CancelInvitationModal({
-    team,
+    organisation,
     invitation,
     open,
     onOpenChange,
@@ -33,7 +33,7 @@ export default function CancelInvitationModal({
             return;
         }
 
-        router.visit(destroyInvitation([team.slug, invitation.id]), {
+        router.visit(destroyInvitation([organisation.slug, invitation.id]), {
             onStart: () => setProcessing(true),
             onFinish: () => setProcessing(false),
             onSuccess: () => onOpenChange(false),
