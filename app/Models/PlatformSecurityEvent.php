@@ -32,11 +32,17 @@ class PlatformSecurityEvent extends Model
 
     public $timestamps = false;
 
+    /**
+     * @return BelongsTo<User, $this>
+     */
     public function actor(): BelongsTo
     {
         return $this->belongsTo(User::class, 'actor_user_id');
     }
 
+    /**
+     * @return BelongsTo<User, $this>
+     */
     public function subject(): BelongsTo
     {
         return $this->belongsTo(User::class, 'subject_user_id');

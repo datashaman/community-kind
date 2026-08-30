@@ -9,12 +9,16 @@ class EnsureRecentPassword extends RequirePassword
 {
     public function handle($request, $next, $redirectToRoute = null, $passwordTimeoutSeconds = null): mixed
     {
+        $passwordTimeout = $passwordTimeoutSeconds === null
+            ? null
+            : (int) $passwordTimeoutSeconds;
+
         if (
             $request->isMethodSafe()
-            || ! $this->shouldConfirmPassword($request, $passwordTimeoutSeconds)
+            || ! $this->shouldConfirmPassword($request, $passwordTimeout)
             || $request->expectsJson()
         ) {
-            return parent::handle($request, $next, $redirectToRoute, $passwordTimeoutSeconds);
+            return parent::handle($request, $next, $redirectToRoute, $passwordTimeout);
         }
 
         $request->session()->put('auth.security_return_url', $this->safeReturnUrl($request));
