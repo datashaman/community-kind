@@ -11,6 +11,10 @@ readonly class UserTeam
         public bool $isPersonal,
         public ?string $role,
         public ?string $roleLabel,
+        public bool $isOwner,
+        public string $status,
+        /** @var array<int> */
+        public array $programIds,
         public ?bool $isCurrent = null,
     ) {
         //

@@ -8,6 +8,7 @@ use App\Http\Requests\Teams\UpdateTeamMemberRequest;
 use App\Models\Team;
 use App\Models\User;
 use Illuminate\Http\RedirectResponse;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Gate;
 use Inertia\Inertia;
 
@@ -20,12 +21,20 @@ class TeamMemberController extends Controller
     {
         Gate::authorize('updateMember', $team);
 
-        $newRole = TeamRole::from($request->validated('role'));
+        DB::transaction(function () use ($request, $team, $user) {
+            $membership = $team->memberships()
+                ->where('user_id', $user->id)
+                ->lockForUpdate()
+                ->firstOrFail();
 
-        $team->memberships()
-            ->where('user_id', $user->id)
-            ->firstOrFail()
-            ->update(['role' => $newRole]);
+            $membership->update([
+                'role' => TeamRole::from($request->validated('role')),
+            ]);
+
+            if ($request->has('program_ids')) {
+                $membership->programs()->sync($request->validated('program_ids', []));
+            }
+        });
 
         Inertia::flash('toast', ['type' => 'success', 'message' => __('Member role updated.')]);
 
@@ -46,7 +55,13 @@ class TeamMemberController extends Controller
             ->delete();
 
         if ($user->isCurrentTeam($team)) {
-            $user->switchTeam($user->personalTeam());
+            $fallbackTeam = $user->fallbackTeam($team);
+
+            if ($fallbackTeam) {
+                $user->switchTeam($fallbackTeam);
+            } else {
+                $user->update(['current_team_id' => null]);
+            }
         }
 
         Inertia::flash('toast', ['type' => 'success', 'message' => __('Member removed.')]);

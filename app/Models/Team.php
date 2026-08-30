@@ -4,6 +4,7 @@ namespace App\Models;
 
 use App\Concerns\GeneratesUniqueTeamSlugs;
 use App\Enums\TeamRole;
+use App\Enums\TeamStatus;
 use Database\Factories\TeamFactory;
 use Illuminate\Database\Eloquent\Attributes\Fillable;
 use Illuminate\Database\Eloquent\Collection;
@@ -19,6 +20,7 @@ use Illuminate\Support\Carbon;
  * @property string $name
  * @property string $slug
  * @property bool $is_personal
+ * @property TeamStatus $status
  * @property Carbon|null $created_at
  * @property Carbon|null $updated_at
  * @property Carbon|null $deleted_at
@@ -26,11 +28,16 @@ use Illuminate\Support\Carbon;
  * @property-read Collection<int, Membership> $memberships
  * @property-read Collection<int, User> $members
  */
-#[Fillable(['name', 'slug', 'is_personal'])]
+#[Fillable(['name', 'slug', 'is_personal', 'status'])]
 class Team extends Model
 {
     /** @use HasFactory<TeamFactory> */
     use GeneratesUniqueTeamSlugs, HasFactory, SoftDeletes;
+
+    /** @var array<string, mixed> */
+    protected $attributes = [
+        'status' => TeamStatus::Pending->value,
+    ];
 
     /**
      * Bootstrap the model and its traits.
@@ -58,7 +65,9 @@ class Team extends Model
     public function owner(): ?Model
     {
         return $this->members()
-            ->wherePivot('role', TeamRole::Owner->value)
+            ->where(fn ($query) => $query
+                ->where('team_members.is_owner', true)
+                ->orWhere('team_members.role', TeamRole::Owner->value))
             ->first();
     }
 
@@ -71,7 +80,7 @@ class Team extends Model
     {
         return $this->belongsToMany(User::class, 'team_members', 'team_id', 'user_id')
             ->using(Membership::class)
-            ->withPivot(['role'])
+            ->withPivot(['role', 'is_owner'])
             ->withTimestamps();
     }
 
@@ -96,6 +105,16 @@ class Team extends Model
     }
 
     /**
+     * Get the programs configured for this Team.
+     *
+     * @return HasMany<Program, $this>
+     */
+    public function programs(): HasMany
+    {
+        return $this->hasMany(Program::class);
+    }
+
+    /**
      * Get the attributes that should be cast.
      *
      * @return array<string, string>
@@ -104,6 +123,7 @@ class Team extends Model
     {
         return [
             'is_personal' => 'boolean',
+            'status' => TeamStatus::class,
         ];
     }
 

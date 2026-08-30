@@ -47,7 +47,7 @@ class EnsureTeamMembership
         abort_if(
             $requiredRole === null ||
             $role === null ||
-            ! $role->isAtLeast($requiredRole),
+            $role !== $requiredRole,
             403,
         );
     }

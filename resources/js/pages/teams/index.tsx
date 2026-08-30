@@ -51,8 +51,9 @@ export default function TeamsIndex({ teams }: Props) {
 
                 <div className="space-y-3">
                     {teams.map((team) => {
-                        const canLeaveTeam =
-                            !team.isPersonal && team.role !== 'owner';
+                        const canLeaveTeam = !team.isOwner;
+                        const canEditTeam =
+                            team.isOwner || team.role === 'team_administrator';
 
                         return (
                             <div
@@ -66,6 +67,14 @@ export default function TeamsIndex({ teams }: Props) {
                                             <span className="font-medium">
                                                 {team.name}
                                             </span>
+                                            {team.status ? (
+                                                <Badge variant="outline">
+                                                    {team.status.replaceAll(
+                                                        '_',
+                                                        ' ',
+                                                    )}
+                                                </Badge>
+                                            ) : null}
                                             {team.isPersonal ? (
                                                 <Badge variant="secondary">
                                                     Personal
@@ -102,7 +111,7 @@ export default function TeamsIndex({ teams }: Props) {
                                             </Tooltip>
                                         ) : null}
 
-                                        {team.role === 'member' ? (
+                                        {!canEditTeam ? (
                                             <Tooltip>
                                                 <TooltipTrigger asChild>
                                                     <Button

@@ -41,7 +41,7 @@ export default function CreateTeamModal({ children }: PropsWithChildren) {
                             </DialogHeader>
 
                             <div className="grid gap-2">
-                                <Label htmlFor="name">Team name</Label>
+                                <Label htmlFor="name">Organisation name</Label>
                                 <Input
                                     id="name"
                                     name="name"

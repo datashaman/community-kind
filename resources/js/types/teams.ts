@@ -1,12 +1,20 @@
-export type TeamRole = 'owner' | 'admin' | 'member';
+export type TeamRole =
+    | 'team_administrator'
+    | 'program_manager'
+    | 'case_worker'
+    | 'engagement_officer'
+    | 'executive_viewer';
 
 export type Team = {
     id: number;
     name: string;
     slug: string;
     isPersonal: boolean;
-    role?: TeamRole;
+    role?: TeamRole | null;
     roleLabel?: string;
+    isOwner?: boolean;
+    status?: string;
+    programIds?: number[];
     isCurrent?: boolean;
 };
 
@@ -15,8 +23,10 @@ export type TeamMember = {
     name: string;
     email: string;
     avatar?: string | null;
-    role: TeamRole;
+    role: TeamRole | null;
     role_label: string;
+    is_owner: boolean;
+    program_ids: number[];
 };
 
 export type TeamInvitation = {
@@ -55,4 +65,9 @@ export type TeamPermissions = {
 export type RoleOption = {
     value: TeamRole;
     label: string;
+};
+
+export type ProgramOption = {
+    id: number;
+    name: string;
 };

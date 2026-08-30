@@ -227,10 +227,10 @@ class TeamTest extends TestCase
         $this->assertEquals($alphaTeam->id, $user->fresh()->current_team_id);
     }
 
-    public function test_deleting_current_team_falls_back_to_personal_team_when_alphabetically_first()
+    public function test_deleting_current_team_falls_back_to_the_remaining_team()
     {
         $user = User::factory()->create();
-        $personalTeam = $user->personalTeam();
+        $remainingTeam = $user->currentTeam;
         $team = Team::factory()->create(['name' => 'Zulu Team']);
         $team->members()->attach($user, ['role' => TeamRole::Owner->value]);
 
@@ -248,17 +248,17 @@ class TeamTest extends TestCase
             'id' => $team->id,
         ]);
 
-        $this->assertEquals($personalTeam->id, $user->fresh()->current_team_id);
+        $this->assertEquals($remainingTeam->id, $user->fresh()->current_team_id);
     }
 
     public function test_deleting_non_current_team_leaves_current_team_unchanged()
     {
         $user = User::factory()->create();
-        $personalTeam = $user->personalTeam();
+        $currentTeam = $user->currentTeam;
         $team = Team::factory()->create();
         $team->members()->attach($user, ['role' => TeamRole::Owner->value]);
 
-        $user->update(['current_team_id' => $personalTeam->id]);
+        $user->update(['current_team_id' => $currentTeam->id]);
 
         $response = $this
             ->actingAs($user)
@@ -272,7 +272,7 @@ class TeamTest extends TestCase
             'id' => $team->id,
         ]);
 
-        $this->assertEquals($personalTeam->id, $user->fresh()->current_team_id);
+        $this->assertEquals($currentTeam->id, $user->fresh()->current_team_id);
     }
 
     public function test_members_can_leave_non_personal_teams()
@@ -324,7 +324,8 @@ class TeamTest extends TestCase
     public function test_personal_teams_cannot_be_left()
     {
         $user = User::factory()->create();
-        $personalTeam = $user->personalTeam();
+        $personalTeam = Team::factory()->personal()->create();
+        $personalTeam->members()->attach($user, ['role' => TeamRole::Member->value]);
 
         $response = $this
             ->actingAs($user)
@@ -363,10 +364,11 @@ class TeamTest extends TestCase
         $response->assertForbidden();
     }
 
-    public function test_deleting_team_switches_other_affected_users_to_their_personal_team()
+    public function test_deleting_team_switches_other_affected_users_to_their_remaining_team()
     {
         $owner = User::factory()->create();
         $member = User::factory()->create();
+        $memberRemainingTeam = $member->currentTeam;
 
         $team = Team::factory()->create();
         $team->members()->attach($owner, ['role' => TeamRole::Owner->value]);
@@ -383,14 +385,15 @@ class TeamTest extends TestCase
 
         $response->assertRedirect();
 
-        $this->assertEquals($member->personalTeam()->id, $member->fresh()->current_team_id);
+        $this->assertEquals($memberRemainingTeam->id, $member->fresh()->current_team_id);
     }
 
     public function test_personal_teams_cannot_be_deleted()
     {
         $user = User::factory()->create();
 
-        $personalTeam = $user->personalTeam();
+        $personalTeam = Team::factory()->personal()->create();
+        $personalTeam->members()->attach($user, ['role' => TeamRole::Owner->value]);
 
         $response = $this
             ->actingAs($user)

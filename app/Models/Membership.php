@@ -5,6 +5,7 @@ namespace App\Models;
 use App\Enums\TeamRole;
 use Illuminate\Database\Eloquent\Attributes\Fillable;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 use Illuminate\Database\Eloquent\Relations\Pivot;
 use Illuminate\Support\Carbon;
 
@@ -12,13 +13,14 @@ use Illuminate\Support\Carbon;
  * @property int $id
  * @property int $team_id
  * @property int $user_id
- * @property TeamRole $role
+ * @property TeamRole|null $role
+ * @property bool $is_owner
  * @property Carbon|null $created_at
  * @property Carbon|null $updated_at
  * @property-read Team $team
  * @property-read User $user
  */
-#[Fillable(['team_id', 'user_id', 'role'])]
+#[Fillable(['team_id', 'user_id', 'role', 'is_owner'])]
 class Membership extends Pivot
 {
     /**
@@ -56,6 +58,16 @@ class Membership extends Pivot
     }
 
     /**
+     * Get the programs this membership can access.
+     *
+     * @return BelongsToMany<Program, $this>
+     */
+    public function programs(): BelongsToMany
+    {
+        return $this->belongsToMany(Program::class, 'membership_program', 'membership_id', 'program_id');
+    }
+
+    /**
      * Get the attributes that should be cast.
      *
      * @return array<string, string>
@@ -64,6 +76,7 @@ class Membership extends Pivot
     {
         return [
             'role' => TeamRole::class,
+            'is_owner' => 'boolean',
         ];
     }
 }

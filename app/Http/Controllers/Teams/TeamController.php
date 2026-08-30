@@ -56,6 +56,7 @@ class TeamController extends Controller
                 'name' => $team->name,
                 'slug' => $team->slug,
                 'isPersonal' => $team->is_personal,
+                'status' => $team->status->value,
             ],
             'members' => $team->members()->get()->map(function (User $member) {
                 /** @var Membership $membership */
@@ -66,10 +67,15 @@ class TeamController extends Controller
                     'name' => $member->name,
                     'email' => $member->email,
                     'avatar' => $member->avatar ?? null,
-                    'role' => $membership->role->value,
-                    'role_label' => $membership->role->label(),
+                    'role' => $membership->role?->value,
+                    'role_label' => $membership->role?->label() ?? __('No operational role'),
+                    'is_owner' => $membership->is_owner,
+                    'program_ids' => $membership->programs()->orderBy('programs.name')->pluck('programs.id')->all(),
                 ];
             }),
+            'programs' => $team->programs()
+                ->orderBy('name')
+                ->get(['id', 'name']),
             'invitations' => $team->invitations()
                 ->whereNull('accepted_at')
                 ->whereNull('revoked_at')
@@ -118,7 +124,7 @@ class TeamController extends Controller
 
         $request->user()->switchTeam($team);
 
-        return back();
+        return to_route('dashboard', ['current_team' => $team->slug]);
     }
 
     /**
@@ -160,7 +166,15 @@ class TeamController extends Controller
         DB::transaction(function () use ($user, $team) {
             User::where('current_team_id', $team->id)
                 ->where('id', '!=', $user->id)
-                ->each(fn (User $affectedUser) => $affectedUser->switchTeam($affectedUser->personalTeam()));
+                ->each(function (User $affectedUser) use ($team) {
+                    $fallbackTeam = $affectedUser->fallbackTeam($team);
+
+                    if ($fallbackTeam) {
+                        $affectedUser->switchTeam($fallbackTeam);
+                    } else {
+                        $affectedUser->update(['current_team_id' => null]);
+                    }
+                });
 
             $team->invitations()->delete();
             $team->memberships()->delete();

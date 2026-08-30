@@ -7,6 +7,7 @@ use App\Data\UserTeam;
 use App\Enums\TeamPermission;
 use App\Enums\TeamRole;
 use App\Models\Membership;
+use App\Models\Program;
 use App\Models\Team;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\BelongsToMany;
@@ -25,7 +26,7 @@ trait HasTeams
     public function teams(): BelongsToMany
     {
         return $this->belongsToMany(Team::class, 'team_members', 'user_id', 'team_id')
-            ->withPivot(['role'])
+            ->withPivot(['role', 'is_owner'])
             ->withTimestamps();
     }
 
@@ -43,7 +44,7 @@ trait HasTeams
             'id',
             'id',
             'team_id',
-        )->where('team_members.role', TeamRole::Owner->value);
+        )->where('team_members.is_owner', true);
     }
 
     /**
@@ -114,7 +115,13 @@ trait HasTeams
      */
     public function ownsTeam(Team $team): bool
     {
-        return $this->teamRole($team) === TeamRole::Owner;
+        $membership = $this->teamMembership($team);
+
+        if ($membership === null) {
+            return false;
+        }
+
+        return $membership->is_owner || $membership->role === TeamRole::Owner;
     }
 
     /**
@@ -122,10 +129,27 @@ trait HasTeams
      */
     public function teamRole(Team $team): ?TeamRole
     {
+        return $this->teamMembership($team)?->role;
+    }
+
+    /**
+     * Get the user's membership for the given Team.
+     */
+    public function teamMembership(Team $team): ?Membership
+    {
         return $this->teamMemberships()
             ->where('team_id', $team->id)
-            ->first()
-            ?->role;
+            ->first();
+    }
+
+    /**
+     * Determine whether the user has access to a program through its Team membership.
+     */
+    public function hasProgramAccess(Program $program): bool
+    {
+        $membership = $this->teamMembership($program->team);
+
+        return $membership?->programs()->whereKey($program->id)->exists() ?? false;
     }
 
     /**
@@ -148,6 +172,7 @@ trait HasTeams
     public function toUserTeam(Team $team): UserTeam
     {
         $role = $this->teamRole($team);
+        $membership = $this->teamMembership($team);
 
         return new UserTeam(
             id: $team->id,
@@ -156,6 +181,11 @@ trait HasTeams
             isPersonal: $team->is_personal,
             role: $role?->value,
             roleLabel: $role?->label(),
+            isOwner: $membership !== null && $membership->is_owner,
+            status: $team->status->value,
+            programIds: $membership === null
+                ? []
+                : $membership->programs()->orderBy('programs.id')->pluck('programs.id')->all(),
             isCurrent: $this->isCurrentTeam($team),
         );
     }
@@ -165,16 +195,14 @@ trait HasTeams
      */
     public function toTeamPermissions(Team $team): TeamPermissions
     {
-        $role = $this->teamRole($team);
-
         return new TeamPermissions(
-            canUpdateTeam: $role?->hasPermission(TeamPermission::UpdateTeam) ?? false,
-            canDeleteTeam: $role?->hasPermission(TeamPermission::DeleteTeam) ?? false,
-            canAddMember: $role?->hasPermission(TeamPermission::AddMember) ?? false,
-            canUpdateMember: $role?->hasPermission(TeamPermission::UpdateMember) ?? false,
-            canRemoveMember: $role?->hasPermission(TeamPermission::RemoveMember) ?? false,
-            canCreateInvitation: $role?->hasPermission(TeamPermission::CreateInvitation) ?? false,
-            canCancelInvitation: $role?->hasPermission(TeamPermission::CancelInvitation) ?? false,
+            canUpdateTeam: $this->hasTeamPermission($team, TeamPermission::UpdateTeam),
+            canDeleteTeam: $this->hasTeamPermission($team, TeamPermission::DeleteTeam),
+            canAddMember: $this->hasTeamPermission($team, TeamPermission::AddMember),
+            canUpdateMember: $this->hasTeamPermission($team, TeamPermission::UpdateMember),
+            canRemoveMember: $this->hasTeamPermission($team, TeamPermission::RemoveMember),
+            canCreateInvitation: $this->hasTeamPermission($team, TeamPermission::CreateInvitation),
+            canCancelInvitation: $this->hasTeamPermission($team, TeamPermission::CancelInvitation),
         );
     }
 
@@ -191,6 +219,7 @@ trait HasTeams
      */
     public function hasTeamPermission(Team $team, TeamPermission $permission): bool
     {
-        return $this->teamRole($team)?->hasPermission($permission) ?? false;
+        return $this->ownsTeam($team)
+            || ($this->teamRole($team)?->hasPermission($permission) ?? false);
     }
 }

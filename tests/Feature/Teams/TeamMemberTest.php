@@ -51,19 +51,19 @@ class TeamMemberTest extends TestCase
         );
     }
 
-    public function test_team_member_roles_cannot_be_updated_by_non_owners()
+    public function test_team_member_roles_cannot_be_updated_by_program_managers()
     {
         $owner = User::factory()->create();
-        $admin = User::factory()->create();
+        $programManager = User::factory()->create();
         $member = User::factory()->create();
         $team = Team::factory()->create();
 
         $team->members()->attach($owner, ['role' => TeamRole::Owner->value]);
-        $team->members()->attach($admin, ['role' => TeamRole::Admin->value]);
+        $team->members()->attach($programManager, ['role' => TeamRole::ProgramManager->value]);
         $team->members()->attach($member, ['role' => TeamRole::Member->value]);
 
         $response = $this
-            ->actingAs($admin)
+            ->actingAs($programManager)
             ->patch(route('teams.members.update', [$team, $member]), [
                 'role' => TeamRole::Admin->value,
             ]);
@@ -89,19 +89,19 @@ class TeamMemberTest extends TestCase
         $this->assertFalse($member->fresh()->belongsToTeam($team));
     }
 
-    public function test_team_members_cannot_be_removed_by_non_owners()
+    public function test_team_members_cannot_be_removed_by_program_managers()
     {
         $owner = User::factory()->create();
-        $admin = User::factory()->create();
+        $programManager = User::factory()->create();
         $member = User::factory()->create();
         $team = Team::factory()->create();
 
         $team->members()->attach($owner, ['role' => TeamRole::Owner->value]);
-        $team->members()->attach($admin, ['role' => TeamRole::Admin->value]);
+        $team->members()->attach($programManager, ['role' => TeamRole::ProgramManager->value]);
         $team->members()->attach($member, ['role' => TeamRole::Member->value]);
 
         $response = $this
-            ->actingAs($admin)
+            ->actingAs($programManager)
             ->delete(route('teams.members.destroy', [$team, $member]));
 
         $response->assertForbidden();
@@ -146,11 +146,11 @@ class TeamMemberTest extends TestCase
         );
     }
 
-    public function test_removed_member_current_team_is_set_to_personal_team()
+    public function test_removed_member_current_team_is_set_to_their_remaining_team()
     {
         $owner = User::factory()->create();
         $member = User::factory()->create();
-        $personalTeam = $member->personalTeam();
+        $remainingTeam = $member->currentTeam;
         $team = Team::factory()->create();
 
         $team->members()->attach($owner, ['role' => TeamRole::Owner->value]);
@@ -162,6 +162,6 @@ class TeamMemberTest extends TestCase
             ->actingAs($owner)
             ->delete(route('teams.members.destroy', [$team, $member]));
 
-        $this->assertEquals($personalTeam->id, $member->fresh()->current_team_id);
+        $this->assertEquals($remainingTeam->id, $member->fresh()->current_team_id);
     }
 }
