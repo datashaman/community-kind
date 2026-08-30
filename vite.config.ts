@@ -64,7 +64,12 @@ export default defineConfig({
         singleAttributePerLine: false,
         htmlWhitespaceSensitivity: 'css',
         ignorePatterns: [
+            '.agents/**',
+            '.ai/**',
+            '.codex/**',
             '.github/**',
+            'AGENTS.md',
+            'boost.json',
             'composer.json',
             'PRD-community-impact-platform.md',
             'docs/agents/**',
