@@ -22,19 +22,19 @@ export default function PendingInvitationsModal({
     open,
     onOpenChange,
 }: Props) {
-    const [processingCode, setProcessingCode] = useState<string | null>(null);
+    const [processingId, setProcessingId] = useState<number | null>(null);
 
     const acceptInvitation = (invitation: DashboardInvitation) => {
         router.visit(TeamInvitationController.accept(invitation), {
-            onStart: () => setProcessingCode(invitation.code),
-            onFinish: () => setProcessingCode(null),
+            onStart: () => setProcessingId(invitation.id),
+            onFinish: () => setProcessingId(null),
         });
     };
 
     const declineInvitation = (invitation: DashboardInvitation) => {
         router.visit(TeamInvitationController.decline(invitation), {
-            onStart: () => setProcessingCode(invitation.code),
-            onFinish: () => setProcessingCode(null),
+            onStart: () => setProcessingId(invitation.id),
+            onFinish: () => setProcessingId(null),
             onSuccess: () => {
                 if (invitations.length === 1) {
                     onOpenChange(false);
@@ -57,7 +57,7 @@ export default function PendingInvitationsModal({
                 <div className="grid gap-4">
                     {invitations.map((invitation) => (
                         <div
-                            key={invitation.code}
+                            key={invitation.id}
                             data-test="pending-invitation-row"
                             className="rounded-lg border p-4"
                         >
@@ -75,9 +75,7 @@ export default function PendingInvitationsModal({
                                 <Button
                                     variant="secondary"
                                     data-test="pending-invitation-decline"
-                                    disabled={
-                                        processingCode === invitation.code
-                                    }
+                                    disabled={processingId === invitation.id}
                                     onClick={() =>
                                         declineInvitation(invitation)
                                     }
@@ -87,9 +85,7 @@ export default function PendingInvitationsModal({
 
                                 <Button
                                     data-test="pending-invitation-accept"
-                                    disabled={
-                                        processingCode === invitation.code
-                                    }
+                                    disabled={processingId === invitation.id}
                                     onClick={() => acceptInvitation(invitation)}
                                 >
                                     Accept

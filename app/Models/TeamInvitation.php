@@ -9,40 +9,34 @@ use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Support\Carbon;
-use Illuminate\Support\Str;
 
 /**
  * @property int $id
- * @property string $code
+ * @property string $token_hash
  * @property int $team_id
  * @property string $email
  * @property TeamRole $role
  * @property int $invited_by
  * @property Carbon|null $expires_at
  * @property Carbon|null $accepted_at
+ * @property Carbon|null $revoked_at
+ * @property int|null $revoked_by
  * @property Carbon|null $created_at
  * @property Carbon|null $updated_at
  * @property-read Team $team
  * @property-read User $inviter
  */
-#[Fillable(['team_id', 'email', 'role', 'invited_by', 'expires_at', 'accepted_at'])]
+#[Fillable(['token_hash', 'team_id', 'email', 'role', 'invited_by', 'expires_at', 'accepted_at', 'revoked_at', 'revoked_by'])]
 class TeamInvitation extends Model
 {
     /** @use HasFactory<TeamInvitationFactory> */
     use HasFactory;
 
-    /**
-     * Bootstrap the model and its traits.
-     */
-    protected static function boot(): void
+    public static function findByToken(string $token): ?self
     {
-        parent::boot();
-
-        static::creating(function (TeamInvitation $invitation) {
-            if (empty($invitation->code)) {
-                $invitation->code = Str::random(64);
-            }
-        });
+        return self::query()
+            ->where('token_hash', hash('sha256', $token))
+            ->first();
     }
 
     /**
@@ -78,7 +72,17 @@ class TeamInvitation extends Model
      */
     public function isPending(): bool
     {
-        return $this->accepted_at === null && ! $this->isExpired();
+        return ! $this->isAccepted() && ! $this->isRevoked() && ! $this->isExpired();
+    }
+
+    public function isRevoked(): bool
+    {
+        return $this->revoked_at !== null;
+    }
+
+    public function isFor(User $user): bool
+    {
+        return mb_strtolower($this->email) === mb_strtolower($user->email);
     }
 
     /**
@@ -100,14 +104,7 @@ class TeamInvitation extends Model
             'role' => TeamRole::class,
             'expires_at' => 'datetime',
             'accepted_at' => 'datetime',
+            'revoked_at' => 'datetime',
         ];
-    }
-
-    /**
-     * Get the route key for the model.
-     */
-    public function getRouteKeyName(): string
-    {
-        return 'code';
     }
 }

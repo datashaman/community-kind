@@ -20,7 +20,7 @@ export type TeamMember = {
 };
 
 export type TeamInvitation = {
-    code: string;
+    id: number;
     email: string;
     role: TeamRole;
     role_label: string;
@@ -29,11 +29,12 @@ export type TeamInvitation = {
 
 export type TeamInvitationContext = {
     code: string;
+    email: string;
     teamName: string;
 };
 
 export type DashboardInvitation = {
-    code: string;
+    id: number;
     inviterName: string;
     team: {
         name: string;

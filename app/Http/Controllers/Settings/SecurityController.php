@@ -6,6 +6,7 @@ use App\Http\Controllers\Controller;
 use App\Http\Requests\Settings\PasswordUpdateRequest;
 use App\Http\Requests\Settings\TwoFactorAuthenticationRequest;
 use Illuminate\Http\RedirectResponse;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Validation\Rules\Password;
 use Inertia\Inertia;
 use Inertia\Response;
@@ -28,7 +29,16 @@ class SecurityController extends Controller
 
             $props['twoFactorEnabled'] = $request->user()->hasEnabledTwoFactorAuthentication();
             $props['requiresConfirmation'] = Features::optionEnabled(Features::twoFactorAuthentication(), 'confirm');
+            $props['recoveryCodesAcknowledged'] = $request->user()->hasAcknowledgedRecoveryCodes();
         }
+
+        $props['required'] = $request->string('required')->toString() ?: null;
+        $props['otherBrowserSessionCount'] = config('session.driver') === 'database'
+            ? DB::table((string) config('session.table', 'sessions'))
+                ->where('user_id', $request->user()->getAuthIdentifier())
+                ->where('id', '!=', $request->session()->getId())
+                ->count()
+            : 0;
 
         return Inertia::render('settings/security', $props);
     }

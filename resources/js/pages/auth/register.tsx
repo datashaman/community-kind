@@ -28,6 +28,11 @@ export default function Register({ passwordRules, teamInvitation }: Props) {
             >
                 {({ processing, errors }) => (
                     <>
+                        <input
+                            type="hidden"
+                            name="invitation"
+                            value={teamInvitation?.code ?? ''}
+                        />
                         {teamInvitation && (
                             <TeamInvitationAlert
                                 invitation={teamInvitation}
@@ -63,7 +68,8 @@ export default function Register({ passwordRules, teamInvitation }: Props) {
                                     tabIndex={2}
                                     autoComplete="email"
                                     name="email"
-                                    placeholder="email@example.com"
+                                    value={teamInvitation?.email ?? ''}
+                                    readOnly
                                 />
                                 <InputError message={errors.email} />
                             </div>
@@ -138,6 +144,6 @@ export default function Register({ passwordRules, teamInvitation }: Props) {
 }
 
 Register.layout = {
-    title: 'Create an account',
-    description: 'Enter your details below to create your account',
+    title: 'Accept your staff invitation',
+    description: 'Create the account bound to your invitation',
 };

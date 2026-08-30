@@ -72,9 +72,13 @@ class TeamController extends Controller
             }),
             'invitations' => $team->invitations()
                 ->whereNull('accepted_at')
+                ->whereNull('revoked_at')
+                ->where(fn ($query) => $query
+                    ->whereNull('expires_at')
+                    ->orWhere('expires_at', '>=', now()))
                 ->get()
                 ->map(fn ($invitation) => [
-                    'code' => $invitation->code,
+                    'id' => $invitation->id,
                     'email' => $invitation->email,
                     'role' => $invitation->role->value,
                     'role_label' => $invitation->role->label(),
