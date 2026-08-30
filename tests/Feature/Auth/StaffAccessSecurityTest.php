@@ -1,7 +1,6 @@
 <?php
 
 use App\Actions\Security\RecordPlatformSecurityEvent;
-use App\Actions\Security\RevokeOtherBrowserSessions;
 use App\Actions\Teams\IssueTeamInvitation;
 use App\Enums\TeamRole;
 use App\Models\Team;
@@ -9,6 +8,7 @@ use App\Models\User;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Notification;
+use Laravel\Fortify\Contracts\TwoFactorAuthenticationProvider;
 
 test('issued invitations store only a hash and expire after 72 hours', function () {
     $inviter = User::factory()->create();
@@ -83,7 +83,7 @@ test('staff can acknowledge recovery codes only after enabling MFA', function ()
             'acknowledged' => true,
         ])
         ->assertRedirect(route('security.edit'))
-        ->assertSessionHas('auth.mfa_confirmed_at');
+        ->assertSessionMissing('auth.mfa_confirmed_at');
 
     expect($user->refresh()->hasAcknowledgedRecoveryCodes())->toBeTrue();
 });
@@ -121,38 +121,164 @@ test('remember me is ignored for staff logins', function () {
     $response->assertCookieMissing(Auth::guard('web')->getRecallerName());
 });
 
+test('password changes require a recent MFA confirmation', function () {
+    $user = User::factory()->withTwoFactor()->create();
+
+    $response = $this
+        ->actingAs($user)
+        ->put(route('user-password.update'), [
+            'current_password' => 'password',
+            'password' => 'replacement-password',
+            'password_confirmation' => 'replacement-password',
+        ]);
+
+    $response->assertRedirect(route('mfa.confirm'));
+    expect(Auth::guard('web')->validate([
+        'email' => $user->email,
+        'password' => 'password',
+    ]))->toBeTrue();
+});
+
+test('profile deletion requires a recent MFA confirmation', function () {
+    $user = User::factory()->withTwoFactor()->create();
+
+    $response = $this
+        ->actingAs($user)
+        ->delete(route('profile.destroy'), ['password' => 'password']);
+
+    $response->assertRedirect(route('mfa.confirm'));
+    $this->assertModelExists($user);
+});
+
+test('disabling MFA requires a recent MFA confirmation', function () {
+    $user = User::factory()->withTwoFactor()->create();
+
+    $response = $this
+        ->actingAs($user)
+        ->withSession(['auth.password_confirmed_at' => time()])
+        ->delete(route('two-factor.disable'));
+
+    $response->assertRedirect(route('mfa.confirm'));
+    expect($user->refresh()->hasEnabledTwoFactorAuthentication())->toBeTrue();
+});
+
+test('regenerating recovery codes requires a recent MFA confirmation', function () {
+    $user = User::factory()->withTwoFactor()->create();
+    $recoveryCodes = $user->two_factor_recovery_codes;
+
+    $response = $this
+        ->actingAs($user)
+        ->withSession(['auth.password_confirmed_at' => time()])
+        ->post(route('two-factor.regenerate-recovery-codes'));
+
+    $response->assertRedirect(route('mfa.confirm'));
+    expect($user->refresh()->two_factor_recovery_codes)->toBe($recoveryCodes);
+});
+
+test('password confirmation after a mutation returns to its safe form page', function () {
+    Notification::fake();
+
+    $owner = User::factory()->withTwoFactor()->create();
+    $team = Team::factory()->create();
+    $team->members()->attach($owner, ['role' => TeamRole::Owner->value]);
+    $formUrl = route('teams.edit', $team);
+
+    $this->actingAs($owner)
+        ->from($formUrl)
+        ->post(route('teams.invitations.store', $team), [
+            'email' => 'invited@example.com',
+            'role' => TeamRole::Member->value,
+        ])
+        ->assertRedirect(route('password.confirm'));
+
+    $this->post(route('password.confirm.store'), ['password' => 'password'])
+        ->assertRedirect($formUrl);
+    Notification::assertNothingSent();
+});
+
+test('MFA confirmation after a mutation returns to its safe form page', function () {
+    Notification::fake();
+
+    $owner = User::factory()->withTwoFactor()->create();
+    $team = Team::factory()->create();
+    $team->members()->attach($owner, ['role' => TeamRole::Owner->value]);
+    $formUrl = route('teams.edit', $team);
+
+    $this->actingAs($owner)
+        ->withSession(['auth.password_confirmed_at' => time()])
+        ->from($formUrl)
+        ->post(route('teams.invitations.store', $team), [
+            'email' => 'invited@example.com',
+            'role' => TeamRole::Member->value,
+        ])
+        ->assertRedirect(route('mfa.confirm'));
+
+    $this->mock(TwoFactorAuthenticationProvider::class, function ($mock): void {
+        $mock->shouldReceive('verify')
+            ->once()
+            ->with('secret', '123456')
+            ->andReturnTrue();
+    });
+
+    $this->post(route('mfa.confirm.store'), ['code' => '123456'])
+        ->assertRedirect($formUrl);
+    Notification::assertNothingSent();
+});
+
 test('revoking other database sessions is audited', function () {
     config(['session.driver' => 'database']);
 
-    $user = User::factory()->create();
+    $user = User::factory()->withTwoFactor()->create();
     DB::table('sessions')->insert([
-        [
-            'id' => 'current-session',
-            'user_id' => $user->id,
-            'payload' => '',
-            'last_activity' => time(),
-        ],
-        [
-            'id' => 'other-session',
-            'user_id' => $user->id,
-            'payload' => '',
-            'last_activity' => time(),
-        ],
+        'id' => 'other-session',
+        'user_id' => $user->id,
+        'payload' => '',
+        'last_activity' => time(),
     ]);
 
-    $revoked = app(RevokeOtherBrowserSessions::class)->handle($user, 'current-session');
-    app(RecordPlatformSecurityEvent::class)->handle(
-        'other_browser_sessions_revoked',
-        $user,
-        $user,
-        ['revoked_count' => $revoked],
-    );
+    $response = $this
+        ->actingAs($user)
+        ->withSession([
+            'auth.password_confirmed_at' => time(),
+            'auth.mfa_confirmed_at' => time(),
+        ])
+        ->delete(route('security.other-browser-sessions.destroy'));
 
-    expect($revoked)->toBe(1);
+    $response->assertRedirect();
     $this->assertDatabaseMissing('sessions', ['id' => 'other-session']);
     $this->assertDatabaseHas('platform_security_events', [
         'type' => 'other_browser_sessions_revoked',
         'actor_user_id' => $user->id,
+        'subject_user_id' => $user->id,
+    ]);
+});
+
+test('session revocation rolls back when its audit cannot be recorded', function () {
+    config(['session.driver' => 'database']);
+
+    $user = User::factory()->withTwoFactor()->create();
+    DB::table('sessions')->insert([
+        'id' => 'other-session',
+        'user_id' => $user->id,
+        'payload' => '',
+        'last_activity' => time(),
+    ]);
+    $this->mock(RecordPlatformSecurityEvent::class, function ($mock): void {
+        $mock->shouldReceive('handle')->once()->andThrow(new RuntimeException('Audit unavailable.'));
+    });
+
+    $response = $this
+        ->actingAs($user)
+        ->withSession([
+            'auth.password_confirmed_at' => time(),
+            'auth.mfa_confirmed_at' => time(),
+        ])
+        ->delete(route('security.other-browser-sessions.destroy'));
+
+    $response->assertServerError();
+    $this->assertDatabaseHas('sessions', ['id' => 'other-session']);
+    $this->assertDatabaseMissing('platform_security_events', [
+        'type' => 'other_browser_sessions_revoked',
         'subject_user_id' => $user->id,
     ]);
 });

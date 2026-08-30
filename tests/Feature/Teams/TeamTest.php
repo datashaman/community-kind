@@ -4,10 +4,11 @@ namespace Tests\Feature\Teams;
 
 use App\Enums\TeamRole;
 use App\Http\Middleware\EnsureRecentMfa;
+use App\Http\Middleware\EnsureRecentPassword;
 use App\Http\Middleware\EnsureStaffSecurityRequirements;
+use App\Http\Middleware\ProtectSensitiveFortifyRoutes;
 use App\Models\Team;
 use App\Models\User;
-use Illuminate\Auth\Middleware\RequirePassword;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Inertia\Testing\AssertableInertia as Assert;
 use Tests\TestCase;
@@ -23,7 +24,8 @@ class TeamTest extends TestCase
         $this->withoutMiddleware([
             EnsureStaffSecurityRequirements::class,
             EnsureRecentMfa::class,
-            RequirePassword::class,
+            EnsureRecentPassword::class,
+            ProtectSensitiveFortifyRoutes::class,
         ]);
     }
 

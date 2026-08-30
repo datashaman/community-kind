@@ -7,6 +7,7 @@ use App\Actions\Fortify\CreateNewUser;
 use App\Actions\Fortify\DiscardRememberedLogin;
 use App\Actions\Fortify\ResetUserPassword;
 use App\Http\Responses\LoginResponse;
+use App\Http\Responses\PasswordConfirmedResponse;
 use App\Http\Responses\RegisterResponse;
 use App\Http\Responses\TwoFactorLoginResponse;
 use App\Http\Responses\VerifyEmailResponse;
@@ -22,6 +23,7 @@ use Laravel\Fortify\Actions\CanonicalizeUsername;
 use Laravel\Fortify\Actions\PrepareAuthenticatedSession;
 use Laravel\Fortify\Actions\RedirectIfTwoFactorAuthenticatable;
 use Laravel\Fortify\Contracts\LoginResponse as LoginResponseContract;
+use Laravel\Fortify\Contracts\PasswordConfirmedResponse as PasswordConfirmedResponseContract;
 use Laravel\Fortify\Contracts\RegisterResponse as RegisterResponseContract;
 use Laravel\Fortify\Contracts\TwoFactorLoginResponse as TwoFactorLoginResponseContract;
 use Laravel\Fortify\Contracts\VerifyEmailResponse as VerifyEmailResponseContract;
@@ -36,6 +38,7 @@ class FortifyServiceProvider extends ServiceProvider
     public function register(): void
     {
         $this->app->singleton(LoginResponseContract::class, LoginResponse::class);
+        $this->app->singleton(PasswordConfirmedResponseContract::class, PasswordConfirmedResponse::class);
         $this->app->singleton(RegisterResponseContract::class, RegisterResponse::class);
         $this->app->singleton(TwoFactorLoginResponseContract::class, TwoFactorLoginResponse::class);
         $this->app->singleton(VerifyEmailResponseContract::class, VerifyEmailResponse::class);

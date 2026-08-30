@@ -32,6 +32,10 @@ class MfaChallengeController extends Controller
 
         $request->session()->put('auth.mfa_confirmed_at', now()->getTimestamp());
 
-        return redirect()->intended(route('security.edit'));
+        $returnUrl = $request->session()->pull('auth.security_return_url');
+
+        return is_string($returnUrl)
+            ? redirect()->to($returnUrl)
+            : redirect()->intended(route('security.edit'));
     }
 }

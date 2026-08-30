@@ -17,7 +17,6 @@ class RecoveryCodeAcknowledgementController extends Controller
         $request->user()->forceFill([
             'recovery_codes_acknowledged_at' => now(),
         ])->save();
-        $request->session()->put('auth.mfa_confirmed_at', now()->getTimestamp());
 
         Inertia::flash('toast', [
             'type' => 'success',

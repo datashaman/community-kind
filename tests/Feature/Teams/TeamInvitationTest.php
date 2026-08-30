@@ -4,14 +4,16 @@ namespace Tests\Feature\Teams;
 
 use App\Enums\TeamRole;
 use App\Http\Middleware\EnsureRecentMfa;
+use App\Http\Middleware\EnsureRecentPassword;
 use App\Http\Middleware\EnsureStaffSecurityRequirements;
+use App\Http\Middleware\ProtectSensitiveFortifyRoutes;
 use App\Models\Team;
 use App\Models\TeamInvitation;
 use App\Models\User;
 use App\Notifications\Teams\TeamInvitation as TeamInvitationNotification;
-use Illuminate\Auth\Middleware\RequirePassword;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\Notification;
+use Inertia\Testing\AssertableInertia as Assert;
 use Tests\TestCase;
 
 class TeamInvitationTest extends TestCase
@@ -25,7 +27,8 @@ class TeamInvitationTest extends TestCase
         $this->withoutMiddleware([
             EnsureStaffSecurityRequirements::class,
             EnsureRecentMfa::class,
-            RequirePassword::class,
+            EnsureRecentPassword::class,
+            ProtectSensitiveFortifyRoutes::class,
         ]);
     }
 
@@ -186,6 +189,51 @@ class TeamInvitationTest extends TestCase
             ]);
 
         $response->assertSessionHasErrors('email');
+    }
+
+    public function test_revoked_invitations_can_be_reissued()
+    {
+        Notification::fake();
+
+        $owner = User::factory()->create();
+        $team = Team::factory()->create();
+        $team->members()->attach($owner, ['role' => TeamRole::Owner->value]);
+        TeamInvitation::factory()->revoked()->create([
+            'team_id' => $team->id,
+            'email' => 'invited@example.com',
+            'invited_by' => $owner->id,
+        ]);
+
+        $response = $this
+            ->actingAs($owner)
+            ->post(route('teams.invitations.store', $team), [
+                'email' => 'invited@example.com',
+                'role' => TeamRole::Member->value,
+            ]);
+
+        $response->assertRedirect(route('teams.edit', $team));
+        $this->assertDatabaseCount('team_invitations', 2);
+        Notification::assertCount(1);
+    }
+
+    public function test_revoked_invitations_are_not_shown_as_pending()
+    {
+        $owner = User::factory()->create();
+        $team = Team::factory()->create();
+        $team->members()->attach($owner, ['role' => TeamRole::Owner->value]);
+        TeamInvitation::factory()->revoked()->create([
+            'team_id' => $team->id,
+            'invited_by' => $owner->id,
+        ]);
+
+        $response = $this
+            ->actingAs($owner)
+            ->get(route('teams.edit', $team));
+
+        $response->assertInertia(fn (Assert $page) => $page
+            ->component('teams/edit')
+            ->has('invitations', 0),
+        );
     }
 
     public function test_team_invitations_cannot_be_created_by_members()

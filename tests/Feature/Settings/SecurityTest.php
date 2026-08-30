@@ -72,10 +72,11 @@ class SecurityTest extends TestCase
 
     public function test_password_can_be_updated()
     {
-        $user = User::factory()->create();
+        $user = User::factory()->withTwoFactor()->create();
 
         $response = $this
             ->actingAs($user)
+            ->withSession(['auth.mfa_confirmed_at' => time()])
             ->from(route('security.edit'))
             ->put(route('user-password.update'), [
                 'current_password' => 'password',
@@ -92,10 +93,11 @@ class SecurityTest extends TestCase
 
     public function test_correct_password_must_be_provided_to_update_password()
     {
-        $user = User::factory()->create();
+        $user = User::factory()->withTwoFactor()->create();
 
         $response = $this
             ->actingAs($user)
+            ->withSession(['auth.mfa_confirmed_at' => time()])
             ->from(route('security.edit'))
             ->put(route('user-password.update'), [
                 'current_password' => 'wrong-password',
