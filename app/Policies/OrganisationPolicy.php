@@ -3,6 +3,7 @@
 namespace App\Policies;
 
 use App\Enums\OrganisationPermission;
+use App\Enums\OrganisationStatus;
 use App\Models\Organisation;
 use App\Models\User;
 
@@ -40,13 +41,32 @@ class OrganisationPolicy
         return $user->hasOrganisationPermission($organisation, OrganisationPermission::UpdateOrganisation);
     }
 
+    public function transition(User $user, Organisation $organisation): bool
+    {
+        return $user->ownsOrganisation($organisation);
+    }
+
+    public function changeSlug(User $user, Organisation $organisation): bool
+    {
+        return $user->ownsOrganisation($organisation);
+    }
+
+    public function transferOwnership(User $user, Organisation $organisation): bool
+    {
+        return $user->ownsOrganisation($organisation);
+    }
+
     /**
      * Determine whether the user can leave the organisation.
      */
     public function leave(User $user, Organisation $organisation): bool
     {
-        return $user->belongsToOrganisation($organisation)
-            && ! $user->ownsOrganisation($organisation);
+        if (! $user->belongsToOrganisation($organisation)) {
+            return false;
+        }
+
+        return ! $user->ownsOrganisation($organisation)
+            || $organisation->owners()->whereKeyNot($user->id)->exists();
     }
 
     /**
@@ -94,6 +114,7 @@ class OrganisationPolicy
      */
     public function delete(User $user, Organisation $organisation): bool
     {
-        return $user->hasOrganisationPermission($organisation, OrganisationPermission::DeleteOrganisation);
+        return in_array($organisation->status, [OrganisationStatus::Pending, OrganisationStatus::Archived], true)
+            && $user->hasOrganisationPermission($organisation, OrganisationPermission::DeleteOrganisation);
     }
 }

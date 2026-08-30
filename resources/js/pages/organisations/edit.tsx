@@ -1,5 +1,5 @@
 import { Form, Head, router } from '@inertiajs/react';
-import { ChevronDown, Mail, UserPlus, X } from 'lucide-react';
+import { ChevronDown, Mail, ShieldAlert, UserPlus, X } from 'lucide-react';
 import { useMemo, useState } from 'react';
 import CancelInvitationModal from '@/components/cancel-invitation-modal';
 import DeleteOrganisationModal from '@/components/delete-organisation-modal';
@@ -27,8 +27,17 @@ import {
 } from '@/components/ui/tooltip';
 import { useInitials } from '@/hooks/use-initials';
 import { edit, index, update } from '@/routes/organisations';
+import { update as updateLifecycle } from '@/routes/organisations/lifecycle';
 import { update as updateMember } from '@/routes/organisations/members';
+import {
+    store as storeOwnershipTransfer,
+    update as acceptOwnershipTransfer,
+} from '@/routes/organisations/ownership-transfers';
+import { update as updateSlug } from '@/routes/organisations/slug';
 import type {
+    OrganisationAccessHold,
+    OrganisationOwnerCandidate,
+    OrganisationOwnershipTransfer,
     ProgramOption,
     RoleOption,
     Organisation,
@@ -44,6 +53,10 @@ type Props = {
     permissions: OrganisationPermissions;
     availableRoles: RoleOption[];
     programs: ProgramOption[];
+    allowedTransitions: string[];
+    ownerCandidates: OrganisationOwnerCandidate[];
+    ownershipTransfer: OrganisationOwnershipTransfer | null;
+    accessHolds: OrganisationAccessHold[];
 };
 
 export default function OrganisationEdit({
@@ -53,6 +66,10 @@ export default function OrganisationEdit({
     permissions,
     availableRoles,
     programs,
+    allowedTransitions,
+    ownerCandidates,
+    ownershipTransfer,
+    accessHolds,
 }: Props) {
     const getInitials = useInitials();
 
@@ -73,6 +90,11 @@ export default function OrganisationEdit({
                 : `View ${organisation.name}`,
         [permissions.canUpdateOrganisation, organisation.name],
     );
+
+    const statusLabel = (status: string) =>
+        status
+            .replaceAll('_', ' ')
+            .replace(/^./, (letter) => letter.toUpperCase());
 
     const updateMemberRole = (member: OrganisationMember, newRole: string) => {
         router.visit(updateMember([organisation.slug, member.id]), {
@@ -118,6 +140,34 @@ export default function OrganisationEdit({
 
             <div className="flex flex-col space-y-10">
                 <div className="space-y-6">
+                    <div className="flex items-center gap-3">
+                        <Badge variant="outline">
+                            {statusLabel(organisation.status ?? 'pending')}
+                        </Badge>
+                    </div>
+
+                    {accessHolds.map((hold) => (
+                        <div
+                            key={hold.id}
+                            className="border-destructive/40 bg-destructive/5 flex gap-3 rounded-lg border p-4"
+                            data-test="organisation-access-hold"
+                        >
+                            <ShieldAlert className="text-destructive mt-0.5 size-5 shrink-0" />
+                            <div className="space-y-1">
+                                <p className="font-medium">
+                                    Access hold: {statusLabel(hold.accessLevel)}
+                                </p>
+                                <p className="text-muted-foreground text-sm">
+                                    {hold.reason}
+                                </p>
+                                <p className="text-muted-foreground text-xs">
+                                    Scope: {statusLabel(hold.scope)} · Review by{' '}
+                                    {new Date(hold.reviewAt).toLocaleString()}
+                                </p>
+                            </div>
+                        </div>
+                    ))}
+
                     {permissions.canUpdateOrganisation ? (
                         <>
                             <Heading
@@ -168,6 +218,147 @@ export default function OrganisationEdit({
                         </>
                     )}
                 </div>
+
+                {permissions.canChangeOrganisationSlug ? (
+                    <div className="space-y-6">
+                        <Heading
+                            variant="small"
+                            title="Organisation address"
+                            description="Changing the slug redirects the old address temporarily, then quarantines it"
+                        />
+                        <Form
+                            {...updateSlug.form(organisation.slug)}
+                            className="space-y-4"
+                        >
+                            {({ errors, processing }) => (
+                                <>
+                                    <div className="grid gap-2">
+                                        <Label htmlFor="slug">Slug</Label>
+                                        <Input
+                                            id="slug"
+                                            name="slug"
+                                            defaultValue={organisation.slug}
+                                            required
+                                        />
+                                        <InputError message={errors.slug} />
+                                    </div>
+                                    <Button type="submit" disabled={processing}>
+                                        Change slug
+                                    </Button>
+                                </>
+                            )}
+                        </Form>
+                    </div>
+                ) : null}
+
+                {permissions.canTransitionOrganisation &&
+                allowedTransitions.length > 0 ? (
+                    <div className="space-y-6">
+                        <Heading
+                            variant="small"
+                            title="Organisation lifecycle"
+                            description="Lifecycle changes are audited and immediately recompute access"
+                        />
+                        <div className="flex flex-wrap gap-3">
+                            {allowedTransitions.map((status) => (
+                                <Form
+                                    key={status}
+                                    {...updateLifecycle.form(organisation.slug)}
+                                >
+                                    {({ processing }) => (
+                                        <>
+                                            <input
+                                                type="hidden"
+                                                name="status"
+                                                value={status}
+                                            />
+                                            <Button
+                                                type="submit"
+                                                variant="outline"
+                                                disabled={processing}
+                                            >
+                                                Move to {statusLabel(status)}
+                                            </Button>
+                                        </>
+                                    )}
+                                </Form>
+                            ))}
+                        </div>
+                    </div>
+                ) : null}
+
+                {ownershipTransfer ? (
+                    <div className="space-y-4 rounded-lg border p-4">
+                        <Heading
+                            variant="small"
+                            title="Pending ownership transfer"
+                            description={`${ownershipTransfer.nominatedByName} nominated ${ownershipTransfer.nomineeName}`}
+                        />
+                        {ownershipTransfer.canAccept ? (
+                            <Form
+                                {...acceptOwnershipTransfer.form([
+                                    organisation.slug,
+                                    ownershipTransfer.id,
+                                ])}
+                            >
+                                {({ processing }) => (
+                                    <Button type="submit" disabled={processing}>
+                                        Accept ownership
+                                    </Button>
+                                )}
+                            </Form>
+                        ) : null}
+                    </div>
+                ) : permissions.canTransferOwnership &&
+                  ownerCandidates.length > 0 ? (
+                    <div className="space-y-6">
+                        <Heading
+                            variant="small"
+                            title="Transfer ownership"
+                            description="The nominated member must explicitly accept within 72 hours"
+                        />
+                        <Form
+                            {...storeOwnershipTransfer.form(organisation.slug)}
+                            className="space-y-4"
+                        >
+                            {({ errors, processing }) => (
+                                <>
+                                    <div className="grid gap-2">
+                                        <Label htmlFor="nominee_user_id">
+                                            New owner
+                                        </Label>
+                                        <select
+                                            id="nominee_user_id"
+                                            name="nominee_user_id"
+                                            className="border-input bg-background h-9 rounded-md border px-3 text-sm"
+                                            required
+                                        >
+                                            <option value="">
+                                                Select a member
+                                            </option>
+                                            {ownerCandidates.map(
+                                                (candidate) => (
+                                                    <option
+                                                        key={candidate.id}
+                                                        value={candidate.id}
+                                                    >
+                                                        {candidate.name}
+                                                    </option>
+                                                ),
+                                            )}
+                                        </select>
+                                        <InputError
+                                            message={errors.nominee_user_id}
+                                        />
+                                    </div>
+                                    <Button type="submit" disabled={processing}>
+                                        Nominate new owner
+                                    </Button>
+                                </>
+                            )}
+                        </Form>
+                    </div>
+                ) : null}
 
                 <div className="space-y-6">
                     <div className="flex items-center justify-between">
@@ -402,15 +593,15 @@ export default function OrganisationEdit({
                     <div className="space-y-6">
                         <Heading
                             variant="small"
-                            title="Delete organisation"
-                            description="Permanently delete your organisation"
+                            title="Schedule organisation deletion"
+                            description="Start the 30-day recovery period"
                         />
                         <div className="space-y-4 rounded-lg border border-red-100 bg-red-50 p-4 dark:border-red-200/10 dark:bg-red-700/10">
                             <div className="relative space-y-0.5 text-red-600 dark:text-red-100">
                                 <p className="font-medium">Warning</p>
                                 <p className="text-sm">
-                                    Please proceed with caution, this cannot be
-                                    undone.
+                                    The organisation remains recoverable for 30
+                                    days before deletion.
                                 </p>
                             </div>
                             <Button
@@ -418,7 +609,7 @@ export default function OrganisationEdit({
                                 data-test="delete-organisation-button"
                                 onClick={() => setDeleteDialogOpen(true)}
                             >
-                                Delete organisation
+                                Schedule deletion
                             </Button>
                         </div>
                     </div>

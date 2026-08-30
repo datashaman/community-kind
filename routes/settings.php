@@ -3,11 +3,15 @@
 use App\Http\Controllers\Auth\MfaChallengeController;
 use App\Http\Controllers\Organisations\OrganisationController;
 use App\Http\Controllers\Organisations\OrganisationInvitationController;
+use App\Http\Controllers\Organisations\OrganisationLifecycleController;
 use App\Http\Controllers\Organisations\OrganisationMemberController;
+use App\Http\Controllers\Organisations\OrganisationOwnershipTransferController;
+use App\Http\Controllers\Organisations\OrganisationSlugController;
 use App\Http\Controllers\Settings\OtherBrowserSessionController;
 use App\Http\Controllers\Settings\ProfileController;
 use App\Http\Controllers\Settings\RecoveryCodeAcknowledgementController;
 use App\Http\Controllers\Settings\SecurityController;
+use App\Http\Middleware\EnsureOrganisationAccess;
 use App\Http\Middleware\EnsureOrganisationMembership;
 use App\Http\Middleware\EnsureRecentMfa;
 use App\Http\Middleware\EnsureRecentPassword;
@@ -57,17 +61,22 @@ Route::middleware(['auth', 'verified'])->group(function () {
             ->name('security.other-browser-sessions.destroy');
 
         Route::middleware(EnsureOrganisationMembership::class)->group(function () {
-            Route::get('settings/organisations/{organisation}', [OrganisationController::class, 'edit'])->name('organisations.edit');
-            Route::patch('settings/organisations/{organisation}', [OrganisationController::class, 'update'])->middleware([EnsureRecentPassword::class, EnsureRecentMfa::class])->name('organisations.update');
-            Route::delete('settings/organisations/{organisation}', [OrganisationController::class, 'destroy'])->middleware([EnsureRecentPassword::class, EnsureRecentMfa::class])->name('organisations.destroy');
-            Route::post('settings/organisations/{organisation}/switch', [OrganisationController::class, 'switch'])->name('organisations.switch');
+            Route::get('settings/organisations/{organisation}', [OrganisationController::class, 'edit'])->middleware(EnsureOrganisationAccess::class.':recovery')->name('organisations.edit');
+            Route::patch('settings/organisations/{organisation}', [OrganisationController::class, 'update'])->middleware([EnsureOrganisationAccess::class.':administration', EnsureRecentPassword::class, EnsureRecentMfa::class])->name('organisations.update');
+            Route::delete('settings/organisations/{organisation}', [OrganisationController::class, 'destroy'])->middleware([EnsureOrganisationAccess::class.':recovery', EnsureRecentPassword::class, EnsureRecentMfa::class])->name('organisations.destroy');
+            Route::post('settings/organisations/{organisation}/switch', [OrganisationController::class, 'switch'])->middleware(EnsureOrganisationAccess::class.':full')->name('organisations.switch');
             Route::delete('settings/organisations/{organisation}/leave', [OrganisationController::class, 'leave'])->name('organisations.leave');
 
-            Route::patch('settings/organisations/{organisation}/members/{user}', [OrganisationMemberController::class, 'update'])->middleware([EnsureRecentPassword::class, EnsureRecentMfa::class])->name('organisations.members.update');
-            Route::delete('settings/organisations/{organisation}/members/{user}', [OrganisationMemberController::class, 'destroy'])->middleware([EnsureRecentPassword::class, EnsureRecentMfa::class])->name('organisations.members.destroy');
+            Route::patch('settings/organisations/{organisation}/lifecycle', [OrganisationLifecycleController::class, 'update'])->middleware([EnsureOrganisationAccess::class.':recovery', EnsureRecentPassword::class, EnsureRecentMfa::class])->name('organisations.lifecycle.update');
+            Route::patch('settings/organisations/{organisation}/slug', [OrganisationSlugController::class, 'update'])->middleware([EnsureOrganisationAccess::class.':administration', EnsureRecentPassword::class, EnsureRecentMfa::class])->name('organisations.slug.update');
+            Route::post('settings/organisations/{organisation}/ownership-transfers', [OrganisationOwnershipTransferController::class, 'store'])->middleware([EnsureOrganisationAccess::class.':administration', EnsureRecentPassword::class, EnsureRecentMfa::class])->name('organisations.ownership-transfers.store');
+            Route::patch('settings/organisations/{organisation}/ownership-transfers/{transfer}', [OrganisationOwnershipTransferController::class, 'update'])->middleware([EnsureOrganisationAccess::class.':membership', EnsureRecentPassword::class, EnsureRecentMfa::class])->name('organisations.ownership-transfers.update');
 
-            Route::post('settings/organisations/{organisation}/invitations', [OrganisationInvitationController::class, 'store'])->middleware([EnsureRecentPassword::class, EnsureRecentMfa::class])->name('organisations.invitations.store');
-            Route::delete('settings/organisations/{organisation}/invitations/{invitation}', [OrganisationInvitationController::class, 'destroy'])->middleware([EnsureRecentPassword::class, EnsureRecentMfa::class])->name('organisations.invitations.destroy');
+            Route::patch('settings/organisations/{organisation}/members/{user}', [OrganisationMemberController::class, 'update'])->middleware([EnsureOrganisationAccess::class.':administration', EnsureRecentPassword::class, EnsureRecentMfa::class])->name('organisations.members.update');
+            Route::delete('settings/organisations/{organisation}/members/{user}', [OrganisationMemberController::class, 'destroy'])->middleware([EnsureOrganisationAccess::class.':administration', EnsureRecentPassword::class, EnsureRecentMfa::class])->name('organisations.members.destroy');
+
+            Route::post('settings/organisations/{organisation}/invitations', [OrganisationInvitationController::class, 'store'])->middleware([EnsureOrganisationAccess::class.':administration', EnsureRecentPassword::class, EnsureRecentMfa::class])->name('organisations.invitations.store');
+            Route::delete('settings/organisations/{organisation}/invitations/{invitation}', [OrganisationInvitationController::class, 'destroy'])->middleware([EnsureOrganisationAccess::class.':administration', EnsureRecentPassword::class, EnsureRecentMfa::class])->name('organisations.invitations.destroy');
         });
     });
 });

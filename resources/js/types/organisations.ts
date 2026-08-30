@@ -59,6 +59,32 @@ export type OrganisationPermissions = {
     canRemoveMember: boolean;
     canCreateInvitation: boolean;
     canCancelInvitation: boolean;
+    canTransitionOrganisation: boolean;
+    canChangeOrganisationSlug: boolean;
+    canTransferOwnership: boolean;
+};
+
+export type OrganisationAccessHold = {
+    id: string;
+    reason: string;
+    scope: string;
+    accessLevel: string;
+    reviewAt: string;
+    expiresAt: string | null;
+};
+
+export type OrganisationOwnershipTransfer = {
+    id: string;
+    nomineeUserId: number;
+    nomineeName: string;
+    nominatedByName: string;
+    expiresAt: string;
+    canAccept: boolean;
+};
+
+export type OrganisationOwnerCandidate = {
+    id: number;
+    name: string;
 };
 
 export type RoleOption = {

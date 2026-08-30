@@ -3,13 +3,16 @@
 namespace App\Http\Controllers\Organisations;
 
 use App\Actions\Organisations\CreateOrganisation;
+use App\Actions\Organisations\ResolveOrganisationAccess;
+use App\Actions\Organisations\TransitionOrganisationStatus;
+use App\Enums\OrganisationOwnershipTransferStatus;
 use App\Enums\OrganisationRole;
+use App\Enums\OrganisationStatus;
 use App\Http\Controllers\Controller;
 use App\Http\Requests\Organisations\DeleteOrganisationRequest;
 use App\Http\Requests\Organisations\SaveOrganisationRequest;
 use App\Models\Membership;
 use App\Models\Organisation;
-use App\Models\User;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
@@ -46,9 +49,27 @@ class OrganisationController extends Controller
     /**
      * Show the organisation edit page.
      */
-    public function edit(Request $request, Organisation $organisation): Response
-    {
+    public function edit(
+        Request $request,
+        Organisation $organisation,
+        ResolveOrganisationAccess $resolveOrganisationAccess,
+    ): Response {
         $user = $request->user();
+        $permissions = $user->toOrganisationPermissions($organisation)->constrainedByAccess(
+            canAdminister: $resolveOrganisationAccess->allowsStaffCapability($organisation, $user, 'administration'),
+            canRecover: $resolveOrganisationAccess->allowsStaffCapability($organisation, $user, 'recovery'),
+        );
+        $memberships = $organisation->memberships()
+            ->with(['user', 'programs'])
+            ->get();
+        $pendingOwnershipTransfer = $organisation->ownershipTransfers()
+            ->with(['nominatedBy', 'nominee'])
+            ->where('status', OrganisationOwnershipTransferStatus::Pending)
+            ->where('expires_at', '>', now())
+            ->where(fn ($query) => $query
+                ->where('nominated_by_user_id', $user->id)
+                ->orWhere('nominee_user_id', $user->id))
+            ->first();
 
         return Inertia::render('organisations/edit', [
             'organisation' => [
@@ -57,9 +78,7 @@ class OrganisationController extends Controller
                 'slug' => $organisation->slug,
                 'status' => $organisation->status->value,
             ],
-            'members' => $organisation->memberships()
-                ->with(['user', 'programs'])
-                ->get()
+            'members' => $memberships
                 ->map(function (Membership $membership) {
                     $member = $membership->user;
 
@@ -91,8 +110,48 @@ class OrganisationController extends Controller
                     'role_label' => $invitation->role->label(),
                     'created_at' => $invitation->created_at->toISOString(),
                 ]),
-            'permissions' => $user->toOrganisationPermissions($organisation),
+            'permissions' => $permissions,
             'availableRoles' => OrganisationRole::assignable(),
+            'allowedTransitions' => $user->ownsOrganisation($organisation)
+                ? collect($organisation->status->allowedTransitions())
+                    ->reject(fn (OrganisationStatus $status) => in_array($status, [
+                        OrganisationStatus::ScheduledForDeletion,
+                        OrganisationStatus::Deleted,
+                    ], true))
+                    ->map(fn (OrganisationStatus $status) => $status->value)
+                    ->values()
+                : [],
+            'ownerCandidates' => $user->ownsOrganisation($organisation)
+                ? $memberships
+                    ->reject(fn (Membership $membership) => $membership->is_owner)
+                    ->map(fn (Membership $membership) => [
+                        'id' => $membership->user->id,
+                        'name' => $membership->user->name,
+                    ])
+                    ->values()
+                : [],
+            'ownershipTransfer' => $pendingOwnershipTransfer === null ? null : [
+                'id' => $pendingOwnershipTransfer->id,
+                'nomineeUserId' => $pendingOwnershipTransfer->nominee_user_id,
+                'nomineeName' => $pendingOwnershipTransfer->nominee->name,
+                'nominatedByName' => $pendingOwnershipTransfer->nominatedBy->name,
+                'expiresAt' => $pendingOwnershipTransfer->expires_at->toISOString(),
+                'canAccept' => $pendingOwnershipTransfer->nominee_user_id === $user->id,
+            ],
+            'accessHolds' => $organisation->accessHolds()
+                ->whereNull('released_at')
+                ->where('starts_at', '<=', now())
+                ->where(fn ($query) => $query->whereNull('expires_at')->orWhere('expires_at', '>', now()))
+                ->orderByDesc('created_at')
+                ->get()
+                ->map(fn ($hold) => [
+                    'id' => $hold->id,
+                    'reason' => $hold->reason,
+                    'scope' => $hold->scope->value,
+                    'accessLevel' => $hold->access_level->value,
+                    'reviewAt' => $hold->review_at->toISOString(),
+                    'expiresAt' => $hold->expires_at?->toISOString(),
+                ]),
         ]);
     }
 
@@ -136,24 +195,35 @@ class OrganisationController extends Controller
         Gate::authorize('leave', $organisation);
 
         $user = $request->user();
-        $wasCurrentOrganisation = $user->isCurrentOrganisation($organisation);
+        DB::transaction(function () use ($organisation, $user): void {
+            $organisation = Organisation::whereKey($organisation->id)->lockForUpdate()->firstOrFail();
+            $membership = $organisation->memberships()
+                ->where('user_id', $user->id)
+                ->lockForUpdate()
+                ->firstOrFail();
 
-        $fallbackOrganisation = $wasCurrentOrganisation
-            ? $user->fallbackOrganisation($organisation)
-            : null;
+            abort_if(
+                $membership->is_owner && $organisation->owners()->count() <= 1,
+                403,
+                __('The last organisation owner cannot leave.'),
+            );
 
-        $organisation->memberships()
-            ->where('user_id', $user->id)
-            ->delete();
+            $wasCurrentOrganisation = $user->isCurrentOrganisation($organisation);
+            $fallbackOrganisation = $wasCurrentOrganisation
+                ? $user->fallbackOrganisation($organisation)
+                : null;
 
-        if ($wasCurrentOrganisation) {
-            if ($fallbackOrganisation) {
-                $user->switchOrganisation($fallbackOrganisation);
-            } else {
-                $user->update(['current_organisation_id' => null]);
-                $user->unsetRelation('currentOrganisation');
+            $membership->delete();
+
+            if ($wasCurrentOrganisation) {
+                if ($fallbackOrganisation) {
+                    $user->switchOrganisation($fallbackOrganisation);
+                } else {
+                    $user->update(['current_organisation_id' => null]);
+                    $user->unsetRelation('currentOrganisation');
+                }
             }
-        }
+        });
 
         Inertia::flash('toast', ['type' => 'success', 'message' => __('You left the organisation ":name"', ['name' => $organisation->name])]);
 
@@ -163,43 +233,22 @@ class OrganisationController extends Controller
     /**
      * Delete the specified organisation.
      */
-    public function destroy(DeleteOrganisationRequest $request, Organisation $organisation): RedirectResponse
-    {
-        $user = $request->user();
-        $wasCurrentOrganisation = $user->isCurrentOrganisation($organisation);
-        $fallbackOrganisation = $wasCurrentOrganisation
-            ? $user->fallbackOrganisation($organisation)
-            : null;
+    public function destroy(
+        DeleteOrganisationRequest $request,
+        Organisation $organisation,
+        TransitionOrganisationStatus $transitionOrganisationStatus,
+    ): RedirectResponse {
+        $transitionOrganisationStatus->handle(
+            $organisation,
+            OrganisationStatus::ScheduledForDeletion,
+            $request->user(),
+        );
 
-        DB::transaction(function () use ($user, $organisation) {
-            User::where('current_organisation_id', $organisation->id)
-                ->where('id', '!=', $user->id)
-                ->each(function (User $affectedUser) use ($organisation) {
-                    $fallbackOrganisation = $affectedUser->fallbackOrganisation($organisation);
+        Inertia::flash('toast', [
+            'type' => 'success',
+            'message' => __('Organisation scheduled for deletion after a 30-day recovery period.'),
+        ]);
 
-                    if ($fallbackOrganisation) {
-                        $affectedUser->switchOrganisation($fallbackOrganisation);
-                    } else {
-                        $affectedUser->update(['current_organisation_id' => null]);
-                    }
-                });
-
-            $organisation->invitations()->delete();
-            $organisation->memberships()->delete();
-            $organisation->delete();
-        });
-
-        if ($wasCurrentOrganisation) {
-            if ($fallbackOrganisation) {
-                $user->switchOrganisation($fallbackOrganisation);
-            } else {
-                $user->update(['current_organisation_id' => null]);
-                $user->unsetRelation('currentOrganisation');
-            }
-        }
-
-        Inertia::flash('toast', ['type' => 'success', 'message' => __('Organisation deleted.')]);
-
-        return to_route('organisations.index');
+        return to_route('organisations.edit', $organisation);
     }
 }

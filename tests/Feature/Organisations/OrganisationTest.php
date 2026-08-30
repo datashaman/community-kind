@@ -3,6 +3,7 @@
 namespace Tests\Feature\Organisations;
 
 use App\Enums\OrganisationRole;
+use App\Enums\OrganisationStatus;
 use App\Http\Middleware\EnsureRecentMfa;
 use App\Http\Middleware\EnsureRecentPassword;
 use App\Http\Middleware\EnsureStaffSecurityRequirements;
@@ -135,7 +136,7 @@ class OrganisationTest extends TestCase
     public function test_the_organisation_edit_page_can_be_rendered()
     {
         $user = User::factory()->create();
-        $organisation = Organisation::factory()->create();
+        $organisation = Organisation::factory()->active()->create();
 
         $organisation->members()->attach($user, ['is_owner' => true]);
 
@@ -207,9 +208,8 @@ class OrganisationTest extends TestCase
 
         $response->assertRedirect();
 
-        $this->assertSoftDeleted('organisations', [
-            'id' => $organisation->id,
-        ]);
+        $this->assertNotSoftDeleted($organisation);
+        $this->assertSame(OrganisationStatus::ScheduledForDeletion, $organisation->fresh()->status);
     }
 
     public function test_organisation_deletion_requires_name_confirmation()
@@ -256,9 +256,8 @@ class OrganisationTest extends TestCase
 
         $response->assertRedirect();
 
-        $this->assertSoftDeleted('organisations', [
-            'id' => $zuluOrganisation->id,
-        ]);
+        $this->assertNotSoftDeleted($zuluOrganisation);
+        $this->assertSame(OrganisationStatus::ScheduledForDeletion, $zuluOrganisation->fresh()->status);
 
         $this->assertEquals($alphaOrganisation->id, $user->fresh()->current_organisation_id);
     }
@@ -280,9 +279,8 @@ class OrganisationTest extends TestCase
 
         $response->assertRedirect();
 
-        $this->assertSoftDeleted('organisations', [
-            'id' => $organisation->id,
-        ]);
+        $this->assertNotSoftDeleted($organisation);
+        $this->assertSame(OrganisationStatus::ScheduledForDeletion, $organisation->fresh()->status);
 
         $this->assertEquals($remainingOrganisation->id, $user->fresh()->current_organisation_id);
     }
@@ -304,9 +302,8 @@ class OrganisationTest extends TestCase
 
         $response->assertRedirect();
 
-        $this->assertSoftDeleted('organisations', [
-            'id' => $organisation->id,
-        ]);
+        $this->assertNotSoftDeleted($organisation);
+        $this->assertSame(OrganisationStatus::ScheduledForDeletion, $organisation->fresh()->status);
 
         $this->assertEquals($currentOrganisation->id, $user->fresh()->current_organisation_id);
     }
@@ -430,7 +427,7 @@ class OrganisationTest extends TestCase
     public function test_users_can_switch_organisations()
     {
         $user = User::factory()->create();
-        $organisation = Organisation::factory()->create();
+        $organisation = Organisation::factory()->active()->create();
 
         $organisation->members()->attach($user, ['role' => OrganisationRole::CaseWorker->value]);
 
@@ -453,6 +450,20 @@ class OrganisationTest extends TestCase
             ->post(route('organisations.switch', $organisation));
 
         $response->assertForbidden();
+    }
+
+    public function test_users_cannot_switch_to_an_inactive_organisation()
+    {
+        $user = User::factory()->create();
+        $organisation = Organisation::factory()->archived()->create();
+        $organisation->members()->attach($user, ['role' => OrganisationRole::CaseWorker->value]);
+
+        $this
+            ->actingAs($user)
+            ->post(route('organisations.switch', $organisation))
+            ->assertForbidden();
+
+        $this->assertNotEquals($organisation->id, $user->fresh()->current_organisation_id);
     }
 
     public function test_guests_cannot_access_organisations()
