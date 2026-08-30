@@ -3,8 +3,10 @@ import { dashboard, login } from '@/routes';
 import SourceAndLicenceLink from '@/components/source-and-licence-link';
 
 export default function Welcome() {
-    const { auth, currentTeam } = usePage().props;
-    const dashboardUrl = currentTeam ? dashboard(currentTeam.slug) : '/';
+    const { auth, currentOrganisation } = usePage().props;
+    const dashboardUrl = currentOrganisation
+        ? dashboard(currentOrganisation.slug)
+        : '/';
 
     return (
         <>

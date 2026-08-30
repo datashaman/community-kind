@@ -2,7 +2,7 @@
 
 namespace Database\Factories;
 
-use App\Models\Team;
+use App\Models\Organisation;
 use App\Models\User;
 use Illuminate\Database\Eloquent\Factories\Factory;
 use Illuminate\Support\Facades\Hash;
@@ -43,13 +43,13 @@ class UserFactory extends Factory
     public function configure(): static
     {
         return $this->afterCreating(function ($user) {
-            $team = Team::factory()->create();
+            $organisation = Organisation::factory()->create();
 
-            $team->members()->attach($user, [
+            $organisation->members()->attach($user, [
                 'is_owner' => true,
             ]);
 
-            $user->switchTeam($team);
+            $user->switchOrganisation($organisation);
         });
     }
 

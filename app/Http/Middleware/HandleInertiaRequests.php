@@ -2,6 +2,7 @@
 
 namespace App\Http\Middleware;
 
+use App\Models\Organisation;
 use Illuminate\Http\Request;
 use Illuminate\Support\Collection;
 use Inertia\Middleware;
@@ -37,9 +38,9 @@ class HandleInertiaRequests extends Middleware
     public function share(Request $request): array
     {
         $user = $request->user();
-        $teamData = null;
-        $teams = function () use ($user, &$teamData): Collection {
-            return $teamData ??= $user?->toUserTeams(includeCurrent: true) ?? collect();
+        $organisationData = null;
+        $organisations = function () use ($user, &$organisationData): Collection {
+            return $organisationData ??= $user?->toUserOrganisations(includeCurrent: true) ?? collect();
         };
 
         return [
@@ -49,8 +50,9 @@ class HandleInertiaRequests extends Middleware
                 'user' => $user,
             ],
             'sidebarOpen' => ! $request->hasCookie('sidebar_state') || $request->cookie('sidebar_state') === 'true',
-            'currentTeam' => fn () => $teams()->first(fn ($team) => $team->isCurrent),
-            'teams' => $teams,
+            'canCreateOrganisation' => $user?->can('create', Organisation::class) ?? false,
+            'currentOrganisation' => fn () => $organisations()->first(fn ($organisation) => $organisation->isCurrent),
+            'organisations' => $organisations,
         ];
     }
 }

@@ -44,6 +44,7 @@ database credentials with the user and password you created:
 
 ```dotenv
 APP_URL=http://localhost:8000
+ORGANISATION_SELF_SERVICE_PROVISIONING=true
 DB_HOST=127.0.0.1
 DB_DATABASE=community_kind
 DB_USERNAME=community_kind
@@ -51,6 +52,10 @@ DB_PASSWORD=your-local-password
 REDIS_HOST=127.0.0.1
 MAIL_MAILER=log
 ```
+
+Self-service Organisation provisioning is closed by default. Enable it for
+local or self-hosted use as shown above; keep it disabled for controlled
+hosted staging and production environments.
 
 Install the dependencies and prepare the application:
 

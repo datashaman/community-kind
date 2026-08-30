@@ -2,8 +2,8 @@
 
 namespace Tests\Feature;
 
-use App\Models\Team;
-use App\Models\TeamInvitation;
+use App\Models\Organisation;
+use App\Models\OrganisationInvitation;
 use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Inertia\Testing\AssertableInertia as Assert;
@@ -16,7 +16,7 @@ class DashboardTest extends TestCase
     public function test_guests_are_redirected_to_the_login_page()
     {
         $user = User::factory()->create();
-        $team = $user->currentTeam;
+        $organisation = $user->currentOrganisation;
 
         $response = $this->get(route('dashboard'));
         $response->assertRedirect(route('login'));
@@ -25,7 +25,7 @@ class DashboardTest extends TestCase
     public function test_authenticated_users_can_visit_the_dashboard()
     {
         $user = User::factory()->create();
-        $team = $user->currentTeam;
+        $organisation = $user->currentOrganisation;
 
         $response = $this
             ->actingAs($user)
@@ -37,7 +37,7 @@ class DashboardTest extends TestCase
     public function test_unverified_users_are_redirected_to_the_email_verification_screen()
     {
         $user = User::factory()->unverified()->create();
-        $team = $user->currentTeam;
+        $organisation = $user->currentOrganisation;
 
         $response = $this
             ->actingAs($user)
@@ -50,12 +50,12 @@ class DashboardTest extends TestCase
     {
         $owner = User::factory()->create(['name' => 'Taylor Otwell']);
         $invitedUser = User::factory()->create(['email' => 'invited@example.com']);
-        $team = Team::factory()->create(['name' => 'Laravel Team']);
+        $organisation = Organisation::factory()->create(['name' => 'Laravel Organisation']);
 
-        $team->members()->attach($owner, ['is_owner' => true]);
+        $organisation->members()->attach($owner, ['is_owner' => true]);
 
-        $invitation = TeamInvitation::factory()->create([
-            'team_id' => $team->id,
+        $invitation = OrganisationInvitation::factory()->create([
+            'organisation_id' => $organisation->id,
             'email' => 'invited@example.com',
             'invited_by' => $owner->id,
         ]);
@@ -70,9 +70,9 @@ class DashboardTest extends TestCase
             ->has('pendingInvitations', 1)
             ->where('pendingInvitations.0.id', $invitation->id)
             ->where('pendingInvitations.0.inviterName', 'Taylor Otwell')
-            ->where('pendingInvitations.0.team.name', 'Laravel Team')
-            ->where('pendingInvitations.0.team.slug', $team->slug)
-            ->missing('pendingInvitations.0.teamName'),
+            ->where('pendingInvitations.0.organisation.name', 'Laravel Organisation')
+            ->where('pendingInvitations.0.organisation.slug', $organisation->slug)
+            ->missing('pendingInvitations.0.organisationName'),
         );
     }
 
@@ -80,12 +80,12 @@ class DashboardTest extends TestCase
     {
         $owner = User::factory()->create();
         $invitedUser = User::factory()->create(['email' => 'invited@example.com']);
-        $team = Team::factory()->create();
+        $organisation = Organisation::factory()->create();
 
-        $team->members()->attach($owner, ['is_owner' => true]);
+        $organisation->members()->attach($owner, ['is_owner' => true]);
 
-        TeamInvitation::factory()->accepted()->create([
-            'team_id' => $team->id,
+        OrganisationInvitation::factory()->accepted()->create([
+            'organisation_id' => $organisation->id,
             'email' => 'invited@example.com',
             'invited_by' => $owner->id,
         ]);
@@ -105,12 +105,12 @@ class DashboardTest extends TestCase
     {
         $owner = User::factory()->create();
         $invitedUser = User::factory()->create(['email' => 'invited@example.com']);
-        $team = Team::factory()->create();
+        $organisation = Organisation::factory()->create();
 
-        $team->members()->attach($owner, ['is_owner' => true]);
+        $organisation->members()->attach($owner, ['is_owner' => true]);
 
-        $invitation = TeamInvitation::factory()->expired()->create([
-            'team_id' => $team->id,
+        $invitation = OrganisationInvitation::factory()->expired()->create([
+            'organisation_id' => $organisation->id,
             'email' => 'invited@example.com',
             'invited_by' => $owner->id,
         ]);
@@ -125,7 +125,7 @@ class DashboardTest extends TestCase
             ->has('pendingInvitations', 0),
         );
 
-        $this->assertDatabaseHas('team_invitations', [
+        $this->assertDatabaseHas('organisation_invitations', [
             'id' => $invitation->id,
         ]);
     }
@@ -134,12 +134,12 @@ class DashboardTest extends TestCase
     {
         $owner = User::factory()->create();
         $invitedUser = User::factory()->create(['email' => 'invited@example.com']);
-        $team = Team::factory()->create();
+        $organisation = Organisation::factory()->create();
 
-        $team->members()->attach($owner, ['is_owner' => true]);
+        $organisation->members()->attach($owner, ['is_owner' => true]);
 
-        $invitation = TeamInvitation::factory()->expired()->create([
-            'team_id' => $team->id,
+        $invitation = OrganisationInvitation::factory()->expired()->create([
+            'organisation_id' => $organisation->id,
             'email' => 'someone@example.com',
             'invited_by' => $owner->id,
         ]);
@@ -154,7 +154,7 @@ class DashboardTest extends TestCase
             ->has('pendingInvitations', 0),
         );
 
-        $this->assertDatabaseHas('team_invitations', [
+        $this->assertDatabaseHas('organisation_invitations', [
             'id' => $invitation->id,
         ]);
     }

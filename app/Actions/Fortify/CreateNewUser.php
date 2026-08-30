@@ -4,7 +4,7 @@ namespace App\Actions\Fortify;
 
 use App\Concerns\PasswordValidationRules;
 use App\Concerns\ProfileValidationRules;
-use App\Models\TeamInvitation;
+use App\Models\OrganisationInvitation;
 use App\Models\User;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Validator;
@@ -30,7 +30,7 @@ class CreateNewUser implements CreatesNewUsers
         ])->validate();
 
         return DB::transaction(function () use ($input) {
-            $invitation = TeamInvitation::query()
+            $invitation = OrganisationInvitation::query()
                 ->where('token_hash', hash('sha256', $input['invitation']))
                 ->lockForUpdate()
                 ->first();

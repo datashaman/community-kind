@@ -2,8 +2,8 @@
 
 namespace Tests\Feature\Auth;
 
-use App\Models\Team;
-use App\Models\TeamInvitation;
+use App\Models\Organisation;
+use App\Models\OrganisationInvitation;
 use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\RateLimiter;
@@ -22,15 +22,15 @@ class AuthenticationTest extends TestCase
         $response->assertOk();
     }
 
-    public function test_login_screen_includes_team_invitation_context()
+    public function test_login_screen_includes_organisation_invitation_context()
     {
         $owner = User::factory()->create();
-        $team = Team::factory()->create(['name' => 'Laravel Team']);
-        $team->members()->attach($owner, ['is_owner' => true]);
+        $organisation = Organisation::factory()->create(['name' => 'Laravel Organisation']);
+        $organisation->members()->attach($owner, ['is_owner' => true]);
 
         $token = 'login-invitation-token';
-        $invitation = TeamInvitation::factory()->forToken($token)->create([
-            'team_id' => $team->id,
+        $invitation = OrganisationInvitation::factory()->forToken($token)->create([
+            'organisation_id' => $organisation->id,
             'email' => 'invited@example.com',
             'invited_by' => $owner->id,
         ]);
@@ -40,8 +40,8 @@ class AuthenticationTest extends TestCase
         $response->assertOk();
         $response->assertInertia(fn (Assert $page) => $page
             ->component('auth/login')
-            ->where('teamInvitation.code', $token)
-            ->where('teamInvitation.teamName', 'Laravel Team'),
+            ->where('organisationInvitation.code', $token)
+            ->where('organisationInvitation.organisationName', 'Laravel Organisation'),
         );
     }
 
@@ -55,7 +55,7 @@ class AuthenticationTest extends TestCase
         ]);
 
         $this->assertAuthenticated();
-        $response->assertRedirect(route('dashboard', $user->currentTeam->slug));
+        $response->assertRedirect(route('dashboard', $user->currentOrganisation->slug));
     }
 
     public function test_users_with_two_factor_enabled_are_redirected_to_two_factor_challenge()

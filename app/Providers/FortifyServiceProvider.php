@@ -2,7 +2,7 @@
 
 namespace App\Providers;
 
-use App\Actions\Fortify\CaptureTeamInvitation;
+use App\Actions\Fortify\CaptureOrganisationInvitation;
 use App\Actions\Fortify\CreateNewUser;
 use App\Actions\Fortify\DiscardRememberedLogin;
 use App\Actions\Fortify\ResetUserPassword;
@@ -11,7 +11,7 @@ use App\Http\Responses\PasswordConfirmedResponse;
 use App\Http\Responses\RegisterResponse;
 use App\Http\Responses\TwoFactorLoginResponse;
 use App\Http\Responses\VerifyEmailResponse;
-use App\Models\TeamInvitation;
+use App\Models\OrganisationInvitation;
 use Illuminate\Cache\RateLimiting\Limit;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\RateLimiter;
@@ -67,7 +67,7 @@ class FortifyServiceProvider extends ServiceProvider
     private function configureAuthenticationPipeline(): void
     {
         Fortify::authenticateThrough(fn () => [
-            CaptureTeamInvitation::class,
+            CaptureOrganisationInvitation::class,
             DiscardRememberedLogin::class,
             config('fortify.lowercase_usernames') ? CanonicalizeUsername::class : null,
             Features::enabled(Features::twoFactorAuthentication()) ? RedirectIfTwoFactorAuthenticatable::class : null,
@@ -84,7 +84,7 @@ class FortifyServiceProvider extends ServiceProvider
         Fortify::loginView(fn (Request $request) => Inertia::render('auth/login', [
             'canResetPassword' => Features::enabled(Features::resetPasswords()),
             'status' => $request->session()->get('status'),
-            'teamInvitation' => $this->teamInvitation($request),
+            'organisationInvitation' => $this->organisationInvitation($request),
         ]));
 
         Fortify::resetPasswordView(fn (Request $request) => Inertia::render('auth/reset-password', [
@@ -101,12 +101,12 @@ class FortifyServiceProvider extends ServiceProvider
         ]));
 
         Fortify::registerView(function (Request $request) {
-            $teamInvitation = $this->teamInvitation($request);
+            $organisationInvitation = $this->organisationInvitation($request);
 
-            abort_if($teamInvitation === null, 404);
+            abort_if($organisationInvitation === null, 404);
 
             return Inertia::render('auth/register', [
-                'teamInvitation' => $teamInvitation,
+                'organisationInvitation' => $organisationInvitation,
             ]);
         });
 
@@ -136,11 +136,11 @@ class FortifyServiceProvider extends ServiceProvider
     }
 
     /**
-     * Get the pending team invitation context for auth pages.
+     * Get the pending organisation invitation context for auth pages.
      *
-     * @return array{code: string, email: string, teamName: string}|null
+     * @return array{code: string, email: string, organisationName: string}|null
      */
-    private function teamInvitation(Request $request): ?array
+    private function organisationInvitation(Request $request): ?array
     {
         $invitationCode = $request->query('invitation');
 
@@ -148,7 +148,7 @@ class FortifyServiceProvider extends ServiceProvider
             return null;
         }
 
-        $invitation = TeamInvitation::findByToken($invitationCode)?->load('team');
+        $invitation = OrganisationInvitation::findByToken($invitationCode)?->load('organisation');
 
         if (! $invitation?->isPending()) {
             return null;
@@ -157,7 +157,7 @@ class FortifyServiceProvider extends ServiceProvider
         return [
             'code' => $invitationCode,
             'email' => $invitation->email,
-            'teamName' => $invitation->team->name,
+            'organisationName' => $invitation->organisation->name,
         ];
     }
 }

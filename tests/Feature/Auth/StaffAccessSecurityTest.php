@@ -1,9 +1,9 @@
 <?php
 
+use App\Actions\Organisations\IssueOrganisationInvitation;
 use App\Actions\Security\RecordPlatformSecurityEvent;
-use App\Actions\Teams\IssueTeamInvitation;
-use App\Enums\TeamRole;
-use App\Models\Team;
+use App\Enums\OrganisationRole;
+use App\Models\Organisation;
 use App\Models\User;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
@@ -16,13 +16,13 @@ beforeEach(function () {
 
 test('issued invitations store only a hash and expire after 72 hours', function () {
     $inviter = User::factory()->create();
-    $team = Team::factory()->create();
+    $organisation = Organisation::factory()->create();
 
-    $issued = app(IssueTeamInvitation::class)->handle(
-        $team,
+    $issued = app(IssueOrganisationInvitation::class)->handle(
+        $organisation,
         $inviter,
         'INVITED@example.com',
-        TeamRole::CaseWorker,
+        OrganisationRole::CaseWorker,
     );
 
     expect($issued->invitation->token_hash)
@@ -69,18 +69,18 @@ test('staff who completed security onboarding can use operational routes', funct
         ->assertOk();
 });
 
-test('sensitive team actions require a recent MFA confirmation', function () {
+test('sensitive organisation actions require a recent MFA confirmation', function () {
     Notification::fake();
 
     $owner = User::factory()->withTwoFactor()->create();
-    $team = Team::factory()->create();
-    $team->members()->attach($owner, ['is_owner' => true]);
+    $organisation = Organisation::factory()->create();
+    $organisation->members()->attach($owner, ['is_owner' => true]);
 
     $this->actingAs($owner)
         ->withSession(['auth.password_confirmed_at' => time()])
-        ->post(route('teams.invitations.store', $team), [
+        ->post(route('organisations.invitations.store', $organisation), [
             'email' => 'invited@example.com',
-            'role' => TeamRole::CaseWorker->value,
+            'role' => OrganisationRole::CaseWorker->value,
         ])
         ->assertRedirect(route('mfa.confirm'));
 
@@ -194,15 +194,15 @@ test('password confirmation after a mutation returns to its safe form page', fun
     Notification::fake();
 
     $owner = User::factory()->withTwoFactor()->create();
-    $team = Team::factory()->create();
-    $team->members()->attach($owner, ['is_owner' => true]);
-    $formUrl = route('teams.edit', $team);
+    $organisation = Organisation::factory()->create();
+    $organisation->members()->attach($owner, ['is_owner' => true]);
+    $formUrl = route('organisations.edit', $organisation);
 
     $this->actingAs($owner)
         ->from($formUrl)
-        ->post(route('teams.invitations.store', $team), [
+        ->post(route('organisations.invitations.store', $organisation), [
             'email' => 'invited@example.com',
-            'role' => TeamRole::CaseWorker->value,
+            'role' => OrganisationRole::CaseWorker->value,
         ])
         ->assertRedirect(route('password.confirm'));
 
@@ -215,16 +215,16 @@ test('MFA confirmation after a mutation returns to its safe form page', function
     Notification::fake();
 
     $owner = User::factory()->withTwoFactor()->create();
-    $team = Team::factory()->create();
-    $team->members()->attach($owner, ['is_owner' => true]);
-    $formUrl = route('teams.edit', $team);
+    $organisation = Organisation::factory()->create();
+    $organisation->members()->attach($owner, ['is_owner' => true]);
+    $formUrl = route('organisations.edit', $organisation);
 
     $this->actingAs($owner)
         ->withSession(['auth.password_confirmed_at' => time()])
         ->from($formUrl)
-        ->post(route('teams.invitations.store', $team), [
+        ->post(route('organisations.invitations.store', $organisation), [
             'email' => 'invited@example.com',
-            'role' => TeamRole::CaseWorker->value,
+            'role' => OrganisationRole::CaseWorker->value,
         ])
         ->assertRedirect(route('mfa.confirm'));
 

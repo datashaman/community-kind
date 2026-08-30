@@ -1,7 +1,7 @@
 import { Form, Head } from '@inertiajs/react';
 import InputError from '@/components/input-error';
 import PasswordInput from '@/components/password-input';
-import TeamInvitationAlert from '@/components/team-invitation-alert';
+import OrganisationInvitationAlert from '@/components/organisation-invitation-alert';
 import TextLink from '@/components/text-link';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -10,26 +10,26 @@ import { Spinner } from '@/components/ui/spinner';
 import { register } from '@/routes';
 import { store } from '@/routes/login';
 import { request } from '@/routes/password';
-import type { TeamInvitationContext } from '@/types';
+import type { OrganisationInvitationContext } from '@/types';
 
 type Props = {
     status?: string;
     canResetPassword: boolean;
-    teamInvitation?: TeamInvitationContext | null;
+    organisationInvitation?: OrganisationInvitationContext | null;
 };
 
 export default function Login({
     status,
     canResetPassword,
-    teamInvitation,
+    organisationInvitation,
 }: Props) {
     return (
         <>
             <Head title="Log in" />
 
-            {teamInvitation && (
-                <TeamInvitationAlert
-                    invitation={teamInvitation}
+            {organisationInvitation && (
+                <OrganisationInvitationAlert
+                    invitation={organisationInvitation}
                     action="Log in"
                 />
             )}
@@ -41,11 +41,11 @@ export default function Login({
             >
                 {({ processing, errors }) => (
                     <>
-                        {teamInvitation && (
+                        {organisationInvitation && (
                             <input
                                 type="hidden"
                                 name="invitation"
-                                value={teamInvitation.code}
+                                value={organisationInvitation.code}
                             />
                         )}
                         <div className="grid gap-6">
@@ -100,13 +100,14 @@ export default function Login({
                             </Button>
                         </div>
 
-                        {teamInvitation && (
+                        {organisationInvitation && (
                             <div className="text-muted-foreground text-center text-sm">
                                 Need an account?{' '}
                                 <TextLink
                                     href={register({
                                         query: {
-                                            invitation: teamInvitation.code,
+                                            invitation:
+                                                organisationInvitation.code,
                                         },
                                     })}
                                     data-test="register-link"

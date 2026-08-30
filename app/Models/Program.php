@@ -11,25 +11,25 @@ use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 
 /**
  * @property int $id
- * @property int $team_id
+ * @property int $organisation_id
  * @property string $name
  * @property string $slug
- * @property-read Team $team
+ * @property-read Organisation $organisation
  */
-#[Fillable(['team_id', 'name', 'slug'])]
+#[Fillable(['organisation_id', 'name', 'slug'])]
 class Program extends Model
 {
     /** @use HasFactory<ProgramFactory> */
     use HasFactory;
 
     /**
-     * Get the Team that owns the program.
+     * Get the Organisation that owns the program.
      *
-     * @return BelongsTo<Team, $this>
+     * @return BelongsTo<Organisation, $this>
      */
-    public function team(): BelongsTo
+    public function organisation(): BelongsTo
     {
-        return $this->belongsTo(Team::class);
+        return $this->belongsTo(Organisation::class);
     }
 
     /**

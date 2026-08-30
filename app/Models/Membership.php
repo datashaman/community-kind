@@ -2,7 +2,7 @@
 
 namespace App\Models;
 
-use App\Enums\TeamRole;
+use App\Enums\OrganisationRole;
 use Illuminate\Database\Eloquent\Attributes\Fillable;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\BelongsToMany;
@@ -11,16 +11,16 @@ use Illuminate\Support\Carbon;
 
 /**
  * @property int $id
- * @property int $team_id
+ * @property int $organisation_id
  * @property int $user_id
- * @property TeamRole|null $role
+ * @property OrganisationRole|null $role
  * @property bool $is_owner
  * @property Carbon|null $created_at
  * @property Carbon|null $updated_at
- * @property-read Team $team
+ * @property-read Organisation $organisation
  * @property-read User $user
  */
-#[Fillable(['team_id', 'user_id', 'role', 'is_owner'])]
+#[Fillable(['organisation_id', 'user_id', 'role', 'is_owner'])]
 class Membership extends Pivot
 {
     /**
@@ -28,7 +28,7 @@ class Membership extends Pivot
      *
      * @var string
      */
-    protected $table = 'team_members';
+    protected $table = 'organisation_members';
 
     /**
      * Indicates if the IDs are auto-incrementing.
@@ -38,13 +38,13 @@ class Membership extends Pivot
     public $incrementing = true;
 
     /**
-     * Get the team that the membership belongs to.
+     * Get the organisation that the membership belongs to.
      *
-     * @return BelongsTo<Team, $this>
+     * @return BelongsTo<Organisation, $this>
      */
-    public function team(): BelongsTo
+    public function organisation(): BelongsTo
     {
-        return $this->belongsTo(Team::class);
+        return $this->belongsTo(Organisation::class);
     }
 
     /**
@@ -75,7 +75,7 @@ class Membership extends Pivot
     protected function casts(): array
     {
         return [
-            'role' => TeamRole::class,
+            'role' => OrganisationRole::class,
             'is_owner' => 'boolean',
         ];
     }

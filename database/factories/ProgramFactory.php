@@ -2,8 +2,8 @@
 
 namespace Database\Factories;
 
+use App\Models\Organisation;
 use App\Models\Program;
-use App\Models\Team;
 use Illuminate\Database\Eloquent\Factories\Factory;
 use Illuminate\Support\Str;
 
@@ -22,7 +22,7 @@ class ProgramFactory extends Factory
         $name = fake()->unique()->company();
 
         return [
-            'team_id' => Team::factory(),
+            'organisation_id' => Organisation::factory(),
             'name' => Str::title($name),
             'slug' => Str::slug($name),
         ];
