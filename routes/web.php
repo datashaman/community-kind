@@ -2,14 +2,17 @@
 
 use App\Http\Controllers\DashboardController;
 use App\Http\Controllers\Organisations\OrganisationInvitationController;
+use App\Http\Middleware\EnsureOrganisationAccess;
 use App\Http\Middleware\EnsureOrganisationMembership;
 use App\Http\Middleware\EnsureStaffSecurityRequirements;
+use App\Models\Organisation;
 use Illuminate\Contracts\View\View;
 use Illuminate\Http\Response;
 use Illuminate\Support\Facades\File;
 use Illuminate\Support\Facades\Route;
 
 Route::inertia('/', 'welcome')->name('home');
+Route::model('current_organisation', Organisation::class);
 
 Route::get('/source-and-licence', fn (): View => view('source-and-licence', [
     'repository' => config('source.repository'),
@@ -22,7 +25,7 @@ Route::get('/source-and-licence/license', fn (): Response => response(
 ))->name('source-and-licence.license');
 
 Route::prefix('{current_organisation}')
-    ->middleware(['auth', 'verified', EnsureStaffSecurityRequirements::class, EnsureOrganisationMembership::class])
+    ->middleware(['auth', 'verified', EnsureStaffSecurityRequirements::class, EnsureOrganisationMembership::class, EnsureOrganisationAccess::class.':full'])
     ->group(function () {
         Route::get('dashboard', DashboardController::class)->name('dashboard');
     });

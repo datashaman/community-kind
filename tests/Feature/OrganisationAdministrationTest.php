@@ -1,5 +1,6 @@
 <?php
 
+use App\Actions\Organisations\TransitionOrganisationStatus;
 use App\Enums\OrganisationRole;
 use App\Enums\OrganisationStatus;
 use App\Models\Organisation;
@@ -136,8 +137,8 @@ it('rejects program access from another organisation without changing the member
 
 it('switches to a fresh destination dashboard and recomputes organisation context', function () {
     $user = User::factory()->create();
-    $firstOrganisation = Organisation::factory()->create(['name' => 'HarbourKind']);
-    $secondOrganisation = Organisation::factory()->create(['name' => 'NeighbourLink']);
+    $firstOrganisation = Organisation::factory()->active()->create(['name' => 'HarbourKind']);
+    $secondOrganisation = Organisation::factory()->active()->create(['name' => 'NeighbourLink']);
     $firstProgram = Program::factory()->for($firstOrganisation)->create();
     $secondProgram = Program::factory()->for($secondOrganisation)->create();
 
@@ -206,6 +207,11 @@ it('clears current organisation context when leaving the only organisation', fun
 it('clears current organisation context when deleting the only organisation', function () {
     $user = User::factory()->create();
     $organisation = $user->currentOrganisation;
+    app(TransitionOrganisationStatus::class)->handle(
+        $organisation,
+        OrganisationStatus::Archived,
+        $user,
+    );
 
     $response = $this
         ->actingAs($user)
@@ -214,6 +220,7 @@ it('clears current organisation context when deleting the only organisation', fu
             'name' => $organisation->name,
         ]);
 
-    $response->assertRedirect(route('organisations.index'));
-    expect($user->fresh()->current_organisation_id)->toBeNull();
+    $response->assertRedirect(route('organisations.edit', $organisation));
+    expect($user->fresh()->current_organisation_id)->toBeNull()
+        ->and($organisation->fresh()->status)->toBe(OrganisationStatus::ScheduledForDeletion);
 });

@@ -48,21 +48,31 @@ class OrganisationMemberController extends Controller
     {
         Gate::authorize('removeMember', $organisation);
 
-        abort_if($organisation->owner()?->is($user), 403, __('The organisation owner cannot be removed.'));
+        DB::transaction(function () use ($organisation, $user): void {
+            $organisation = Organisation::whereKey($organisation->id)->lockForUpdate()->firstOrFail();
+            $membership = $organisation->memberships()
+                ->where('user_id', $user->id)
+                ->lockForUpdate()
+                ->firstOrFail();
 
-        $organisation->memberships()
-            ->where('user_id', $user->id)
-            ->delete();
+            abort_if(
+                $membership->is_owner && $organisation->owners()->count() <= 1,
+                403,
+                __('The last organisation owner cannot be removed.'),
+            );
 
-        if ($user->isCurrentOrganisation($organisation)) {
-            $fallbackOrganisation = $user->fallbackOrganisation($organisation);
+            $membership->delete();
 
-            if ($fallbackOrganisation) {
-                $user->switchOrganisation($fallbackOrganisation);
-            } else {
-                $user->update(['current_organisation_id' => null]);
+            if ($user->isCurrentOrganisation($organisation)) {
+                $fallbackOrganisation = $user->fallbackOrganisation($organisation);
+
+                if ($fallbackOrganisation) {
+                    $user->switchOrganisation($fallbackOrganisation);
+                } else {
+                    $user->update(['current_organisation_id' => null]);
+                }
             }
-        }
+        });
 
         Inertia::flash('toast', ['type' => 'success', 'message' => __('Member removed.')]);
 

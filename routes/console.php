@@ -9,3 +9,8 @@ Schedule::call(function () {
         ->where('expires_at', '<', now())
         ->delete();
 })->daily()->description('Delete expired organisation invitations');
+
+Schedule::command('organisations:purge-scheduled')
+    ->daily()
+    ->onOneServer()
+    ->withoutOverlapping(60);

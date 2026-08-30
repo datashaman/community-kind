@@ -51,11 +51,14 @@ export default function DeleteOrganisationModal({
                     {({ errors, processing }) => (
                         <>
                             <DialogHeader>
-                                <DialogTitle>Are you sure?</DialogTitle>
+                                <DialogTitle>
+                                    Schedule organisation deletion?
+                                </DialogTitle>
                                 <DialogDescription>
-                                    This action cannot be undone. This will
-                                    permanently delete the organisation{' '}
-                                    <strong>"{organisation.name}"</strong>.
+                                    This starts a 30-day recovery period for{' '}
+                                    <strong>"{organisation.name}"</strong>. The
+                                    organisation becomes read-only and can be
+                                    restored before the period ends.
                                 </DialogDescription>
                             </DialogHeader>
 
@@ -96,7 +99,7 @@ export default function DeleteOrganisationModal({
                                         !canDeleteOrganisation || processing
                                     }
                                 >
-                                    Delete organisation
+                                    Schedule deletion
                                 </Button>
                             </DialogFooter>
                         </>

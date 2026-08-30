@@ -43,7 +43,7 @@ class UserFactory extends Factory
     public function configure(): static
     {
         return $this->afterCreating(function ($user) {
-            $organisation = Organisation::factory()->create();
+            $organisation = Organisation::factory()->active()->create();
 
             $organisation->members()->attach($user, [
                 'is_owner' => true,

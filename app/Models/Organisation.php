@@ -12,6 +12,7 @@ use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\SoftDeletes;
+use Illuminate\Http\Exceptions\HttpResponseException;
 use Illuminate\Support\Carbon;
 
 /**
@@ -19,6 +20,10 @@ use Illuminate\Support\Carbon;
  * @property string $name
  * @property string $slug
  * @property OrganisationStatus $status
+ * @property Carbon|null $status_changed_at
+ * @property Carbon|null $deletion_scheduled_for
+ * @property Carbon|null $signed_links_invalidated_at
+ * @property int $access_version
  * @property Carbon|null $created_at
  * @property Carbon|null $updated_at
  * @property Carbon|null $deleted_at
@@ -26,7 +31,7 @@ use Illuminate\Support\Carbon;
  * @property-read Collection<int, Membership> $memberships
  * @property-read Collection<int, User> $members
  */
-#[Fillable(['name', 'slug', 'status'])]
+#[Fillable(['name', 'slug', 'status', 'status_changed_at', 'deletion_scheduled_for', 'signed_links_invalidated_at', 'access_version'])]
 class Organisation extends Model
 {
     /** @use HasFactory<OrganisationFactory> */
@@ -48,23 +53,29 @@ class Organisation extends Model
             if (empty($organisation->slug)) {
                 $organisation->slug = static::generateUniqueOrganisationSlug($organisation->name);
             }
-        });
 
-        static::updating(function (Organisation $organisation) {
-            if ($organisation->isDirty('name')) {
-                $organisation->slug = static::generateUniqueOrganisationSlug($organisation->name, $organisation->id);
-            }
+            $organisation->status_changed_at ??= Carbon::now();
         });
     }
 
     /**
      * Get the organisation owner.
      */
-    public function owner(): ?Model
+    public function owner(): ?User
     {
         return $this->members()
             ->wherePivot('is_owner', true)
             ->first();
+    }
+
+    /**
+     * Get the organisation's owners.
+     *
+     * @return BelongsToMany<User, $this, Membership, 'pivot'>
+     */
+    public function owners(): BelongsToMany
+    {
+        return $this->members()->wherePivot('is_owner', true);
     }
 
     /**
@@ -110,6 +121,30 @@ class Organisation extends Model
         return $this->hasMany(Program::class);
     }
 
+    /** @return HasMany<OrganisationAccessHold, $this> */
+    public function accessHolds(): HasMany
+    {
+        return $this->hasMany(OrganisationAccessHold::class);
+    }
+
+    /** @return HasMany<OrganisationLifecycleEvent, $this> */
+    public function lifecycleEvents(): HasMany
+    {
+        return $this->hasMany(OrganisationLifecycleEvent::class);
+    }
+
+    /** @return HasMany<OrganisationOwnershipTransfer, $this> */
+    public function ownershipTransfers(): HasMany
+    {
+        return $this->hasMany(OrganisationOwnershipTransfer::class);
+    }
+
+    /** @return HasMany<OrganisationSlug, $this> */
+    public function previousSlugs(): HasMany
+    {
+        return $this->hasMany(OrganisationSlug::class);
+    }
+
     /**
      * Get the attributes that should be cast.
      *
@@ -119,6 +154,10 @@ class Organisation extends Model
     {
         return [
             'status' => OrganisationStatus::class,
+            'status_changed_at' => 'datetime',
+            'deletion_scheduled_for' => 'datetime',
+            'signed_links_invalidated_at' => 'datetime',
+            'access_version' => 'integer',
         ];
     }
 
@@ -128,5 +167,41 @@ class Organisation extends Model
     public function getRouteKeyName(): string
     {
         return 'slug';
+    }
+
+    public function resolveRouteBinding(mixed $value, mixed $field = null): ?Model
+    {
+        $organisation = parent::resolveRouteBinding($value, $field);
+
+        if ($organisation !== null || ! is_string($value) || ($field !== null && $field !== 'slug')) {
+            return $organisation;
+        }
+
+        $previousSlug = OrganisationSlug::query()
+            ->with('organisation')
+            ->whereHas('organisation')
+            ->where('slug', $value)
+            ->where('redirect_until', '>', now())
+            ->first();
+
+        if ($previousSlug === null) {
+            return null;
+        }
+
+        $segments = request()->segments();
+        $segmentIndex = array_search($value, $segments, true);
+
+        if ($segmentIndex === false) {
+            return null;
+        }
+
+        $segments[$segmentIndex] = $previousSlug->organisation->slug;
+        $url = url(implode('/', $segments));
+
+        if (request()->getQueryString() !== null) {
+            $url .= '?'.request()->getQueryString();
+        }
+
+        throw new HttpResponseException(redirect($url, request()->isMethodSafe() ? 302 : 307));
     }
 }

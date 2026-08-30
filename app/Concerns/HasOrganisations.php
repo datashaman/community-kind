@@ -6,6 +6,7 @@ use App\Data\OrganisationPermissions;
 use App\Data\UserOrganisation;
 use App\Enums\OrganisationPermission;
 use App\Enums\OrganisationRole;
+use App\Enums\OrganisationStatus;
 use App\Models\Membership;
 use App\Models\Organisation;
 use App\Models\Program;
@@ -194,12 +195,18 @@ trait HasOrganisations
     {
         return new OrganisationPermissions(
             canUpdateOrganisation: $this->hasOrganisationPermission($organisation, OrganisationPermission::UpdateOrganisation),
-            canDeleteOrganisation: $this->hasOrganisationPermission($organisation, OrganisationPermission::DeleteOrganisation),
+            canDeleteOrganisation: in_array($organisation->status, [OrganisationStatus::Pending, OrganisationStatus::Archived], true)
+                && $this->hasOrganisationPermission($organisation, OrganisationPermission::DeleteOrganisation),
             canAddMember: $this->hasOrganisationPermission($organisation, OrganisationPermission::AddMember),
             canUpdateMember: $this->hasOrganisationPermission($organisation, OrganisationPermission::UpdateMember),
             canRemoveMember: $this->hasOrganisationPermission($organisation, OrganisationPermission::RemoveMember),
             canCreateInvitation: $this->hasOrganisationPermission($organisation, OrganisationPermission::CreateInvitation),
             canCancelInvitation: $this->hasOrganisationPermission($organisation, OrganisationPermission::CancelInvitation),
+            canTransitionOrganisation: $this->ownsOrganisation($organisation),
+            canChangeOrganisationSlug: $this->ownsOrganisation($organisation)
+                && in_array($organisation->status, [OrganisationStatus::Pending, OrganisationStatus::Active], true),
+            canTransferOwnership: $this->ownsOrganisation($organisation)
+                && in_array($organisation->status, [OrganisationStatus::Pending, OrganisationStatus::Active], true),
         );
     }
 

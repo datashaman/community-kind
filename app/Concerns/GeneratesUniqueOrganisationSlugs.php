@@ -3,6 +3,7 @@
 namespace App\Concerns;
 
 use App\Models\Organisation;
+use App\Models\OrganisationSlug;
 use Illuminate\Support\Str;
 
 trait GeneratesUniqueOrganisationSlugs
@@ -24,7 +25,15 @@ trait GeneratesUniqueOrganisationSlugs
             $query->where('id', '!=', $excludeId);
         }
 
-        $existingSlugs = $query->pluck('slug');
+        $existingSlugs = $query->pluck('slug')
+            ->merge(OrganisationSlug::query()
+                ->where('quarantined_until', '>', now())
+                ->where(function ($query) use ($defaultSlug) {
+                    $query->where('slug', $defaultSlug)
+                        ->orWhere('slug', 'like', $defaultSlug.'-%');
+                })
+                ->pluck('slug'))
+            ->unique();
 
         $maxSuffix = $existingSlugs
             ->map(function (string $slug) use ($defaultSlug): ?int {
