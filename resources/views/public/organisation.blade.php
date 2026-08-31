@@ -19,6 +19,8 @@
             <p>This is the verified public home of {{ $organisationName }}.</p>
             <p><a href="{{ $donationUrl }}">Make a simulated donation</a></p>
             <p><a href="{{ $volunteerUrl }}">Volunteer opportunities</a></p>
+            <p><a href="{{ $eventsUrl }}">Community events</a></p>
+            <p><a href="{{ $inKindUrl }}">Offer goods or materials</a></p>
             <p><a href="{{ $sourceUrl }}">Source and licence</a></p>
         </main>
     </body>

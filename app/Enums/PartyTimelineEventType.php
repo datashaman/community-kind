@@ -23,4 +23,8 @@ enum PartyTimelineEventType: string
     case VolunteerCredentialExpired = 'volunteer_credential_expired';
     case VolunteerAssignmentTransitioned = 'volunteer_assignment_transitioned';
     case VolunteerHoursRecorded = 'volunteer_hours_recorded';
+    case EventRegistrationTransitioned = 'event_registration_transitioned';
+    case EventReminderRecorded = 'event_reminder_recorded';
+    case InKindOfferTransitioned = 'in_kind_offer_transitioned';
+    case PartnerEngagementRecorded = 'partner_engagement_recorded';
 }

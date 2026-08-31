@@ -55,6 +55,12 @@ class SupporterRegistration extends Model
         return $this->hasOne(VolunteerApplication::class);
     }
 
+    /** @return HasOne<EventRegistration, $this> */
+    public function eventRegistration(): HasOne
+    {
+        return $this->hasOne(EventRegistration::class);
+    }
+
     /** @return array<string, string> */
     protected function casts(): array
     {

@@ -7,6 +7,7 @@ use App\Actions\Portal\IssuePortalAccessGrant;
 use App\Enums\ConsentChannel;
 use App\Enums\ConsentDecision;
 use App\Enums\ConsentPurpose;
+use App\Enums\EventRegistrationStatus;
 use App\Enums\OrganisationRole;
 use App\Enums\PartyBusinessRole;
 use App\Enums\RecurringMandateStatus;
@@ -16,7 +17,9 @@ use App\Enums\TenantAuditEventType;
 use App\Enums\VolunteerApplicationStatus;
 use App\Enums\VolunteerAssignmentStatus;
 use App\Models\AudienceSegment;
+use App\Models\CommunityEvent;
 use App\Models\Donation;
+use App\Models\EventRegistration;
 use App\Models\Organisation;
 use App\Models\Party;
 use App\Models\PartyRole;
@@ -215,7 +218,7 @@ it('lets the supporter update safe profile fields and preferences which immediat
 
 it('restricts cancellation to the linked supporter records', function () {
     $fixture = supporterPortalFixture();
-    [$mandate, $registration, $otherRegistration] = app(OrganisationContext::class)->run(
+    [$mandate, $registration, $eventRegistration, $otherRegistration] = app(OrganisationContext::class)->run(
         $fixture['organisation'],
         function () use ($fixture): array {
             $donation = Donation::factory()->create(['party_id' => $fixture['party']->id]);
@@ -225,9 +228,15 @@ it('restricts cancellation to the linked supporter records', function () {
                 'status' => RecurringMandateStatus::Active,
             ]);
             $registration = SupporterRegistration::factory()->create(['party_id' => $fixture['party']->id]);
+            $event = CommunityEvent::factory()->create();
+            $eventRegistration = EventRegistration::factory()->create([
+                'community_event_id' => $event->id,
+                'party_id' => $fixture['party']->id,
+                'supporter_registration_id' => $registration->id,
+            ]);
             $otherRegistration = SupporterRegistration::factory()->create(['party_id' => $fixture['otherParty']->id]);
 
-            return [$mandate, $registration, $otherRegistration];
+            return [$mandate, $registration, $eventRegistration, $otherRegistration];
         },
     );
     $this->get(supporterPortalUrl($fixture, "/portal/access/{$fixture['token']}"));
@@ -237,9 +246,41 @@ it('restricts cancellation to the linked supporter records', function () {
     $this->delete(supporterPortalUrl($fixture, "/portal/registrations/{$registration->id}"))->assertRedirect();
     $this->delete(supporterPortalUrl($fixture, "/portal/registrations/{$otherRegistration->id}"))->assertNotFound();
 
-    app(OrganisationContext::class)->run($fixture['organisation'], function () use ($mandate, $registration): void {
+    app(OrganisationContext::class)->run($fixture['organisation'], function () use ($eventRegistration, $mandate, $registration): void {
         expect($mandate->refresh()->status)->toBe(RecurringMandateStatus::Cancelled)
-            ->and($registration->refresh()->status)->toBe(SupporterRegistrationStatus::Cancelled);
+            ->and($registration->refresh()->status)->toBe(SupporterRegistrationStatus::Cancelled)
+            ->and($eventRegistration->refresh()->status)->toBe(EventRegistrationStatus::Cancelled);
+    });
+});
+
+it('does not cancel a completed event registration through the supporter portal', function () {
+    $fixture = supporterPortalFixture();
+    [$registration, $eventRegistration] = app(OrganisationContext::class)->run(
+        $fixture['organisation'],
+        function () use ($fixture): array {
+            $registration = SupporterRegistration::factory()->create([
+                'party_id' => $fixture['party']->id,
+                'status' => SupporterRegistrationStatus::Confirmed,
+            ]);
+            $eventRegistration = EventRegistration::factory()->create([
+                'party_id' => $fixture['party']->id,
+                'supporter_registration_id' => $registration->id,
+                'status' => EventRegistrationStatus::Attended,
+                'attended_at' => now(),
+            ]);
+
+            return [$registration, $eventRegistration];
+        },
+    );
+    $this->get(supporterPortalUrl($fixture, "/portal/access/{$fixture['token']}"));
+
+    $this->get(supporterPortalUrl($fixture))
+        ->assertInertia(fn (Assert $page) => $page->where('registrations.0.canCancel', false));
+    $this->delete(supporterPortalUrl($fixture, "/portal/registrations/{$registration->id}"))->assertUnprocessable();
+
+    app(OrganisationContext::class)->run($fixture['organisation'], function () use ($eventRegistration, $registration): void {
+        expect($registration->refresh()->status)->toBe(SupporterRegistrationStatus::Confirmed)
+            ->and($eventRegistration->refresh()->status)->toBe(EventRegistrationStatus::Attended);
     });
 });
 

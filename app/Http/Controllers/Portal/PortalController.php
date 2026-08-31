@@ -5,9 +5,11 @@ namespace App\Http\Controllers\Portal;
 use App\Enums\ConsentChannel;
 use App\Enums\ConsentDecision;
 use App\Enums\ConsentPurpose;
+use App\Enums\EventRegistrationStatus;
 use App\Enums\PartyContactType;
 use App\Enums\RecurringMandateStatus;
 use App\Http\Controllers\Controller;
+use App\Models\InKindOffer;
 use App\Models\Organisation;
 use App\Models\PartyConsent;
 use App\Models\PartyContactPoint;
@@ -70,12 +72,14 @@ class PortalController extends Controller
                     'canCancel' => $mandate->status !== RecurringMandateStatus::Cancelled,
                 ]),
             'registrations' => SupporterRegistration::query()
-                ->with(['volunteerApplication.credentials', 'volunteerApplication.assignments.shift', 'volunteerApplication.assignments.hours'])
+                ->with(['volunteerApplication.credentials', 'volunteerApplication.assignments.shift', 'volunteerApplication.assignments.hours', 'eventRegistration.event'])
                 ->where('party_id', $party->id)
                 ->orderByRaw('starts_at asc nulls last')
                 ->get()
                 ->map(function (SupporterRegistration $registration): array {
                     $application = $registration->volunteerApplication;
+                    $eventRegistration = $registration->eventRegistration;
+                    $eventCanCancel = $eventRegistration === null || in_array(EventRegistrationStatus::Cancelled, $eventRegistration->status->allowedTransitions(), true);
 
                     return [
                         'id' => $registration->id,
@@ -83,15 +87,21 @@ class PortalController extends Controller
                         'title' => $registration->title,
                         'status' => $registration->status->label(),
                         'startsAt' => $registration->starts_at?->toAtomString(),
-                        'canCancel' => $registration->status->canCancel(),
+                        'canCancel' => $registration->status->canCancel() && $eventCanCancel,
                         'volunteer' => $application instanceof VolunteerApplication ? [
                             'applicationStatus' => $application->status->value,
                             'onboardingStatus' => $application->onboarding_status->value,
                             'credentials' => $application->credentials->map(fn ($credential): array => ['type' => $credential->type, 'status' => $credential->effectiveStatus()->value, 'expiresAt' => $credential->expires_at?->toAtomString()])->values()->all(),
                             'assignments' => $application->assignments->map(fn ($assignment): array => ['title' => $assignment->shift->title, 'startsAt' => $assignment->shift->starts_at->toAtomString(), 'status' => $assignment->status->value, 'minutes' => $assignment->hours?->minutes])->values()->all(),
                         ] : null,
+                        'event' => $registration->eventRegistration !== null ? [
+                            'status' => $registration->eventRegistration->status->value,
+                            'startsAt' => $registration->eventRegistration->event->starts_at->toAtomString(),
+                            'remindedAt' => $registration->eventRegistration->reminded_at?->toAtomString(),
+                        ] : null,
                     ];
                 }),
+            'inKindOffers' => InKindOffer::query()->where('party_id', $party->id)->latest('offered_at')->get()->map(fn (InKindOffer $offer): array => ['id' => $offer->id, 'category' => $offer->category, 'quantity' => $offer->quantity, 'unit' => $offer->unit, 'condition' => $offer->condition, 'status' => $offer->status->value, 'outcome' => $offer->fulfilment_outcome]),
         ]);
     }
 }

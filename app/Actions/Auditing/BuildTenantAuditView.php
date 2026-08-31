@@ -126,6 +126,12 @@ class BuildTenantAuditView
             TenantAuditEventType::VolunteerShiftCreated,
             TenantAuditEventType::VolunteerAssignmentTransitioned,
             TenantAuditEventType::VolunteerHoursRecorded => 'engagement',
+            TenantAuditEventType::CommunityEventCreated,
+            TenantAuditEventType::EventRegistrationTransitioned,
+            TenantAuditEventType::EventReminderRecorded,
+            TenantAuditEventType::InKindOfferTransitioned,
+            TenantAuditEventType::PartnerProfileCreated,
+            TenantAuditEventType::PartnerCommitmentRecorded => 'engagement',
             default => 'service',
         };
     }

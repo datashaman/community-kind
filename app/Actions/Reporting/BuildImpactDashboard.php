@@ -12,10 +12,13 @@ use App\Models\CaseInteraction;
 use App\Models\Donation;
 use App\Models\DonationPaymentEvent;
 use App\Models\DonationRefund;
+use App\Models\EventRegistration;
 use App\Models\FundraisingCampaign;
+use App\Models\InKindOffer;
 use App\Models\IntakeRequest;
 use App\Models\MetricEvent;
 use App\Models\Organisation;
+use App\Models\PartnerCommitment;
 use App\Models\Party;
 use App\Models\PartyAddress;
 use App\Models\Program;
@@ -121,6 +124,9 @@ class BuildImpactDashboard
             'engagement.meaningful_action_rate' => $this->journeyMetric(SupporterJourneyEventType::MeaningfulAction, $start, $end, $filters, true),
             'engagement.volunteer_applications' => $this->volunteerApplications($start, $end, $filters),
             'engagement.volunteer_hours' => $this->volunteerHours($start, $end, $filters),
+            'engagement.event_attendance' => $this->eventAttendance($start, $end, $filters),
+            'engagement.in_kind_fulfilments' => $this->inKindFulfilments($start, $end, $filters),
+            'engagement.partner_commitments' => $this->partnerCommitments($start, $end, $filters),
             default => ['value' => null, 'sampleSize' => 0],
         };
     }
@@ -147,6 +153,36 @@ class BuildImpactDashboard
             ->filter(fn (VolunteerHourEntry $entry): bool => $this->matchesParty($entry->party, $filters));
 
         return ['value' => round($entries->sum('minutes') / 60, 2), 'sampleSize' => $entries->pluck('party_id')->unique()->count()];
+    }
+
+    /** @param array<string, mixed> $filters
+     * @return array{value: float, sampleSize: int}
+     */
+    private function eventAttendance(CarbonImmutable $start, CarbonImmutable $end, array $filters): array
+    {
+        $records = EventRegistration::query()->with(['party.addresses', 'party.businessRoles'])->whereNotNull('attended_at')->where('attended_at', '>=', $start)->where('attended_at', '<', $end)->get()->filter(fn (EventRegistration $registration): bool => $this->matchesParty($registration->party, $filters));
+
+        return ['value' => (float) $records->count(), 'sampleSize' => $records->pluck('party_id')->unique()->count()];
+    }
+
+    /** @param array<string, mixed> $filters
+     * @return array{value: float, sampleSize: int}
+     */
+    private function inKindFulfilments(CarbonImmutable $start, CarbonImmutable $end, array $filters): array
+    {
+        $records = InKindOffer::query()->with(['party.addresses', 'party.businessRoles'])->whereNotNull('fulfilled_at')->where('fulfilled_at', '>=', $start)->where('fulfilled_at', '<', $end)->get()->filter(fn (InKindOffer $offer): bool => $this->matchesParty($offer->party, $filters));
+
+        return ['value' => (float) $records->count(), 'sampleSize' => $records->pluck('party_id')->unique()->count()];
+    }
+
+    /** @param array<string, mixed> $filters
+     * @return array{value: float, sampleSize: int}
+     */
+    private function partnerCommitments(CarbonImmutable $start, CarbonImmutable $end, array $filters): array
+    {
+        $records = PartnerCommitment::query()->with(['partner.party.addresses', 'partner.party.businessRoles'])->where('created_at', '>=', $start)->where('created_at', '<', $end)->get()->filter(fn (PartnerCommitment $commitment): bool => $this->matchesParty($commitment->partner->party, $filters));
+
+        return ['value' => (float) $records->count(), 'sampleSize' => $records->pluck('partner.party_id')->unique()->count()];
     }
 
     /** @param array<string, mixed> $filters

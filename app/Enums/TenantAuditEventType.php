@@ -41,6 +41,12 @@ enum TenantAuditEventType: string
     case VolunteerShiftCreated = 'volunteer_shift_created';
     case VolunteerAssignmentTransitioned = 'volunteer_assignment_transitioned';
     case VolunteerHoursRecorded = 'volunteer_hours_recorded';
+    case CommunityEventCreated = 'community_event_created';
+    case EventRegistrationTransitioned = 'event_registration_transitioned';
+    case EventReminderRecorded = 'event_reminder_recorded';
+    case InKindOfferTransitioned = 'in_kind_offer_transitioned';
+    case PartnerProfileCreated = 'partner_profile_created';
+    case PartnerCommitmentRecorded = 'partner_commitment_recorded';
 
     /** @return array<string, string> */
     public function payloadSchema(): array
@@ -181,6 +187,12 @@ enum TenantAuditEventType: string
             self::VolunteerShiftCreated => ['shift_id' => 'string', 'opportunity_id' => 'string', 'capacity' => 'integer'],
             self::VolunteerAssignmentTransitioned => ['assignment_id' => 'string', 'from_status' => 'string', 'to_status' => 'string'],
             self::VolunteerHoursRecorded => ['hours_id' => 'string', 'assignment_id' => 'string', 'minutes' => 'integer'],
+            self::CommunityEventCreated => ['event_id' => 'string', 'capacity' => 'integer'],
+            self::EventRegistrationTransitioned => ['registration_id' => 'string', 'from_status' => 'string', 'to_status' => 'string'],
+            self::EventReminderRecorded => ['registration_id' => 'string'],
+            self::InKindOfferTransitioned => ['offer_id' => 'string', 'from_status' => 'string', 'to_status' => 'string'],
+            self::PartnerProfileCreated => ['partner_profile_id' => 'string', 'party_uuid' => 'string'],
+            self::PartnerCommitmentRecorded => ['commitment_id' => 'string', 'partner_profile_id' => 'string', 'status' => 'string'],
         };
     }
 }

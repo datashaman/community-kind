@@ -38,7 +38,7 @@ it('exports the exact privacy-safe dashboard context and audits it separately', 
         ->assertOk()->assertHeader('content-type', 'text/csv; charset=UTF-8')->streamedContent();
     expect($csv)->toContain('service.services_delivered')
         ->toContain(',2,available,count,')
-        ->toContain('2026.2')
+        ->toContain('2026.3')
         ->toContain('Fictional')
         ->not->toContain($party->uuid)
         ->not->toContain('case note');
@@ -59,7 +59,7 @@ it('exports the exact privacy-safe dashboard context and audits it separately', 
         ->toContain('<desc id="description">')
         ->toContain('Fictional data')
         ->toContain('Small Ward')
-        ->toContain('service.services_delivered v2026.2')
+        ->toContain('service.services_delivered v2026.3')
         ->toContain('Suppressed')
         ->not->toContain($party->uuid)
         ->not->toContain('case note');
@@ -67,7 +67,7 @@ it('exports the exact privacy-safe dashboard context and audits it separately', 
     app(OrganisationContext::class)->run($organisation, function (): void {
         $audits = TenantAuditEvent::query()->where('type', TenantAuditEventType::ImpactReportExported)->get();
         expect($audits)->toHaveCount(3)
-            ->and($audits->every(fn (TenantAuditEvent $audit): bool => $audit->payload['metric_count'] === 4 && $audit->payload['registry_version'] === '2026.2'))->toBeTrue()
+            ->and($audits->every(fn (TenantAuditEvent $audit): bool => $audit->payload['metric_count'] === 4 && $audit->payload['registry_version'] === '2026.3'))->toBeTrue()
             ->and($audits->pluck('payload.format')->all())->toBe(['csv', 'csv', 'svg']);
     });
 });

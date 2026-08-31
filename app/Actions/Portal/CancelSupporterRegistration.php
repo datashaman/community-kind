@@ -3,8 +3,10 @@
 namespace App\Actions\Portal;
 
 use App\Actions\Auditing\RecordTenantAuditEvent;
+use App\Actions\Engagement\TransitionEventRegistration;
 use App\Actions\Parties\RecordPartyTimelineEvent;
 use App\Actions\Volunteering\TransitionVolunteerApplication;
+use App\Enums\EventRegistrationStatus;
 use App\Enums\PartyTimelineEventType;
 use App\Enums\SupporterRegistrationStatus;
 use App\Enums\TenantAuditEventType;
@@ -21,6 +23,7 @@ final class CancelSupporterRegistration
         private readonly RecordPartyTimelineEvent $recordTimeline,
         private readonly RecordTenantAuditEvent $recordAudit,
         private readonly TransitionVolunteerApplication $transitionVolunteerApplication,
+        private readonly TransitionEventRegistration $transitionEventRegistration,
     ) {}
 
     public function handle(PortalAccessGrant $grant, SupporterRegistration $registration): SupporterRegistration
@@ -37,6 +40,12 @@ final class CancelSupporterRegistration
                 ->firstOrFail();
 
             abort_unless($locked->status->canCancel(), 422, 'This registration can no longer be cancelled.');
+            $eventRegistration = $locked->eventRegistration()->first();
+            abort_if(
+                $eventRegistration !== null && ! in_array(EventRegistrationStatus::Cancelled, $eventRegistration->status->allowedTransitions(), true),
+                422,
+                'This event registration can no longer be cancelled.',
+            );
 
             $locked->update([
                 'status' => SupporterRegistrationStatus::Cancelled,
@@ -67,6 +76,9 @@ final class CancelSupporterRegistration
             $application = $locked->volunteerApplication()->first();
             if ($application !== null && in_array(VolunteerApplicationStatus::Withdrawn, $application->status->allowedTransitions(), true)) {
                 $this->transitionVolunteerApplication->handle($application, VolunteerApplicationStatus::Withdrawn, $grant->user);
+            }
+            if ($eventRegistration !== null && in_array(EventRegistrationStatus::Cancelled, $eventRegistration->status->allowedTransitions(), true)) {
+                $this->transitionEventRegistration->handle($eventRegistration, EventRegistrationStatus::Cancelled, $grant->user);
             }
 
             return $locked->refresh();
