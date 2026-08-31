@@ -2,6 +2,9 @@
 
 namespace App\Providers;
 
+use App\Cryptography\ClassifiedDataEncrypter;
+use App\Cryptography\ContactBlindIndexer;
+use App\Cryptography\VersionedKeyRing;
 use Carbon\CarbonImmutable;
 use Illuminate\Support\Facades\Date;
 use Illuminate\Support\Facades\DB;
@@ -16,7 +19,14 @@ class AppServiceProvider extends ServiceProvider
      */
     public function register(): void
     {
-        //
+        $this->app->bind(
+            ClassifiedDataEncrypter::class,
+            fn () => new ClassifiedDataEncrypter(new VersionedKeyRing('classified_data.encryption')),
+        );
+        $this->app->bind(
+            ContactBlindIndexer::class,
+            fn () => new ContactBlindIndexer(new VersionedKeyRing('classified_data.contact_index')),
+        );
     }
 
     /**
