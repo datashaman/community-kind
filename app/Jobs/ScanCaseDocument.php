@@ -31,6 +31,7 @@ class ScanCaseDocument implements ShouldBeUnique, ShouldQueue
         public string $organisationUuid,
         public string $documentId,
         public int $expectedGeneration,
+        public int $expectedOrganisationGeneration = 0,
     ) {
         $this->onQueue('security');
     }
@@ -42,7 +43,7 @@ class ScanCaseDocument implements ShouldBeUnique, ShouldQueue
     {
         $organisation = Organisation::query()->where('uuid', $this->organisationUuid)->first();
 
-        if ($organisation === null) {
+        if ($organisation === null || $organisation->demo_generation !== $this->expectedOrganisationGeneration) {
             return;
         }
 
@@ -74,6 +75,6 @@ class ScanCaseDocument implements ShouldBeUnique, ShouldQueue
 
     public function uniqueId(): string
     {
-        return $this->organisationUuid.':'.$this->documentId.':'.$this->expectedGeneration;
+        return $this->organisationUuid.':'.$this->expectedOrganisationGeneration.':'.$this->documentId.':'.$this->expectedGeneration;
     }
 }

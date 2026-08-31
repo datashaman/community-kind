@@ -29,7 +29,7 @@ use Ramsey\Uuid\Uuid;
  * @phpstan-type ProgramDefinition array{name: string, slug: string, configuration: array<string, mixed>}
  * @phpstan-type MemberDefinition array{party_uuid: string, name: string, email: string, telephone: string, owner: bool, role: OrganisationRole|null, program_slugs: list<string>}
  * @phpstan-type PartyDefinition array{uuid: string, kind: PartyKind, name: string, email?: string, telephone?: string, program_slugs?: list<string>, roles?: list<PartyBusinessRole>, interests?: list<string>}
- * @phpstan-type ScenarioDefinition array{uuid: string, name: string, slug: string, timezone: string, currency: string, reporting_at: string, synthetic: true, party_population: array<string, int>, programs: list<ProgramDefinition>, members: list<MemberDefinition>, parties: list<PartyDefinition>}
+ * @phpstan-type ScenarioDefinition array{uuid: string, name: string, slug: string, timezone: string, currency: string, reporting_at: string, synthetic: true, template_slug?: string, sandbox_pair_id?: string, demo_generation?: int, party_population: array<string, int>, programs: list<ProgramDefinition>, members: list<MemberDefinition>, parties: list<PartyDefinition>}
  */
 final class BuildOrganisationScenario
 {
@@ -54,6 +54,10 @@ final class BuildOrganisationScenario
                 'uuid' => $scenario['uuid'],
                 'name' => $scenario['name'],
                 'slug' => $scenario['slug'],
+                'sandbox_pair_id' => $scenario['sandbox_pair_id'] ?? null,
+                'sandbox_template' => $scenario['template_slug'] ?? null,
+                'demo_generation' => $scenario['demo_generation'] ?? 0,
+                'is_synthetic' => $scenario['synthetic'],
             ];
 
             if (! $organisation->exists) {
@@ -80,17 +84,27 @@ final class BuildOrganisationScenario
 
                 $this->upsertPartyPopulation($organisation, $scenario);
 
-                if ($scenario['slug'] === 'harbourkind') {
+                if (($scenario['template_slug'] ?? $scenario['slug']) === 'harbourkind') {
+                    $client = collect($scenario['parties'])->first(fn (array $party): bool => in_array(PartyBusinessRole::Client, $party['roles'] ?? [], true));
+                    $donor = collect($scenario['parties'])->first(fn (array $party): bool => in_array(PartyBusinessRole::Donor, $party['roles'] ?? [], true));
+                    $manager = collect($scenario['members'])->first(fn (array $member): bool => $member['role'] === OrganisationRole::ProgramManager && in_array('housing-support', $member['program_slugs'], true));
+                    $caseworker = collect($scenario['members'])->first(fn (array $member): bool => $member['role'] === OrganisationRole::CaseWorker && in_array('housing-support', $member['program_slugs'], true));
+                    $engagement = collect($scenario['members'])->first(fn (array $member): bool => $member['role'] === OrganisationRole::EngagementOfficer);
+
+                    if ($client === null || $donor === null || $manager === null || $caseworker === null || $engagement === null) {
+                        throw new LogicException('The HarbourKind scenario is missing a required showcase persona.');
+                    }
+
                     $this->buildRequestToOutcomeScenario->handle(
                         $organisation,
                         Program::query()->where('slug', 'housing-support')->firstOrFail(),
-                        Party::query()->where('uuid', '12000000-0000-4000-8000-000000000001')->firstOrFail(),
-                        User::query()->where('email', 'manager@harbourkind.example.test')->firstOrFail(),
-                        Membership::query()->whereHas('user', fn ($query) => $query->where('email', 'caseworker@harbourkind.example.test'))->firstOrFail(),
+                        Party::query()->where('uuid', $client['uuid'])->firstOrFail(),
+                        User::query()->where('email', $manager['email'])->firstOrFail(),
+                        Membership::query()->whereHas('user', fn ($query) => $query->where('email', $caseworker['email']))->firstOrFail(),
                     );
                     $this->buildDonorToRetainedSupporterScenario->handle(
-                        Party::query()->where('uuid', '12000000-0000-4000-8000-000000000002')->firstOrFail(),
-                        User::query()->where('email', 'engagement@harbourkind.example.test')->firstOrFail(),
+                        Party::query()->where('uuid', $donor['uuid'])->firstOrFail(),
+                        User::query()->where('email', $engagement['email'])->firstOrFail(),
                     );
                 }
             });

@@ -1,6 +1,7 @@
 <?php
 
 use App\Http\Middleware\EnforceAbsoluteSessionLifetime;
+use App\Http\Middleware\EnforceDemoSandbox;
 use App\Http\Middleware\EnsureInstallationAccess;
 use App\Http\Middleware\EnsureTrustedApplicationHost;
 use App\Http\Middleware\HandleAppearance;
@@ -27,6 +28,7 @@ return Application::configure(basePath: dirname(__DIR__))
         ], append: [
             EnsureInstallationAccess::class,
             EnforceAbsoluteSessionLifetime::class,
+            EnforceDemoSandbox::class,
             ProtectSensitiveFortifyRoutes::class,
             HandleAppearance::class,
             HandleInertiaRequests::class,

@@ -15,6 +15,8 @@ export type Organisation = {
     status?: string;
     programIds?: number[];
     isCurrent?: boolean;
+    isSynthetic?: boolean;
+    demoGeneration?: number;
 };
 
 export type OrganisationMember = {

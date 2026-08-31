@@ -1,4 +1,4 @@
-import { Form, Head, router } from '@inertiajs/react';
+import { Form, Head, router, usePage } from '@inertiajs/react';
 import { Mail, Plus, ShieldAlert, UserPlus, X } from 'lucide-react';
 import { useMemo, useState } from 'react';
 import CancelInvitationModal from '@/components/cancel-invitation-modal';
@@ -20,6 +20,7 @@ import {
 } from '@/components/ui/tooltip';
 import { useInitials } from '@/hooks/use-initials';
 import { edit, index, update } from '@/routes/organisations';
+import { reset as resetDemoOrganisation } from '@/routes/demo/organisations';
 import { update as updateLifecycle } from '@/routes/organisations/lifecycle';
 import { update as updateMember } from '@/routes/organisations/members';
 import {
@@ -73,6 +74,7 @@ export default function OrganisationEdit({
     accessHolds,
 }: Props) {
     const getInitials = useInitials();
+    const demoSandbox = usePage().props.demoSandbox;
 
     const [inviteDialogOpen, setInviteDialogOpen] = useState(false);
     const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
@@ -259,6 +261,38 @@ export default function OrganisationEdit({
                                 </Form>
                             ))}
                         </div>
+                    </div>
+                ) : null}
+
+                {demoSandbox &&
+                organisation.isSynthetic &&
+                permissions.canUpdateOrganisation ? (
+                    <div className="space-y-6 rounded-lg border border-amber-300 bg-amber-50 p-5 dark:border-amber-800 dark:bg-amber-950">
+                        <Heading
+                            variant="small"
+                            title="Reset this demo Organisation"
+                            description="Replaces only this Organisation with its pinned synthetic scenario and invalidates its current sessions and queued work."
+                        />
+                        <Form
+                            {...resetDemoOrganisation.form(organisation.slug)}
+                        >
+                            {({ processing }) => (
+                                <>
+                                    <input
+                                        type="hidden"
+                                        name="slug"
+                                        value={organisation.slug}
+                                    />
+                                    <Button
+                                        type="submit"
+                                        variant="outline"
+                                        disabled={processing}
+                                    >
+                                        Reset {organisation.name}
+                                    </Button>
+                                </>
+                            )}
+                        </Form>
                     </div>
                 ) : null}
 

@@ -8,6 +8,7 @@ use App\Models\IntakeRequest;
 use App\Models\Organisation;
 use App\Models\Party;
 use App\Models\Program;
+use App\Models\SandboxPair;
 use App\Models\SupporterJourney;
 use App\Models\TenantAuditEvent;
 use Illuminate\Http\Request;
@@ -62,6 +63,28 @@ class HandleInertiaRequests extends Middleware
             'canCreateOrganisation' => $user?->can('create', Organisation::class) ?? false,
             'currentOrganisation' => fn () => $organisations()->first(fn ($organisation) => $organisation->isCurrent),
             'organisations' => $organisations,
+            'demoSandbox' => function () use ($request, $user): ?array {
+                $pairId = $request->session()->get('demo_sandbox_pair_id');
+
+                if (is_string($pairId)) {
+                    $pair = SandboxPair::query()->find($pairId);
+
+                    if ($pair?->status->isAccessible()) {
+                        return [
+                            'pairId' => $pair->id,
+                            'expiresAt' => $pair->expires_at->toISOString(),
+                        ];
+                    }
+                }
+
+                $visibleOrganisation = $request->route('current_organisation')
+                    ?? $request->route('organisation')
+                    ?? $user?->currentOrganisation;
+
+                return $visibleOrganisation instanceof Organisation && $visibleOrganisation->is_synthetic
+                    ? ['pairId' => null, 'expiresAt' => null]
+                    : null;
+            },
             'canViewParties' => fn (): bool => $routeOrganisation instanceof Organisation
                 && Gate::allows('viewAny', [Party::class, $routeOrganisation]),
             'canViewPrograms' => fn (): bool => $routeOrganisation instanceof Organisation

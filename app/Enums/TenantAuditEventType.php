@@ -25,6 +25,8 @@ enum TenantAuditEventType: string
     case AudienceSegmentCreated = 'audience_segment_created';
     case ImpactReportExported = 'impact_report_exported';
     case AuditViewAccessed = 'audit_view_accessed';
+    case DemoPersonaSelected = 'demo_persona_selected';
+    case DemoOrganisationReset = 'demo_organisation_reset';
 
     /** @return array<string, string> */
     public function payloadSchema(): array
@@ -123,6 +125,15 @@ enum TenantAuditEventType: string
                 'record_count' => 'integer',
                 'scope' => 'string',
                 'role' => 'string',
+            ],
+            self::DemoPersonaSelected => [
+                'membership_id' => 'integer',
+                'role' => 'string',
+                'generation' => 'integer',
+            ],
+            self::DemoOrganisationReset => [
+                'generation' => 'integer',
+                'template' => 'string',
             ],
         };
     }

@@ -53,6 +53,8 @@ class BuildTenantAuditView
             OrganisationRole::OrganisationAdministrator => in_array($event->type, [
                 TenantAuditEventType::ProgramUpdated,
                 TenantAuditEventType::AuditViewAccessed,
+                TenantAuditEventType::DemoPersonaSelected,
+                TenantAuditEventType::DemoOrganisationReset,
             ], true),
             OrganisationRole::ProgramManager => in_array($this->domain($event->type), ['service', 'configuration'], true)
                 && ($this->programIsVisible($event, $user) || ($event->actor_user_id === $user->id && $event->type === TenantAuditEventType::ServiceOperationsExported)),
@@ -100,7 +102,10 @@ class BuildTenantAuditView
     private function domain(TenantAuditEventType $type): string
     {
         return match ($type) {
-            TenantAuditEventType::ProgramUpdated, TenantAuditEventType::AuditViewAccessed => 'configuration',
+            TenantAuditEventType::ProgramUpdated,
+            TenantAuditEventType::AuditViewAccessed,
+            TenantAuditEventType::DemoPersonaSelected,
+            TenantAuditEventType::DemoOrganisationReset => 'configuration',
             TenantAuditEventType::DonationCreated,
             TenantAuditEventType::DonationPaymentTransitioned,
             TenantAuditEventType::DonationRefunded,

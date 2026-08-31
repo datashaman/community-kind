@@ -79,6 +79,8 @@ class OrganisationController extends Controller
                 'name' => $organisation->name,
                 'slug' => $organisation->slug,
                 'status' => $organisation->status->value,
+                'isSynthetic' => $organisation->is_synthetic,
+                'demoGeneration' => $organisation->demo_generation,
             ],
             'members' => $memberships
                 ->map(function (Membership $membership) use ($organisation, $permissions, $user) {

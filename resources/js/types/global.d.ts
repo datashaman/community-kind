@@ -23,6 +23,10 @@ declare module '@inertiajs/core' {
             canViewAudit: boolean;
             currentOrganisation: Organisation | null;
             organisations: Organisation[];
+            demoSandbox: {
+                pairId: string | null;
+                expiresAt: string | null;
+            } | null;
             [key: string]: unknown;
         };
     }
