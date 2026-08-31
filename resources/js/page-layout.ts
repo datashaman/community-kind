@@ -6,6 +6,7 @@ export function resolvePageLayout(name: string) {
     switch (true) {
         case name === 'welcome':
         case name.startsWith('demo/'):
+        case name.startsWith('portal/'):
             return null;
         case name.startsWith('auth/'):
             return AuthLayout;

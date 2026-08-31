@@ -17,4 +17,6 @@ enum PartyTimelineEventType: string
     case DonationRefunded = 'donation_refunded';
     case RecurringMandateTransitioned = 'recurring_mandate_transitioned';
     case SupporterJourneyTransitioned = 'supporter_journey_transitioned';
+    case SupporterRegistrationTransitioned = 'supporter_registration_transitioned';
+    case PortalAccessChanged = 'portal_access_changed';
 }

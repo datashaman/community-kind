@@ -27,6 +27,12 @@ enum TenantAuditEventType: string
     case AuditViewAccessed = 'audit_view_accessed';
     case DemoPersonaSelected = 'demo_persona_selected';
     case DemoOrganisationReset = 'demo_organisation_reset';
+    case PortalAccessIssued = 'portal_access_issued';
+    case PortalAccessVerified = 'portal_access_verified';
+    case PortalAccessRevoked = 'portal_access_revoked';
+    case SupporterProfileUpdated = 'supporter_profile_updated';
+    case SupporterConsentPreferencesUpdated = 'supporter_consent_preferences_updated';
+    case SupporterRegistrationCancelled = 'supporter_registration_cancelled';
 
     /** @return array<string, string> */
     public function payloadSchema(): array
@@ -134,6 +140,30 @@ enum TenantAuditEventType: string
             self::DemoOrganisationReset => [
                 'generation' => 'integer',
                 'template' => 'string',
+            ],
+            self::PortalAccessIssued => [
+                'grant_id' => 'string',
+                'party_uuid' => 'string',
+                'user_id' => 'integer',
+                'expires_at' => 'string',
+            ],
+            self::PortalAccessVerified, self::PortalAccessRevoked => [
+                'grant_id' => 'string',
+                'party_uuid' => 'string',
+                'user_id' => 'integer',
+            ],
+            self::SupporterProfileUpdated => [
+                'party_uuid' => 'string',
+                'changed_fields' => 'string_list',
+            ],
+            self::SupporterConsentPreferencesUpdated => [
+                'party_uuid' => 'string',
+                'channels' => 'string_list',
+            ],
+            self::SupporterRegistrationCancelled => [
+                'registration_id' => 'string',
+                'party_uuid' => 'string',
+                'kind' => 'string',
             ],
         };
     }

@@ -23,15 +23,23 @@ use App\Http\Controllers\Organisations\PartyController;
 use App\Http\Controllers\Organisations\PartyDuplicateReviewController;
 use App\Http\Controllers\Organisations\PartyRelationshipController;
 use App\Http\Controllers\Organisations\PartySafeContactInstructionController;
+use App\Http\Controllers\Organisations\PortalAccessGrantController as OrganisationPortalAccessGrantController;
 use App\Http\Controllers\Organisations\ProgramController;
 use App\Http\Controllers\Organisations\ServiceCaseController;
 use App\Http\Controllers\Organisations\ServiceOperationsExportController;
 use App\Http\Controllers\Organisations\SupporterJourneyController;
 use App\Http\Controllers\Organisations\TenantAuditEventController;
+use App\Http\Controllers\Portal\PortalAccessController;
+use App\Http\Controllers\Portal\PortalConsentPreferenceController;
+use App\Http\Controllers\Portal\PortalController;
+use App\Http\Controllers\Portal\PortalProfileController;
+use App\Http\Controllers\Portal\PortalRecurringMandateController;
+use App\Http\Controllers\Portal\PortalRegistrationController;
 use App\Http\Controllers\Public\DonationController as PublicDonationController;
 use App\Http\Controllers\Public\OrganisationController as PublicOrganisationController;
 use App\Http\Middleware\EnsureOrganisationAccess;
 use App\Http\Middleware\EnsureOrganisationMembership;
+use App\Http\Middleware\EnsurePortalAccess;
 use App\Http\Middleware\EnsureRecentPassword;
 use App\Http\Middleware\EnsureStaffSecurityRequirements;
 use App\Http\Middleware\ResolvePublicOrganisation;
@@ -73,6 +81,17 @@ Route::domain('{public_organisation}.'.config('organisations.public_domain'))
         Route::get('/', PublicOrganisationController::class)->name('public.organisations.show');
         Route::get('/donate', [PublicDonationController::class, 'create'])->name('public.donations.create');
         Route::post('/donate', [PublicDonationController::class, 'store'])->middleware('throttle:10,1')->name('public.donations.store');
+        Route::get('/portal/access/{token}', [PortalAccessController::class, 'use'])
+            ->middleware('throttle:20,1')
+            ->name('portal.access.use');
+        Route::middleware(EnsurePortalAccess::class)->group(function (): void {
+            Route::get('/portal', PortalController::class)->name('portal.show');
+            Route::patch('/portal/profile', [PortalProfileController::class, 'update'])->name('portal.profile.update');
+            Route::put('/portal/consent-preferences', [PortalConsentPreferenceController::class, 'update'])->name('portal.consent-preferences.update');
+            Route::delete('/portal/recurring-mandates/{mandate}', [PortalRecurringMandateController::class, 'destroy'])->name('portal.recurring-mandates.destroy');
+            Route::delete('/portal/registrations/{registration}', [PortalRegistrationController::class, 'destroy'])->name('portal.registrations.destroy');
+            Route::delete('/portal/access', [PortalAccessController::class, 'destroy'])->name('portal.access.destroy');
+        });
         Route::get('/.well-known/security.txt', $securityText)->name('public.security.txt');
         Route::get('/security-policy', $securityPolicy)->name('public.security.policy');
     });
@@ -134,6 +153,7 @@ Route::prefix('{current_organisation}')
         Route::post('duplicate-reviews/{duplicate_review}', [PartyDuplicateReviewController::class, 'store'])->name('duplicate-reviews.store');
         Route::delete('duplicate-reviews/{duplicate_review}', [PartyDuplicateReviewController::class, 'destroy'])->name('duplicate-reviews.destroy');
         Route::post('parties/{party}/consents', [PartyConsentController::class, 'store'])->name('parties.consents.store');
+        Route::post('parties/{party}/portal-access-grants', [OrganisationPortalAccessGrantController::class, 'store'])->name('parties.portal-access-grants.store');
         Route::post('parties/{party}/addresses', [PartyAddressController::class, 'store'])->name('parties.addresses.store');
         Route::post('parties/{party}/relationships', [PartyRelationshipController::class, 'store'])->name('parties.relationships.store');
         Route::post('parties/{party}/safe-contact-instructions', [PartySafeContactInstructionController::class, 'store'])->name('parties.safe-contact-instructions.store');

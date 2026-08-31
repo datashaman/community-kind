@@ -76,7 +76,11 @@ class ResolvePublicOrganisation
         $route = $request->route();
         $routeName = $route?->getName();
 
-        abort_unless(is_string($routeName) && str_starts_with($routeName, 'public.'), Response::HTTP_NOT_FOUND);
+        abort_unless(
+            is_string($routeName)
+            && (str_starts_with($routeName, 'public.') || str_starts_with($routeName, 'portal.')),
+            Response::HTTP_NOT_FOUND,
+        );
 
         $parameters = $route->parameters();
         $parameters['public_organisation'] = $organisation->slug;

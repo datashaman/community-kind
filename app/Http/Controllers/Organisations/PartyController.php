@@ -103,6 +103,7 @@ class PartyController extends Controller
             'timelineEvents' => fn ($query) => $query->latest('occurred_at')->latest('id')->limit(100),
         ]);
         $canManageSafeContact = Gate::allows('manageSafeContact', $party);
+        $canManagePortalAccess = Gate::allows('managePortalAccess', $party);
         $canUpdate = Gate::allows('update', $party);
 
         if ($canManageSafeContact) {
@@ -172,6 +173,8 @@ class PartyController extends Controller
             'canUpdate' => $canUpdate,
             'canRecordConsent' => Gate::allows('recordConsent', $party),
             'canManageSafeContact' => $canManageSafeContact,
+            'canManagePortalAccess' => $canManagePortalAccess,
+            'portalAccessUrl' => $canManagePortalAccess ? $request->session()->get('portal_access_url') : null,
             'relationshipCandidates' => $serviceProjection ? $this->visibleParties($request->user(), $currentOrganisation)
                 ->whereKeyNot($party->id)
                 ->orderBy('display_name')
