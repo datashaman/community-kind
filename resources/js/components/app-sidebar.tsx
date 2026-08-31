@@ -1,5 +1,6 @@
 import { Link, usePage } from '@inertiajs/react';
 import {
+    ClipboardList,
     FolderGit2,
     LayoutGrid,
     Scale,
@@ -21,6 +22,7 @@ import {
     SidebarMenuItem,
 } from '@/components/ui/sidebar';
 import { dashboard } from '@/routes';
+import { index as intakesIndex } from '@/routes/intakes';
 import { index as partiesIndex } from '@/routes/parties';
 import { index as programsIndex } from '@/routes/programs';
 import type { NavItem } from '@/types';
@@ -43,6 +45,15 @@ export function AppSidebar() {
                       title: 'Party profiles',
                       href: partiesIndex(page.props.currentOrganisation.slug),
                       icon: UsersRound,
+                  },
+              ]
+            : []),
+        ...(page.props.canViewIntakes && page.props.currentOrganisation
+            ? [
+                  {
+                      title: 'Service requests',
+                      href: intakesIndex(page.props.currentOrganisation.slug),
+                      icon: ClipboardList,
                   },
               ]
             : []),

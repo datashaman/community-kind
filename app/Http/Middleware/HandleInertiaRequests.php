@@ -2,6 +2,7 @@
 
 namespace App\Http\Middleware;
 
+use App\Models\IntakeRequest;
 use App\Models\Organisation;
 use App\Models\Party;
 use App\Models\Program;
@@ -61,6 +62,8 @@ class HandleInertiaRequests extends Middleware
                 && Gate::allows('viewAny', [Party::class, $routeOrganisation]),
             'canViewPrograms' => fn (): bool => $routeOrganisation instanceof Organisation
                 && Gate::allows('viewAny', [Program::class, $routeOrganisation]),
+            'canViewIntakes' => fn (): bool => $routeOrganisation instanceof Organisation
+                && Gate::allows('viewAny', [IntakeRequest::class, $routeOrganisation]),
         ];
     }
 }

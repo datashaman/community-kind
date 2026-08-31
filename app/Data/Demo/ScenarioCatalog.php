@@ -9,7 +9,7 @@ use InvalidArgumentException;
 
 final class ScenarioCatalog
 {
-    public const VERSION = '2026.1';
+    public const VERSION = '2026.2';
 
     public const AS_OF = '2026-06-30 23:59:59';
 
@@ -153,7 +153,7 @@ final class ScenarioCatalog
 
     /**
      * @param  array<string, string>  $stages
-     * @return array{name: string, slug: string, configuration: array{labels: array{request: string, case: string}, stages: list<array{key: string, label: string}>, outcome_measures: list<array{key: string, label: string, unit: string}>, taxonomies: list<array{key: string, label: string, values: list<string>}>}}
+     * @return array{name: string, slug: string, configuration: array{labels: array{request: string, case: string}, stages: list<array{key: string, label: string}>, outcome_measures: list<array{key: string, label: string, unit: string}>, taxonomies: list<array{key: string, label: string, values: list<string>}>, intake_fields: list<array{key: string, label: string, type: string, required: bool}>, eligibility_fields: list<array{key: string, label: string}>, risk_flags: list<array{key: string, label: string}>}}
      */
     private static function program(string $name, string $slug, string $requestLabel, string $caseLabel, array $stages): array
     {
@@ -165,6 +165,18 @@ final class ScenarioCatalog
                 'stages' => array_values(collect($stages)->map(fn (string $label, string $key): array => compact('key', 'label'))->all()),
                 'outcome_measures' => [['key' => 'progress', 'label' => 'Progress', 'unit' => 'score']],
                 'taxonomies' => [['key' => 'need', 'label' => 'Presenting need', 'values' => ['Housing', 'Food', 'Employment', 'Connection']]],
+                'intake_fields' => [
+                    ['key' => 'preferred_contact_time', 'label' => 'Preferred contact time', 'type' => 'text', 'required' => false],
+                    ['key' => 'current_situation', 'label' => 'Current situation', 'type' => 'textarea', 'required' => true],
+                ],
+                'eligibility_fields' => [
+                    ['key' => 'service_area', 'label' => 'Lives in the service area'],
+                    ['key' => 'program_fit', 'label' => 'Request fits the Program remit'],
+                ],
+                'risk_flags' => [
+                    ['key' => 'immediate_safety', 'label' => 'Immediate safety concern'],
+                    ['key' => 'housing_loss', 'label' => 'At risk of losing housing'],
+                ],
             ],
         ];
     }
