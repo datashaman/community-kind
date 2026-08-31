@@ -131,7 +131,11 @@ class BuildTenantAuditView
             TenantAuditEventType::EventReminderRecorded,
             TenantAuditEventType::InKindOfferTransitioned,
             TenantAuditEventType::PartnerProfileCreated,
-            TenantAuditEventType::PartnerCommitmentRecorded => 'engagement',
+            TenantAuditEventType::PartnerCommitmentRecorded,
+            TenantAuditEventType::OrganisationConfigurationCreated,
+            TenantAuditEventType::OrganisationConfigurationActivated,
+            TenantAuditEventType::ImpactSnapshotPublished,
+            TenantAuditEventType::SupporterJourneyTransitioned => 'engagement',
             default => 'service',
         };
     }

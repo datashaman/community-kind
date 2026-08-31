@@ -6,8 +6,10 @@ use App\Models\AudienceSegment;
 use App\Models\Donation;
 use App\Models\IntakeRequest;
 use App\Models\Organisation;
+use App\Models\OrganisationConfiguration;
 use App\Models\Party;
 use App\Models\Program;
+use App\Models\PublishedImpactSnapshot;
 use App\Models\SandboxPair;
 use App\Models\SupporterJourney;
 use App\Models\TenantAuditEvent;
@@ -65,6 +67,8 @@ class HandleInertiaRequests extends Middleware
                 'canViewSupporterJourneys' => false,
                 'canViewAudit' => false,
                 'canViewVolunteers' => false,
+                'canViewOrganisationConfigurations' => false,
+                'canViewImpactSnapshots' => false,
             ];
         }
 
@@ -123,6 +127,10 @@ class HandleInertiaRequests extends Middleware
                 && Gate::allows('viewAny', [TenantAuditEvent::class, $routeOrganisation]),
             'canViewVolunteers' => fn (): bool => $routeOrganisation instanceof Organisation
                 && Gate::allows('viewAny', [VolunteerOpportunity::class, $routeOrganisation]),
+            'canViewOrganisationConfigurations' => fn (): bool => $routeOrganisation instanceof Organisation
+                && Gate::allows('viewAny', [OrganisationConfiguration::class, $routeOrganisation]),
+            'canViewImpactSnapshots' => fn (): bool => $routeOrganisation instanceof Organisation
+                && Gate::allows('viewAny', [PublishedImpactSnapshot::class, $routeOrganisation]),
         ];
     }
 }

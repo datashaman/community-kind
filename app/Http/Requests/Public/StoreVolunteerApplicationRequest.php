@@ -2,9 +2,13 @@
 
 namespace App\Http\Requests\Public;
 
+use App\Enums\OrganisationConfigurationArea;
+use App\Enums\OrganisationConfigurationStatus;
 use App\Models\Organisation;
+use App\Models\OrganisationConfiguration;
 use Illuminate\Contracts\Validation\ValidationRule;
 use Illuminate\Foundation\Http\FormRequest;
+use Illuminate\Validation\Rule;
 
 class StoreVolunteerApplicationRequest extends FormRequest
 {
@@ -23,14 +27,24 @@ class StoreVolunteerApplicationRequest extends FormRequest
      */
     public function rules(): array
     {
+        $required = $this->requiredFields('volunteer_registration');
+
         return [
             'name' => ['required', 'string', 'max:255'],
             'email' => ['required', 'string', 'lowercase', 'email:rfc', 'max:255'],
-            'interests' => ['sometimes', 'array', 'max:10'],
+            'interests' => [Rule::requiredIf(in_array('interests', $required, true)), 'array', 'max:10'],
             'interests.*' => ['string', 'max:100', 'distinct'],
             'availability' => ['required', 'array', 'min:1', 'max:7'],
             'availability.*' => ['string', 'max:50', 'distinct'],
             'consent_email' => ['required', 'boolean'],
         ];
+    }
+
+    /** @return list<string> */
+    private function requiredFields(string $form): array
+    {
+        $configuration = OrganisationConfiguration::query()->where('area', OrganisationConfigurationArea::PublicForm)->where('configuration_key', $form)->where('status', OrganisationConfigurationStatus::Active)->latest('version')->first();
+
+        return array_values(array_map('strval', $configuration?->definition['required_fields'] ?? []));
     }
 }

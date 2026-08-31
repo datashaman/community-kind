@@ -132,6 +132,24 @@ class Party extends Model
         return $this->hasMany(Donation::class);
     }
 
+    /** @return HasMany<EventRegistration, $this> */
+    public function eventRegistrations(): HasMany
+    {
+        return $this->hasMany(EventRegistration::class);
+    }
+
+    /** @return HasMany<VolunteerApplication, $this> */
+    public function volunteerApplications(): HasMany
+    {
+        return $this->hasMany(VolunteerApplication::class);
+    }
+
+    /** @return HasMany<VolunteerHourEntry, $this> */
+    public function volunteerHourEntries(): HasMany
+    {
+        return $this->hasMany(VolunteerHourEntry::class);
+    }
+
     /** @return array<string, string> */
     protected function casts(): array
     {

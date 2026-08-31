@@ -15,7 +15,7 @@ use LogicException;
  * @property string $id
  * @property int $organisation_id
  * @property string $name
- * @property array{purpose: string, channel: string, role: string, service_area: string|null, interest: string|null, donation_activity: bool, campaign_source: string|null} $criteria
+ * @property array{purpose: string, channel: string, role: string, service_area: string|null, interest: string|null, donation_activity: bool, campaign_source: string|null, activity_type?: string, recency_days?: int|null, minimum_frequency?: int, minimum_value?: int|null} $criteria
  */
 #[Fillable(['organisation_id', 'name', 'criteria', 'created_by_user_id'])]
 class AudienceSegment extends Model

@@ -8,7 +8,7 @@ import { index, show, store } from '@/routes/audience-segments';
 type Segment = {
     id: string;
     name: string;
-    criteria: Record<string, string | boolean | null>;
+    criteria: Record<string, string | boolean | number | null>;
     eligibleCount: number;
 };
 type Option = { value: string; label: string };
@@ -21,6 +21,7 @@ type Props = {
         serviceAreas: string[];
         interests: Array<{ slug: string; label: string }>;
         campaignSources: string[];
+        activityTypes: Option[];
     };
 };
 
@@ -93,6 +94,48 @@ export default function AudienceSegmentsIndex({ segments, options }: Props) {
                                         optional
                                     />
                                     <Select
+                                        name="activity_type"
+                                        label="Eligible activity"
+                                        options={options.activityTypes}
+                                    />
+                                    <label className="grid gap-1">
+                                        <span>
+                                            Recency window in days (optional)
+                                        </span>
+                                        <input
+                                            name="recency_days"
+                                            type="number"
+                                            min="1"
+                                            max="3650"
+                                            className="h-9 rounded-md border bg-transparent px-3"
+                                        />
+                                    </label>
+                                    <label className="grid gap-1">
+                                        <span>Minimum frequency</span>
+                                        <input
+                                            name="minimum_frequency"
+                                            type="number"
+                                            min="0"
+                                            defaultValue="0"
+                                            required
+                                            className="h-9 rounded-md border bg-transparent px-3"
+                                        />
+                                    </label>
+                                    <label className="grid gap-1">
+                                        <span>Minimum value (optional)</span>
+                                        <input
+                                            name="minimum_value"
+                                            type="number"
+                                            min="0"
+                                            className="h-9 rounded-md border bg-transparent px-3"
+                                        />
+                                        <small className="text-muted-foreground">
+                                            Donation minor units, event
+                                            attendances, or volunteer minutes.
+                                            Leave blank for Any.
+                                        </small>
+                                    </label>
+                                    <Select
                                         name="campaign_source"
                                         label="Donation source (optional)"
                                         options={options.campaignSources.map(
@@ -103,19 +146,11 @@ export default function AudienceSegmentsIndex({ segments, options }: Props) {
                                         )}
                                         optional
                                     />
-                                    <label className="flex items-center gap-2">
-                                        <input
-                                            type="hidden"
-                                            name="donation_activity"
-                                            value="0"
-                                        />
-                                        <input
-                                            type="checkbox"
-                                            name="donation_activity"
-                                            value="1"
-                                        />
-                                        Require a successful simulated donation
-                                    </label>
+                                    <input
+                                        type="hidden"
+                                        name="donation_activity"
+                                        value="0"
+                                    />
                                     <Button type="submit" disabled={processing}>
                                         Save and preview
                                     </Button>

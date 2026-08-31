@@ -11,6 +11,10 @@ type Member = {
     serviceAreas: string[];
     interests: string[];
     donationCount: number;
+    activityType: string;
+    activityFrequency: number;
+    activityValue: number | null;
+    latestActivityAt: string | null;
     consentedAt: string;
 };
 
@@ -22,7 +26,7 @@ export default function AudienceSegmentShow({
     segment: {
         id: string;
         name: string;
-        criteria: Record<string, string | boolean | null>;
+        criteria: Record<string, string | boolean | number | null>;
     };
     audience: Member[];
     eligibleCount: number;
@@ -76,9 +80,27 @@ export default function AudienceSegmentShow({
                                     </div>
                                     <div className="text-sm">
                                         <p>
-                                            {member.donationCount} matching
-                                            donation(s)
+                                            {member.activityFrequency}{' '}
+                                            {member.activityType.replaceAll(
+                                                '_',
+                                                ' ',
+                                            )}{' '}
+                                            activity record(s)
                                         </p>
+                                        {member.activityValue !== null ? (
+                                            <p>
+                                                Declared value:{' '}
+                                                {member.activityValue}
+                                            </p>
+                                        ) : null}
+                                        {member.latestActivityAt ? (
+                                            <p>
+                                                Latest activity:{' '}
+                                                {new Date(
+                                                    member.latestActivityAt,
+                                                ).toLocaleString()}
+                                            </p>
+                                        ) : null}
                                         <p>
                                             Consent:{' '}
                                             {new Date(

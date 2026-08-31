@@ -6,6 +6,7 @@ use App\Actions\Parties\FindPartiesByContact;
 use App\Cryptography\ClassifiedDataEncrypter;
 use App\Data\Values\ClassifiedValue;
 use App\Enums\IntakeStatus;
+use App\Enums\IntakeUrgency;
 use App\Enums\PartyContactType;
 use App\Models\IntakeRequest;
 use App\Models\Organisation;
@@ -26,7 +27,7 @@ class CreateIntakeRequest
     ) {}
 
     /**
-     * @param  array{source: string, narrative: string, presenting_needs: string, intake_fields: array<string, mixed>, eligibility_context: array<string, mixed>, risk_flags: list<string>, email: string|null, telephone: string|null, idempotency_key: string|null, consent_granted: bool, consent_source: string}  $attributes
+     * @param  array{source: string, narrative: string, presenting_needs: string, urgency?: IntakeUrgency, intake_fields: array<string, mixed>, eligibility_context: array<string, mixed>, risk_flags: list<string>, email: string|null, telephone: string|null, idempotency_key: string|null, consent_granted: bool, consent_source: string}  $attributes
      */
     public function handle(Organisation $organisation, Program $program, Party $party, array $attributes, User $actor): IntakeRequest
     {
@@ -55,6 +56,7 @@ class CreateIntakeRequest
                     'eligibility_context' => $attributes['eligibility_context'],
                     'risk_flags' => $attributes['risk_flags'],
                     'status' => IntakeStatus::Draft,
+                    'urgency' => $attributes['urgency'] ?? IntakeUrgency::Routine,
                     'source' => $attributes['source'],
                     'idempotency_key' => $attributes['idempotency_key'],
                     'created_by_user_id' => $actor->id,

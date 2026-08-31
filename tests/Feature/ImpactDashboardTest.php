@@ -89,7 +89,7 @@ it('reconciles fixed definitions, half-open periods, comparisons, rates, money, 
 
     $empty = app(OrganisationContext::class)->run($organisation, fn () => app(BuildImpactDashboard::class)->handle($executive, $organisation, ['period_start' => '2025-01-01', 'period_end' => '2025-02-01']));
     $emptyMetrics = collect($empty['metrics'])->keyBy('definition.id');
-    expect($emptyMetrics)->toHaveCount(13)
+    expect($emptyMetrics)->toHaveCount(15)
         ->and($emptyMetrics['service.requests_received']['value'])->toBe(0.0)
         ->and($emptyMetrics['service.goal_achievement_rate']['availability'])->toBe('unavailable')
         ->and($emptyMetrics['engagement.meaningful_action_rate']['availability'])->toBe('unavailable');

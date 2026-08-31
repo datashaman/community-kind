@@ -2,6 +2,7 @@
 
 namespace Database\Factories;
 
+use App\Enums\SupporterJourneyKind;
 use App\Enums\SupporterJourneyStatus;
 use App\Models\AudienceSegment;
 use App\Models\SupporterJourney;
@@ -24,9 +25,12 @@ class SupporterJourneyFactory extends Factory
             'organisation_id' => app(OrganisationContext::class)->id(),
             'audience_segment_id' => AudienceSegment::factory(),
             'name' => fake()->unique()->words(3, true),
+            'journey_kind' => SupporterJourneyKind::General,
+            'channel' => 'email',
             'subject' => 'Thank you, {{ supporter_name }}',
             'body' => 'Your {{ donation_count }} contribution(s) make a difference.',
             'status' => SupporterJourneyStatus::Draft,
+            'version' => 1,
         ];
     }
 }

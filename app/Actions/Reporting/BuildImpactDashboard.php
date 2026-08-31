@@ -73,6 +73,17 @@ class BuildImpactDashboard
                 ] : null,
             ];
         })->values()->all();
+        $cohortComparisons = collect(PartyBusinessRole::cases())->map(function (PartyBusinessRole $cohort) use ($definitions, $end, $filters, $start): array {
+            $cohortFilters = [...$filters, 'cohort' => $cohort->value];
+            $values = collect($definitions)->filter(fn (array $definition): bool => in_array('cohort', $definition['dimensions'], true))->mapWithKeys(function (array $definition) use ($cohortFilters, $end, $start): array {
+                $metric = $this->calculate($definition['id'], $start, $end, $cohortFilters);
+                $suppressed = $metric['sampleSize'] > 0 && $metric['sampleSize'] < config('reporting.minimum_cohort');
+
+                return [$definition['id'] => ['value' => $suppressed ? null : $metric['value'], 'availability' => $suppressed ? 'suppressed' : ($metric['value'] === null ? 'unavailable' : 'available'), 'sampleSize' => $suppressed ? null : $metric['sampleSize']]];
+            })->all();
+
+            return ['cohort' => $cohort->value, 'label' => $cohort->label(), 'metrics' => $values];
+        })->values()->all();
 
         return [
             'registryVersion' => MetricRegistry::VERSION,
@@ -87,6 +98,7 @@ class BuildImpactDashboard
             'filters' => collect($filters)->except('_program_ids')->all(),
             'minimumCohort' => config('reporting.minimum_cohort'),
             'metrics' => $metrics,
+            'cohortComparisons' => $cohortComparisons,
             'options' => $this->options($user, $organisation, $role),
         ];
     }
@@ -127,6 +139,8 @@ class BuildImpactDashboard
             'engagement.event_attendance' => $this->eventAttendance($start, $end, $filters),
             'engagement.in_kind_fulfilments' => $this->inKindFulfilments($start, $end, $filters),
             'engagement.partner_commitments' => $this->partnerCommitments($start, $end, $filters),
+            'data.missing_service_area_rate' => $this->missingDataRate('service_area', $start, $end, $filters),
+            'data.missing_contact_rate' => $this->missingDataRate('contact', $start, $end, $filters),
             default => ['value' => null, 'sampleSize' => 0],
         };
     }
@@ -183,6 +197,24 @@ class BuildImpactDashboard
         $records = PartnerCommitment::query()->with(['partner.party.addresses', 'partner.party.businessRoles'])->where('created_at', '>=', $start)->where('created_at', '<', $end)->get()->filter(fn (PartnerCommitment $commitment): bool => $this->matchesParty($commitment->partner->party, $filters));
 
         return ['value' => (float) $records->count(), 'sampleSize' => $records->pluck('partner.party_id')->unique()->count()];
+    }
+
+    /** @param array<string, mixed> $filters
+     * @return array{value: float|null, sampleSize: int}
+     */
+    private function missingDataRate(string $field, CarbonImmutable $start, CarbonImmutable $end, array $filters): array
+    {
+        $parties = Party::query()->with(['addresses', 'businessRoles', 'contactPoints'])
+            ->where('created_at', '>=', $start)->where('created_at', '<', $end)->get()
+            ->filter(fn (Party $party): bool => $this->matchesParty($party, $filters));
+        if ($parties->isEmpty()) {
+            return ['value' => null, 'sampleSize' => 0];
+        }
+        $missing = $parties->filter(fn (Party $party): bool => $field === 'service_area'
+            ? ! $party->addresses->contains(fn (PartyAddress $address): bool => filled($address->service_area))
+            : $party->contactPoints->isEmpty());
+
+        return ['value' => round($missing->count() / $parties->count() * 100, 2), 'sampleSize' => $parties->count()];
     }
 
     /** @param array<string, mixed> $filters
