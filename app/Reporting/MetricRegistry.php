@@ -6,7 +6,7 @@ use App\Enums\OrganisationRole;
 
 class MetricRegistry
 {
-    public const VERSION = '2026.2';
+    public const VERSION = '2026.3';
 
     /** @return list<array{id: string, version: string, category: string, domain: string, label: string, description: string, formula: string, unit: string, dimensions: list<string>}> */
     public function forRole(?OrganisationRole $role): array
@@ -20,6 +20,9 @@ class MetricRegistry
             $this->definition('engagement.welcome_deliveries', 'activity', 'engagement', 'Welcome deliveries', 'Recipients with a simulated delivered event in the reporting period.', 'count(distinct delivered recipients)', 'count', ['date', 'area', 'location', 'cohort', 'campaign']),
             $this->definition('engagement.volunteer_applications', 'activity', 'engagement', 'Volunteer applications', 'Volunteer applications submitted in the reporting period.', 'count(applications)', 'count', ['date', 'area', 'location', 'cohort']),
             $this->definition('engagement.volunteer_hours', 'output', 'engagement', 'Volunteer hours', 'Attended volunteer time recorded in the reporting period.', 'sum(minutes) / 60', 'hours', ['date', 'area', 'location', 'cohort']),
+            $this->definition('engagement.event_attendance', 'output', 'engagement', 'Event attendance', 'Event registrations entering attended state in the reporting period.', 'count(attended registrations)', 'count', ['date', 'area', 'location', 'cohort']),
+            $this->definition('engagement.in_kind_fulfilments', 'output', 'engagement', 'In-kind fulfilments', 'In-kind offers fulfilled in the reporting period.', 'count(fulfilled offers)', 'count', ['date', 'area', 'location', 'cohort']),
+            $this->definition('engagement.partner_commitments', 'activity', 'engagement', 'Partner commitments', 'Partner commitments recorded in the reporting period.', 'count(commitments)', 'count', ['date', 'area', 'location', 'cohort']),
             $this->definition('fundraising.net_raised', 'output', 'fundraising', 'Net raised', 'Succeeded payment value less refunds recorded in the reporting period.', 'sum(succeeded payment minor units) - sum(refund minor units)', 'currency', ['date', 'area', 'location', 'cohort', 'campaign']),
             $this->definition('engagement.meaningful_action_rate', 'outcome', 'engagement', 'Meaningful action rate', 'Recipients with a meaningful action divided by delivered recipients.', 'meaningful recipients / delivered recipients', 'percent', ['date', 'area', 'location', 'cohort', 'campaign']),
         ];

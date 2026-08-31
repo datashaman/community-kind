@@ -46,6 +46,11 @@ type Registration = {
             minutes: number | null;
         }[];
     } | null;
+    event: {
+        status: string;
+        startsAt: string;
+        remindedAt: string | null;
+    } | null;
 };
 type Props = {
     organisation: { name: string; slug: string };
@@ -53,6 +58,15 @@ type Props = {
     preferences: Record<'email' | 'sms' | 'telephone', boolean>;
     recurringMandates: RecurringMandate[];
     registrations: Registration[];
+    inKindOffers: {
+        id: string;
+        category: string;
+        quantity: string;
+        unit: string;
+        condition: string;
+        status: string;
+        outcome: string | null;
+    }[];
 };
 
 const formArray = (value: unknown): string[] =>
@@ -68,6 +82,7 @@ export default function PortalShow({
     preferences,
     recurringMandates,
     registrations,
+    inKindOffers,
 }: Props) {
     const slug = organisation.slug;
 
@@ -366,6 +381,21 @@ export default function PortalShow({
                                                     )}
                                                 </div>
                                             ) : null}
+                                            {registration.event ? (
+                                                <p className="mt-3 text-sm text-slate-600 dark:text-slate-300">
+                                                    Event status:{' '}
+                                                    {registration.event.status}{' '}
+                                                    ·{' '}
+                                                    {new Date(
+                                                        registration.event
+                                                            .startsAt,
+                                                    ).toLocaleString()}
+                                                    {registration.event
+                                                        .remindedAt
+                                                        ? ' · reminder recorded'
+                                                        : ''}
+                                                </p>
+                                            ) : null}
                                         </div>
                                         {registration.canCancel ? (
                                             <Form
@@ -386,6 +416,39 @@ export default function PortalShow({
                                             </Form>
                                         ) : null}
                                     </div>
+                                </div>
+                            ))}
+                        </CardContent>
+                    </Card>
+
+                    <Card>
+                        <CardHeader>
+                            <CardTitle>In-kind offers</CardTitle>
+                        </CardHeader>
+                        <CardContent className="space-y-3">
+                            {inKindOffers.length === 0 ? (
+                                <p className="text-sm text-slate-600 dark:text-slate-300">
+                                    You have no in-kind offers with this
+                                    organisation.
+                                </p>
+                            ) : null}
+                            {inKindOffers.map((offer) => (
+                                <div
+                                    key={offer.id}
+                                    className="rounded-md border border-slate-200 p-4 dark:border-slate-700"
+                                >
+                                    <p className="font-medium">
+                                        {offer.category}: {offer.quantity}{' '}
+                                        {offer.unit}
+                                    </p>
+                                    <p className="text-sm">
+                                        {offer.condition} · {offer.status}
+                                    </p>
+                                    {offer.outcome ? (
+                                        <p className="text-sm">
+                                            Outcome: {offer.outcome}
+                                        </p>
+                                    ) : null}
                                 </div>
                             ))}
                         </CardContent>

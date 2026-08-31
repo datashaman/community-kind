@@ -1,6 +1,7 @@
 import { Link, usePage } from '@inertiajs/react';
 import {
     ClipboardList,
+    CalendarDays,
     FolderGit2,
     HandCoins,
     LayoutGrid,
@@ -29,6 +30,7 @@ import {
 import { dashboard } from '@/routes';
 import { index as audienceSegmentsIndex } from '@/routes/audience-segments';
 import { index as auditIndex } from '@/routes/audit';
+import { index as communityEngagementIndex } from '@/routes/community-engagement';
 import { index as donationsIndex } from '@/routes/donations';
 import { index as intakesIndex } from '@/routes/intakes';
 import { index as partiesIndex } from '@/routes/parties';
@@ -107,6 +109,17 @@ export function AppSidebar() {
                           page.props.currentOrganisation.slug,
                       ),
                       icon: HeartHandshake,
+                  },
+              ]
+            : []),
+        ...(page.props.canViewVolunteers && page.props.currentOrganisation
+            ? [
+                  {
+                      title: 'Community engagement',
+                      href: communityEngagementIndex(
+                          page.props.currentOrganisation.slug,
+                      ),
+                      icon: CalendarDays,
                   },
               ]
             : []),

@@ -11,6 +11,7 @@ use App\Http\Controllers\Organisations\CaseDocumentController;
 use App\Http\Controllers\Organisations\CaseExportController;
 use App\Http\Controllers\Organisations\CaseItemController;
 use App\Http\Controllers\Organisations\CaseWorkflowController;
+use App\Http\Controllers\Organisations\CommunityEngagementController;
 use App\Http\Controllers\Organisations\DonationController;
 use App\Http\Controllers\Organisations\ImpactChartExportController;
 use App\Http\Controllers\Organisations\ImpactReportExportController;
@@ -36,7 +37,9 @@ use App\Http\Controllers\Portal\PortalController;
 use App\Http\Controllers\Portal\PortalProfileController;
 use App\Http\Controllers\Portal\PortalRecurringMandateController;
 use App\Http\Controllers\Portal\PortalRegistrationController;
+use App\Http\Controllers\Public\CommunityEventController as PublicCommunityEventController;
 use App\Http\Controllers\Public\DonationController as PublicDonationController;
+use App\Http\Controllers\Public\InKindOfferController as PublicInKindOfferController;
 use App\Http\Controllers\Public\OrganisationController as PublicOrganisationController;
 use App\Http\Controllers\Public\VolunteerOpportunityController as PublicVolunteerOpportunityController;
 use App\Http\Middleware\EnsureOrganisationAccess;
@@ -86,6 +89,11 @@ Route::domain('{public_organisation}.'.config('organisations.public_domain'))
         Route::get('/volunteer', [PublicVolunteerOpportunityController::class, 'index'])->name('public.volunteers.index');
         Route::get('/volunteer/{opportunity}', [PublicVolunteerOpportunityController::class, 'show'])->name('public.volunteers.show');
         Route::post('/volunteer/{opportunity}', [PublicVolunteerOpportunityController::class, 'store'])->middleware('throttle:10,1')->name('public.volunteers.store');
+        Route::get('/events', [PublicCommunityEventController::class, 'index'])->name('public.events.index');
+        Route::get('/events/{event}', [PublicCommunityEventController::class, 'show'])->name('public.events.show');
+        Route::post('/events/{event}', [PublicCommunityEventController::class, 'store'])->middleware('throttle:10,1')->name('public.events.store');
+        Route::get('/in-kind', [PublicInKindOfferController::class, 'create'])->name('public.in-kind.create');
+        Route::post('/in-kind', [PublicInKindOfferController::class, 'store'])->middleware('throttle:10,1')->name('public.in-kind.store');
         Route::get('/portal/access/{token}', [PortalAccessController::class, 'use'])
             ->middleware('throttle:20,1')
             ->name('portal.access.use');
@@ -135,6 +143,13 @@ Route::prefix('{current_organisation}')
         Route::resource('audience-segments', AudienceSegmentController::class)->only(['index', 'store', 'show']);
         Route::resource('supporter-journeys', SupporterJourneyController::class)->only(['index', 'store', 'show']);
         Route::resource('volunteers', VolunteerOpportunityController::class)->only(['index', 'store', 'show']);
+        Route::get('community-engagement', [CommunityEngagementController::class, 'index'])->name('community-engagement.index');
+        Route::post('community-engagement/events', [CommunityEngagementController::class, 'storeEvent'])->name('community-engagement.events.store');
+        Route::post('community-engagement/event-registrations/{registration}/transitions', [CommunityEngagementController::class, 'transitionRegistration'])->name('community-engagement.event-registrations.transitions.store');
+        Route::post('community-engagement/event-registrations/{registration}/reminder', [CommunityEngagementController::class, 'remindRegistration'])->name('community-engagement.event-registrations.reminder.store');
+        Route::post('community-engagement/in-kind-offers/{offer}/transitions', [CommunityEngagementController::class, 'transitionOffer'])->name('community-engagement.in-kind-offers.transitions.store');
+        Route::post('community-engagement/partners', [CommunityEngagementController::class, 'storePartner'])->name('community-engagement.partners.store');
+        Route::post('community-engagement/partners/{partner}/commitments', [CommunityEngagementController::class, 'storeCommitment'])->name('community-engagement.partners.commitments.store');
         Route::post('volunteers/{volunteer}/applications/{application}/transitions', [VolunteerOpportunityController::class, 'transitionApplication'])->name('volunteers.applications.transitions.store');
         Route::post('volunteers/{volunteer}/applications/{application}/credentials', [VolunteerOpportunityController::class, 'storeCredential'])->name('volunteers.applications.credentials.store');
         Route::post('volunteers/{volunteer}/shifts', [VolunteerOpportunityController::class, 'storeShift'])->name('volunteers.shifts.store');

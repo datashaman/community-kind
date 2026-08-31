@@ -39,6 +39,7 @@ final class BuildOrganisationScenario
         private readonly BuildRequestToOutcomeScenario $buildRequestToOutcomeScenario,
         private readonly BuildDonorToRetainedSupporterScenario $buildDonorToRetainedSupporterScenario,
         private readonly BuildVolunteerScenario $buildVolunteerScenario,
+        private readonly BuildCommunityEngagementScenario $buildCommunityEngagementScenario,
     ) {}
 
     /** @param ScenarioDefinition $scenario */
@@ -108,6 +109,11 @@ final class BuildOrganisationScenario
                         User::query()->where('email', $engagement['email'])->firstOrFail(),
                     );
                     $this->buildVolunteerScenario->handle(
+                        $organisation,
+                        User::query()->where('email', $engagement['email'])->firstOrFail(),
+                        $scenario['reporting_at'],
+                    );
+                    $this->buildCommunityEngagementScenario->handle(
                         $organisation,
                         User::query()->where('email', $engagement['email'])->firstOrFail(),
                         $scenario['reporting_at'],

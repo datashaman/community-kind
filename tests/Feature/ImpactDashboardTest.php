@@ -76,7 +76,7 @@ it('reconciles fixed definitions, half-open periods, comparisons, rates, money, 
     $engagementFilters = ['period_start' => '2026-06-01', 'period_end' => '2026-07-01'];
     $engagementDashboard = app(OrganisationContext::class)->run($organisation, fn () => app(BuildImpactDashboard::class)->handle($engagement, $organisation, $engagementFilters));
     $engagementMetrics = collect($engagementDashboard['metrics'])->keyBy('definition.id');
-    expect($engagementMetrics)->toHaveCount(6)
+    expect($engagementMetrics)->toHaveCount(9)
         ->and($engagementMetrics['fundraising.successful_donations']['value'])->toBe(1.0)
         ->and($engagementMetrics['fundraising.net_raised']['value'])->toBe(40.0)
         ->and($engagementMetrics['engagement.welcome_deliveries']['value'])->toBe(1.0)
@@ -89,7 +89,7 @@ it('reconciles fixed definitions, half-open periods, comparisons, rates, money, 
 
     $empty = app(OrganisationContext::class)->run($organisation, fn () => app(BuildImpactDashboard::class)->handle($executive, $organisation, ['period_start' => '2025-01-01', 'period_end' => '2025-02-01']));
     $emptyMetrics = collect($empty['metrics'])->keyBy('definition.id');
-    expect($emptyMetrics)->toHaveCount(10)
+    expect($emptyMetrics)->toHaveCount(13)
         ->and($emptyMetrics['service.requests_received']['value'])->toBe(0.0)
         ->and($emptyMetrics['service.goal_achievement_rate']['availability'])->toBe('unavailable')
         ->and($emptyMetrics['engagement.meaningful_action_rate']['availability'])->toBe('unavailable');
@@ -147,7 +147,10 @@ it('exactly reconciles the versioned seeded service, donation, and communication
         ->and($engagementMetrics['engagement.welcome_deliveries']['value'])->toBe(1.0)
         ->and($engagementMetrics['engagement.meaningful_action_rate']['value'])->toBe(100.0)
         ->and($engagementMetrics['engagement.volunteer_applications']['value'])->toBe(100.0)
-        ->and($engagementMetrics['engagement.volunteer_hours']['value'])->toBe(400.0);
+        ->and($engagementMetrics['engagement.volunteer_hours']['value'])->toBe(400.0)
+        ->and($engagementMetrics['engagement.event_attendance']['value'])->toBe(1.0)
+        ->and($engagementMetrics['engagement.in_kind_fulfilments']['value'])->toBe(1.0)
+        ->and($engagementMetrics['engagement.partner_commitments']['value'])->toBe(1.0);
 });
 
 /** @return array{Organisation, Program, User, User, User} */
