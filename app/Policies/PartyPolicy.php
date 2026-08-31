@@ -75,7 +75,8 @@ class PartyPolicy
 
     public function recordConsent(User $user, Party $party): bool
     {
-        return $this->hasProgramManagerAccess($user, $party)
+        return $this->supporterSafe($user, $party)
+            || $this->hasProgramManagerAccess($user, $party)
             || ServiceCase::query()
                 ->where('party_id', $party->id)
                 ->get()

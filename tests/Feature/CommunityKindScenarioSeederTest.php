@@ -1,11 +1,14 @@
 <?php
 
 use App\Actions\Demo\BuildOrganisationScenario;
+use App\Actions\Engagement\EvaluateAudienceSegment;
 use App\Actions\Programs\BuildProgramReport;
 use App\Actions\Programs\SearchPrograms;
 use App\Data\Demo\ScenarioCatalog;
+use App\Enums\ConsentPurpose;
 use App\Enums\DonationPaymentStatus;
 use App\Enums\OrganisationStatus;
+use App\Models\AudienceSegment;
 use App\Models\Donation;
 use App\Models\DonationFund;
 use App\Models\DonationPayment;
@@ -15,6 +18,7 @@ use App\Models\Membership;
 use App\Models\MetricEvent;
 use App\Models\Organisation;
 use App\Models\Party;
+use App\Models\PartyConsent;
 use App\Models\PartyContactPoint;
 use App\Models\Program;
 use App\Models\RoleAssignment;
@@ -85,6 +89,8 @@ it('seeds the versioned synthetic scenarios deterministically', function () {
         ->and(DonationPayment::withoutGlobalScopes()->count())->toBe(1)
         ->and(DonationPayment::withoutGlobalScopes()->sole()->status)->toBe(DonationPaymentStatus::Succeeded)
         ->and(DonationReceipt::withoutGlobalScopes()->sole()->marker)->toBe('Demo—Not a tax receipt')
+        ->and(AudienceSegment::withoutGlobalScopes()->count())->toBe(1)
+        ->and(PartyConsent::withoutGlobalScopes()->where('purpose', ConsentPurpose::SupporterUpdates)->count())->toBe(1)
         ->and($showcaseCase->opened_at->toDateTimeString())->toBe('2026-06-02 06:00:00')
         ->and($showcaseCase->closed_at?->toDateTimeString())->toBe('2026-06-28 13:00:00')
         ->and($serviceMetric->occurred_at->toDateTimeString())->toBe('2026-06-10 10:00:00')
@@ -110,7 +116,12 @@ it('seeds the versioned synthetic scenarios deterministically', function () {
         ->and(DonationFund::withoutGlobalScopes()->count())->toBe(1)
         ->and(Donation::withoutGlobalScopes()->count())->toBe(1)
         ->and(DonationPayment::withoutGlobalScopes()->count())->toBe(1)
-        ->and(DonationReceipt::withoutGlobalScopes()->count())->toBe(1);
+        ->and(DonationReceipt::withoutGlobalScopes()->count())->toBe(1)
+        ->and(AudienceSegment::withoutGlobalScopes()->count())->toBe(1)
+        ->and(PartyConsent::withoutGlobalScopes()->where('purpose', ConsentPurpose::SupporterUpdates)->count())->toBe(1);
+
+    $harbourKind = Organisation::query()->findOrFail($harbourKindId);
+    expect(app(OrganisationContext::class)->run($harbourKind, fn () => app(EvaluateAudienceSegment::class)->handle(AudienceSegment::query()->sole())->count()))->toBe(1);
 });
 
 it('keeps every scenario identity and reserved showcase explicitly synthetic', function () {

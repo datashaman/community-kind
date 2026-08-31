@@ -18,6 +18,7 @@ declare module '@inertiajs/core' {
             canViewPrograms: boolean;
             canViewIntakes: boolean;
             canViewDonations: boolean;
+            canViewAudienceSegments: boolean;
             currentOrganisation: Organisation | null;
             organisations: Organisation[];
             [key: string]: unknown;

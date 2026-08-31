@@ -3,6 +3,7 @@
 namespace App\Models;
 
 use App\Concerns\BelongsToOrganisation;
+use App\Enums\ConsentChannel;
 use App\Enums\ConsentDecision;
 use App\Enums\ConsentPurpose;
 use Database\Factories\PartyConsentFactory;
@@ -17,6 +18,7 @@ use LogicException;
 /**
  * @property string $id
  * @property ConsentPurpose $purpose
+ * @property ConsentChannel $channel
  * @property ConsentDecision $decision
  * @property string $wording_version
  * @property string $wording
@@ -24,7 +26,7 @@ use LogicException;
  * @property Carbon $occurred_at
  * @property string|null $supersedes_id
  */
-#[Fillable(['organisation_id', 'party_id', 'purpose', 'decision', 'wording_version', 'wording', 'source', 'occurred_at', 'supersedes_id', 'recorded_by_user_id'])]
+#[Fillable(['organisation_id', 'party_id', 'purpose', 'channel', 'decision', 'wording_version', 'wording', 'source', 'occurred_at', 'supersedes_id', 'recorded_by_user_id'])]
 class PartyConsent extends Model
 {
     /** @use HasFactory<PartyConsentFactory> */
@@ -61,6 +63,7 @@ class PartyConsent extends Model
     {
         return [
             'purpose' => ConsentPurpose::class,
+            'channel' => ConsentChannel::class,
             'decision' => ConsentDecision::class,
             'occurred_at' => 'datetime',
         ];

@@ -3,6 +3,7 @@
 namespace App\Http\Controllers\Organisations;
 
 use App\Actions\Parties\RecordPartyConsent;
+use App\Enums\ConsentChannel;
 use App\Enums\ConsentDecision;
 use App\Enums\ConsentPurpose;
 use App\Http\Controllers\Controller;
@@ -22,8 +23,11 @@ class PartyConsentController extends Controller
     ): RedirectResponse {
         $party = Party::query()->where('uuid', $party)->firstOrFail();
         Gate::authorize('recordConsent', $party);
+        $purpose = ConsentPurpose::from($request->string('purpose')->toString());
+        abort_if(Gate::allows('supporterSafe', $party) && $purpose !== ConsentPurpose::SupporterUpdates, 403);
         $recordPartyConsent->handle($party, [
-            'purpose' => ConsentPurpose::from($request->string('purpose')->toString()),
+            'purpose' => $purpose,
+            'channel' => $request->filled('channel') ? ConsentChannel::from($request->string('channel')->toString()) : ConsentChannel::NotApplicable,
             'decision' => ConsentDecision::from($request->string('decision')->toString()),
             'wording_version' => $request->string('wording_version')->toString(),
             'wording' => $request->string('wording')->toString(),

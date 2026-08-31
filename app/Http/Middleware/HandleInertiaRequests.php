@@ -2,6 +2,7 @@
 
 namespace App\Http\Middleware;
 
+use App\Models\AudienceSegment;
 use App\Models\Donation;
 use App\Models\IntakeRequest;
 use App\Models\Organisation;
@@ -67,6 +68,8 @@ class HandleInertiaRequests extends Middleware
                 && Gate::allows('viewAny', [IntakeRequest::class, $routeOrganisation]),
             'canViewDonations' => fn (): bool => $routeOrganisation instanceof Organisation
                 && Gate::allows('viewAny', [Donation::class, $routeOrganisation]),
+            'canViewAudienceSegments' => fn (): bool => $routeOrganisation instanceof Organisation
+                && Gate::allows('viewAny', [AudienceSegment::class, $routeOrganisation]),
         ];
     }
 }

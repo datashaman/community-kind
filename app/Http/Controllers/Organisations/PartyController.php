@@ -4,6 +4,7 @@ namespace App\Http\Controllers\Organisations;
 
 use App\Actions\Parties\CreatePartyProfile;
 use App\Actions\Parties\UpdatePartyProfile;
+use App\Enums\ConsentPurpose;
 use App\Enums\OrganisationRole;
 use App\Enums\PartyBusinessRole;
 use App\Enums\PartyContactType;
@@ -137,16 +138,19 @@ class PartyController extends Controller
                     'startedAt' => $relationship->started_at?->toAtomString(),
                     'endedAt' => $relationship->ended_at?->toAtomString(),
                 ])->values() : [],
-                'consents' => $serviceProjection ? $party->consents->map(fn ($consent): array => [
-                    'id' => $consent->id,
-                    'purpose' => $consent->purpose->value,
-                    'decision' => $consent->decision->value,
-                    'wordingVersion' => $consent->wording_version,
-                    'wording' => $consent->wording,
-                    'source' => $consent->source,
-                    'occurredAt' => $consent->occurred_at->toAtomString(),
-                    'supersedesId' => $consent->supersedes_id,
-                ])->values() : [],
+                'consents' => ($serviceProjection || $supporterSafe) ? $party->consents
+                    ->when($supporterSafe, fn ($consents) => $consents->where('purpose', ConsentPurpose::SupporterUpdates))
+                    ->map(fn ($consent): array => [
+                        'id' => $consent->id,
+                        'purpose' => $consent->purpose->value,
+                        'channel' => $consent->channel->value,
+                        'decision' => $consent->decision->value,
+                        'wordingVersion' => $consent->wording_version,
+                        'wording' => $consent->wording,
+                        'source' => $consent->source,
+                        'occurredAt' => $consent->occurred_at->toAtomString(),
+                        'supersedesId' => $consent->supersedes_id,
+                    ])->values() : [],
                 'safeContactInstructions' => $canManageSafeContact
                     ? $party->safeContactInstructions->map(fn ($instruction): array => [
                         'id' => $instruction->id,
