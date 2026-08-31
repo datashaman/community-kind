@@ -4,6 +4,7 @@ namespace App\Models;
 
 use App\Concerns\BelongsToOrganisation;
 use App\Enums\PartyKind;
+use App\OrganisationContext;
 use Database\Factories\PartyFactory;
 use Illuminate\Database\Eloquent\Attributes\Fillable;
 use Illuminate\Database\Eloquent\Collection;
@@ -11,6 +12,7 @@ use Illuminate\Database\Eloquent\Concerns\HasUuids;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\SoftDeletes;
 
@@ -54,9 +56,64 @@ class Party extends Model
         return $this->hasMany(PartyContactPoint::class);
     }
 
+    /** @return BelongsToMany<Program, $this> */
+    public function programs(): BelongsToMany
+    {
+        return $this->belongsToMany(Program::class, 'party_program')
+            ->withPivotValue('organisation_id', app(OrganisationContext::class)->id())
+            ->withTimestamps();
+    }
+
+    /** @return HasMany<PartyRole, $this> */
+    public function businessRoles(): HasMany
+    {
+        return $this->hasMany(PartyRole::class);
+    }
+
+    /** @return HasMany<PartyRelationship, $this> */
+    public function relationships(): HasMany
+    {
+        return $this->hasMany(PartyRelationship::class);
+    }
+
+    /** @return HasMany<PartyAddress, $this> */
+    public function addresses(): HasMany
+    {
+        return $this->hasMany(PartyAddress::class);
+    }
+
+    /** @return HasMany<PartyInterest, $this> */
+    public function interests(): HasMany
+    {
+        return $this->hasMany(PartyInterest::class);
+    }
+
+    /** @return HasMany<PartyConsent, $this> */
+    public function consents(): HasMany
+    {
+        return $this->hasMany(PartyConsent::class);
+    }
+
+    /** @return HasMany<PartySafeContactInstruction, $this> */
+    public function safeContactInstructions(): HasMany
+    {
+        return $this->hasMany(PartySafeContactInstruction::class);
+    }
+
+    /** @return HasMany<PartyTimelineEvent, $this> */
+    public function timelineEvents(): HasMany
+    {
+        return $this->hasMany(PartyTimelineEvent::class);
+    }
+
     /** @return array<string, string> */
     protected function casts(): array
     {
         return ['kind' => PartyKind::class];
+    }
+
+    public function getRouteKeyName(): string
+    {
+        return 'uuid';
     }
 }

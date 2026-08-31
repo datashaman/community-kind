@@ -2,6 +2,12 @@
 
 use App\Http\Controllers\DashboardController;
 use App\Http\Controllers\Organisations\OrganisationInvitationController;
+use App\Http\Controllers\Organisations\PartyAddressController;
+use App\Http\Controllers\Organisations\PartyConsentController;
+use App\Http\Controllers\Organisations\PartyController;
+use App\Http\Controllers\Organisations\PartyRelationshipController;
+use App\Http\Controllers\Organisations\PartySafeContactInstructionController;
+use App\Http\Controllers\Organisations\ProgramController;
 use App\Http\Controllers\Public\OrganisationController as PublicOrganisationController;
 use App\Http\Middleware\EnsureOrganisationAccess;
 use App\Http\Middleware\EnsureOrganisationMembership;
@@ -68,6 +74,12 @@ Route::prefix('{current_organisation}')
     ->middleware(['auth', 'verified', EnsureStaffSecurityRequirements::class, EnsureOrganisationMembership::class, UseOrganisationContext::class, EnsureOrganisationAccess::class.':full'])
     ->group(function () {
         Route::get('dashboard', DashboardController::class)->name('dashboard');
+        Route::get('programs', [ProgramController::class, 'index'])->name('programs.index');
+        Route::resource('parties', PartyController::class)->only(['index', 'store', 'show', 'update']);
+        Route::post('parties/{party}/consents', [PartyConsentController::class, 'store'])->name('parties.consents.store');
+        Route::post('parties/{party}/addresses', [PartyAddressController::class, 'store'])->name('parties.addresses.store');
+        Route::post('parties/{party}/relationships', [PartyRelationshipController::class, 'store'])->name('parties.relationships.store');
+        Route::post('parties/{party}/safe-contact-instructions', [PartySafeContactInstructionController::class, 'store'])->name('parties.safe-contact-instructions.store');
     });
 
 Route::middleware(['auth', 'verified'])->group(function () {

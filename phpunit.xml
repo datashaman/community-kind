@@ -24,6 +24,11 @@
         <env name="BCRYPT_ROUNDS" value="4"/>
         <env name="BROADCAST_CONNECTION" value="null"/>
         <env name="CACHE_STORE" value="array"/>
+        <env name="CLASSIFIED_DATA_KEY_CURRENT" value="test-v1"/>
+        <env name="CLASSIFIED_DATA_KEYS" value="{&quot;test-v1&quot;:&quot;base64:VFRUVFRUVFRUVFRUVFRUVFRUVFRUVFRUVFRUVFRUVFQ=&quot;}"/>
+        <env name="CONTACT_INDEX_KEY_CURRENT" value="test-v1"/>
+        <env name="CONTACT_INDEX_KEY_PREVIOUS" value=""/>
+        <env name="CONTACT_INDEX_KEYS" value="{&quot;test-v1&quot;:&quot;base64:SUlJSUlJSUlJSUlJSUlJSUlJSUlJSUlJSUlJSUlJSUk=&quot;}"/>
         <env name="DB_CONNECTION" value="sqlite"/>
         <env name="DB_DATABASE" value=":memory:"/>
         <env name="DB_URL" value=""/>

@@ -14,28 +14,42 @@ use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Gate;
 use Illuminate\Support\Facades\Storage;
+use Inertia\Inertia;
+use Inertia\Response;
 use Symfony\Component\HttpFoundation\StreamedResponse;
 
 class ProgramController extends Controller
 {
+    public function index(Organisation $currentOrganisation): Response
+    {
+        Gate::authorize('viewAny', [Program::class, $currentOrganisation]);
+
+        return Inertia::render('programs/index', [
+            'programs' => Program::query()
+                ->orderBy('name')
+                ->get(['id', 'organisation_id', 'name', 'slug', 'configuration'])
+                ->map(fn (Program $program): array => [
+                    ...$program->only(['id', 'name', 'slug', 'configuration']),
+                    'canUpdate' => Gate::allows('update', $program),
+                ]),
+        ]);
+    }
+
     public function show(Organisation $organisation, string $program): JsonResponse
     {
         $program = $this->findProgram($program);
         Gate::authorize('view', $program);
 
-        return response()->json($program->only(['id', 'organisation_id', 'name', 'slug']));
+        return response()->json($program->only(['id', 'organisation_id', 'name', 'slug', 'configuration']));
     }
 
     public function update(UpdateProgramRequest $request, Organisation $organisation, string $program, UpdateProgram $updateProgram): JsonResponse
     {
         $program = $this->findProgram($program);
         Gate::authorize('update', $program);
-        $program = $updateProgram->handle($program, [
-            'name' => $request->string('name')->toString(),
-            'slug' => $request->string('slug')->toString(),
-        ], $request->user());
+        $program = $updateProgram->handle($program, $this->updateAttributes($request), $request->user());
 
-        return response()->json($program->only(['id', 'organisation_id', 'name', 'slug']));
+        return response()->json($program->only(['id', 'organisation_id', 'name', 'slug', 'configuration']));
     }
 
     public function search(Request $request, Organisation $organisation, SearchPrograms $searchPrograms): JsonResponse
@@ -65,5 +79,22 @@ class ProgramController extends Controller
         return ctype_digit($identifier)
             ? Program::query()->findOrFail((int) $identifier)
             : Program::query()->where('slug', $identifier)->firstOrFail();
+    }
+
+    /** @return array{name: string, slug: string, configuration?: array<string, mixed>} */
+    private function updateAttributes(UpdateProgramRequest $request): array
+    {
+        $configuration = $request->validated('configuration');
+
+        return $request->has('configuration') && is_array($configuration)
+            ? [
+                'name' => $request->string('name')->toString(),
+                'slug' => $request->string('slug')->toString(),
+                'configuration' => $configuration,
+            ]
+            : [
+                'name' => $request->string('name')->toString(),
+                'slug' => $request->string('slug')->toString(),
+            ];
     }
 }

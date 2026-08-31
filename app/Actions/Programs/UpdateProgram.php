@@ -12,7 +12,7 @@ class UpdateProgram
 {
     public function __construct(private RecordTenantAuditEvent $recordTenantAuditEvent) {}
 
-    /** @param array{name: string, slug: string} $attributes */
+    /** @param array{name: string, slug: string, configuration?: array<string, mixed>} $attributes */
     public function handle(Program $program, array $attributes, User $actor): Program
     {
         return DB::transaction(function () use ($program, $attributes, $actor): Program {
