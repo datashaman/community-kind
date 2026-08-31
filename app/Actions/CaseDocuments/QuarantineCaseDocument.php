@@ -128,7 +128,12 @@ final class QuarantineCaseDocument
                     $actor,
                 );
 
-                ScanCaseDocument::dispatch($case->organisation->uuid, $document->id, $document->generation)->afterCommit();
+                ScanCaseDocument::dispatch(
+                    $case->organisation->uuid,
+                    $document->id,
+                    $document->generation,
+                    $case->organisation->demo_generation,
+                )->afterCommit();
 
                 return $document;
             });

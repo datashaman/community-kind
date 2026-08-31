@@ -1,6 +1,9 @@
 <?php
 
 use App\Http\Controllers\DashboardController;
+use App\Http\Controllers\Demo\SandboxBootstrapController;
+use App\Http\Controllers\Demo\SandboxOrganisationController;
+use App\Http\Controllers\Demo\SandboxPersonaController;
 use App\Http\Controllers\Organisations\AudienceSegmentController;
 use App\Http\Controllers\Organisations\CaseAssignmentController;
 use App\Http\Controllers\Organisations\CaseConfidentialityController;
@@ -29,6 +32,7 @@ use App\Http\Controllers\Public\DonationController as PublicDonationController;
 use App\Http\Controllers\Public\OrganisationController as PublicOrganisationController;
 use App\Http\Middleware\EnsureOrganisationAccess;
 use App\Http\Middleware\EnsureOrganisationMembership;
+use App\Http\Middleware\EnsureRecentPassword;
 use App\Http\Middleware\EnsureStaffSecurityRequirements;
 use App\Http\Middleware\ResolvePublicOrganisation;
 use App\Http\Middleware\UseOrganisationContext;
@@ -75,6 +79,10 @@ Route::domain('{public_organisation}.'.config('organisations.public_domain'))
 
 Route::inertia('/', 'welcome')->name('home');
 Route::model('current_organisation', Organisation::class);
+
+Route::get('/demo/bootstrap/{token}', SandboxBootstrapController::class)->middleware('throttle:30,1')->name('demo.bootstrap');
+Route::get('/demo/personas', [SandboxPersonaController::class, 'index'])->name('demo.personas.index');
+Route::post('/demo/personas', [SandboxPersonaController::class, 'store'])->middleware('throttle:30,1')->name('demo.personas.store');
 
 Route::get('/.well-known/security.txt', $securityText)->name('security.txt');
 
@@ -132,6 +140,9 @@ Route::prefix('{current_organisation}')
     });
 
 Route::middleware(['auth', 'verified'])->group(function () {
+    Route::post('settings/organisations/{organisation}/demo-reset', [SandboxOrganisationController::class, 'reset'])
+        ->middleware([EnsureStaffSecurityRequirements::class, EnsureRecentPassword::class, EnsureOrganisationMembership::class, UseOrganisationContext::class, EnsureOrganisationAccess::class.':administration'])
+        ->name('demo.organisations.reset');
     Route::post('invitations/{invitation}/accept', [OrganisationInvitationController::class, 'accept'])->name('invitations.accept');
     Route::delete('invitations/{invitation}', [OrganisationInvitationController::class, 'decline'])->name('invitations.decline');
 });

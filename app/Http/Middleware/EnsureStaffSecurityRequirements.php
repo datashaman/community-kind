@@ -15,6 +15,10 @@ class EnsureStaffSecurityRequirements
      */
     public function handle(Request $request, Closure $next): Response
     {
+        if (config('demo_sandbox.enabled') && $request->session()->has('demo_sandbox_pair_id')) {
+            return $next($request);
+        }
+
         if (! config('auth.mfa_required')) {
             return $next($request);
         }

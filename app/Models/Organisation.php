@@ -11,6 +11,7 @@ use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Database\Eloquent\Concerns\HasUuids;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\SoftDeletes;
@@ -30,11 +31,16 @@ use Illuminate\Support\Carbon;
  * @property Carbon|null $created_at
  * @property Carbon|null $updated_at
  * @property Carbon|null $deleted_at
+ * @property string|null $sandbox_pair_id
+ * @property string|null $sandbox_template
+ * @property int $demo_generation
+ * @property bool $is_synthetic
+ * @property-read SandboxPair|null $sandboxPair
  * @property-read Collection<int, OrganisationInvitation> $invitations
  * @property-read Collection<int, Membership> $memberships
  * @property-read Collection<int, User> $members
  */
-#[Fillable(['name', 'slug', 'status', 'status_changed_at', 'deletion_scheduled_for', 'signed_links_invalidated_at', 'access_version'])]
+#[Fillable(['name', 'slug', 'status', 'status_changed_at', 'deletion_scheduled_for', 'signed_links_invalidated_at', 'access_version', 'sandbox_pair_id', 'sandbox_template', 'demo_generation', 'is_synthetic'])]
 class Organisation extends Model
 {
     /** @use HasFactory<OrganisationFactory> */
@@ -136,6 +142,12 @@ class Organisation extends Model
         return $this->hasMany(OrganisationInvitation::class);
     }
 
+    /** @return BelongsTo<SandboxPair, $this> */
+    public function sandboxPair(): BelongsTo
+    {
+        return $this->belongsTo(SandboxPair::class);
+    }
+
     /**
      * Get the programs configured for this Organisation.
      *
@@ -201,6 +213,8 @@ class Organisation extends Model
             'deletion_scheduled_for' => 'datetime',
             'signed_links_invalidated_at' => 'datetime',
             'access_version' => 'integer',
+            'demo_generation' => 'integer',
+            'is_synthetic' => 'boolean',
         ];
     }
 

@@ -29,3 +29,13 @@ Schedule::command('audit:digest:verify')
     ->dailyAt('01:00')
     ->onOneServer()
     ->withoutOverlapping(60);
+
+Schedule::command('demo:sandbox:expire')
+    ->hourly()
+    ->onOneServer()
+    ->withoutOverlapping(10);
+
+Schedule::command('demo:sandbox:purge')
+    ->daily()
+    ->onOneServer()
+    ->withoutOverlapping(60);
