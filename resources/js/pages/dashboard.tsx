@@ -8,6 +8,8 @@ import { dashboard } from '@/routes';
 import { show as showCase } from '@/routes/cases';
 import { show as showIntake } from '@/routes/intakes';
 import { exportMethod as exportServiceOperations } from '@/routes/dashboard/service-operations';
+import { exportMethod as exportImpact } from '@/routes/dashboard/impact';
+import { exportMethod as exportImpactChart } from '@/routes/dashboard/impact/chart';
 import type { DashboardInvitation } from '@/types';
 
 type Props = {
@@ -297,6 +299,26 @@ function ImpactMetrics({ impact }: { impact: ImpactDashboard }) {
                         exclusive
                     </p>
                 </div>
+                <div className="flex flex-wrap gap-2">
+                    <Button asChild variant="outline">
+                        <a
+                            href={exportImpact.url(organisation.slug, {
+                                query: impact.filters,
+                            })}
+                        >
+                            Export accessible CSV
+                        </a>
+                    </Button>
+                    <Button asChild variant="outline">
+                        <a
+                            href={exportImpactChart.url(organisation.slug, {
+                                query: impact.filters,
+                            })}
+                        >
+                            Export accessible SVG
+                        </a>
+                    </Button>
+                </div>
             </div>
             <Form
                 action={dashboard.url(organisation.slug)}
@@ -409,11 +431,94 @@ function ImpactMetrics({ impact }: { impact: ImpactDashboard }) {
                     </div>
                 );
             })}
+            <MetricChart metrics={impact.metrics} currency={impact.currency} />
             <p className="text-muted-foreground text-xs">
                 Slices with 1–{impact.minimumCohort - 1} people are suppressed.
                 Aggregates do not provide person or case drill-down.
             </p>
         </section>
+    );
+}
+
+function MetricChart({
+    metrics,
+    currency,
+}: {
+    metrics: Metric[];
+    currency: string;
+}) {
+    const available = metrics.filter(
+        (metric) =>
+            metric.availability === 'available' && metric.value !== null,
+    );
+    const maximumByUnit = available.reduce<Record<string, number>>(
+        (maximums, metric) => ({
+            ...maximums,
+            [metric.definition.unit]: Math.max(
+                maximums[metric.definition.unit] ?? 1,
+                Math.abs(metric.value ?? 0),
+            ),
+        }),
+        {},
+    );
+
+    return (
+        <figure
+            className="space-y-3 rounded-lg border p-4"
+            aria-labelledby="impact-chart-title"
+            aria-describedby="impact-chart-description"
+        >
+            <figcaption>
+                <h2 id="impact-chart-title" className="font-semibold">
+                    Presentation chart
+                </h2>
+                <p
+                    id="impact-chart-description"
+                    className="text-muted-foreground text-sm"
+                >
+                    Relative bars for available aggregate values, scaled
+                    separately by unit. Units are retained in each label;
+                    suppressed and unavailable values have no bar.
+                </p>
+            </figcaption>
+            <div className="space-y-3" aria-hidden="true">
+                {available.map((metric) => (
+                    <div key={metric.definition.id} className="grid gap-1">
+                        <div className="flex justify-between gap-3 text-sm">
+                            <span>{metric.definition.label}</span>
+                            <strong>{metricValue(metric, currency)}</strong>
+                        </div>
+                        <div className="bg-muted h-4 rounded-sm">
+                            <div
+                                className="bg-primary h-4 min-w-1 rounded-sm"
+                                style={{
+                                    width: `${(Math.abs(metric.value ?? 0) / maximumByUnit[metric.definition.unit]) * 100}%`,
+                                }}
+                            />
+                        </div>
+                    </div>
+                ))}
+            </div>
+            <table className="sr-only">
+                <caption>Nonvisual equivalent of the impact chart</caption>
+                <thead>
+                    <tr>
+                        <th scope="col">Metric</th>
+                        <th scope="col">Value</th>
+                        <th scope="col">Status</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {metrics.map((metric) => (
+                        <tr key={metric.definition.id}>
+                            <th scope="row">{metric.definition.label}</th>
+                            <td>{metricValue(metric, currency)}</td>
+                            <td>{metric.availability}</td>
+                        </tr>
+                    ))}
+                </tbody>
+            </table>
+        </figure>
     );
 }
 
