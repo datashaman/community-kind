@@ -2,6 +2,8 @@
 
 namespace Database\Factories;
 
+use App\Data\Auditing\VersionedAuditPayload;
+use App\Enums\PlatformSecurityEventType;
 use App\Models\PlatformSecurityEvent;
 use App\Models\User;
 use Illuminate\Database\Eloquent\Factories\Factory;
@@ -19,10 +21,11 @@ class PlatformSecurityEventFactory extends Factory
     public function definition(): array
     {
         return [
-            'type' => fake()->randomElement(['other_browser_sessions_revoked']),
+            'type' => PlatformSecurityEventType::OtherBrowserSessionsRevoked,
+            'schema_version' => VersionedAuditPayload::CURRENT_VERSION,
             'actor_user_id' => User::factory(),
             'subject_user_id' => User::factory(),
-            'metadata' => [],
+            'metadata' => ['revoked_count' => 1],
             'occurred_at' => now(),
         ];
     }

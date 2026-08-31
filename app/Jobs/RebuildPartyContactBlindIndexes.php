@@ -8,6 +8,7 @@ use App\Enums\OrganisationAccessLevel;
 use App\Enums\OrganisationAccessScope;
 use App\Models\Organisation;
 use App\OrganisationContext;
+use App\Queue\Middleware\PauseForInstallationControl;
 use Illuminate\Contracts\Queue\ShouldQueue;
 use Illuminate\Foundation\Queue\Queueable;
 use LogicException;
@@ -46,5 +47,11 @@ class RebuildPartyContactBlindIndexes implements ShouldQueue
         }
 
         $organisationContext->run($organisation, fn () => $rebuild->handle($organisation));
+    }
+
+    /** @return list<object> */
+    public function middleware(): array
+    {
+        return [new PauseForInstallationControl];
     }
 }
