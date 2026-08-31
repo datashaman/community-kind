@@ -24,6 +24,7 @@ use App\Http\Controllers\Organisations\ProgramController;
 use App\Http\Controllers\Organisations\ServiceCaseController;
 use App\Http\Controllers\Organisations\ServiceOperationsExportController;
 use App\Http\Controllers\Organisations\SupporterJourneyController;
+use App\Http\Controllers\Organisations\TenantAuditEventController;
 use App\Http\Controllers\Public\DonationController as PublicDonationController;
 use App\Http\Controllers\Public\OrganisationController as PublicOrganisationController;
 use App\Http\Middleware\EnsureOrganisationAccess;
@@ -96,6 +97,7 @@ Route::prefix('{current_organisation}')
         Route::get('dashboard/service-operations/export', ServiceOperationsExportController::class)->name('dashboard.service-operations.export');
         Route::get('dashboard/impact/export', ImpactReportExportController::class)->name('dashboard.impact.export');
         Route::get('dashboard/impact/chart.svg', ImpactChartExportController::class)->name('dashboard.impact.chart.export');
+        Route::get('audit', TenantAuditEventController::class)->name('audit.index');
         Route::get('programs', [ProgramController::class, 'index'])->name('programs.index');
         Route::resource('donations', DonationController::class)->only(['index', 'show']);
         Route::resource('audience-segments', AudienceSegmentController::class)->only(['index', 'store', 'show']);
