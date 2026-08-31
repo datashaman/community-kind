@@ -20,6 +20,7 @@ use LogicException;
  * @property string $idempotency_key
  * @property string $provider_refund_id
  * @property Carbon $occurred_at
+ * @property-read DonationPayment $payment
  */
 class DonationRefund extends Model
 {

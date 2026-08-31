@@ -2,17 +2,18 @@
 
 namespace App\Http\Controllers;
 
+use App\Actions\Reporting\BuildImpactDashboard;
 use App\Actions\ServiceMonitoring\BuildServiceOperationsDashboard;
+use App\Http\Requests\DashboardMetricsRequest;
 use App\Models\Organisation;
 use App\Models\OrganisationInvitation;
 use App\OrganisationContext;
-use Illuminate\Http\Request;
 use Inertia\Inertia;
 use Inertia\Response;
 
 class DashboardController extends Controller
 {
-    public function __invoke(Request $request, Organisation $currentOrganisation, BuildServiceOperationsDashboard $buildDashboard): Response
+    public function __invoke(DashboardMetricsRequest $request, Organisation $currentOrganisation, BuildServiceOperationsDashboard $buildDashboard, BuildImpactDashboard $buildImpact): Response
     {
         $email = strtolower($request->user()->email);
 
@@ -59,6 +60,7 @@ class DashboardController extends Controller
                 $currentOrganisation,
                 $request->filled('program_id') ? $request->integer('program_id') : null,
             ),
+            'impact' => $buildImpact->handle($request->user(), $currentOrganisation, $request->validated()),
         ]);
     }
 }

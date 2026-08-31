@@ -3,6 +3,9 @@
 namespace App\Actions\Demo;
 
 use App\Actions\Donations\CreateDonation;
+use App\Actions\Engagement\ApproveSupporterJourney;
+use App\Actions\Engagement\DispatchSupporterJourney;
+use App\Actions\Engagement\TransitionSupporterJourneyRecipient;
 use App\Actions\Parties\RecordPartyConsent;
 use App\Donations\DonationPaymentProvider;
 use App\Enums\ConsentChannel;
@@ -10,12 +13,15 @@ use App\Enums\ConsentDecision;
 use App\Enums\ConsentPurpose;
 use App\Enums\DonationFrequency;
 use App\Enums\DonationSimulationScenario;
+use App\Enums\SupporterJourneyEventType;
+use App\Enums\SupporterJourneyStatus;
 use App\Models\AudienceSegment;
 use App\Models\Donation;
 use App\Models\DonationFund;
 use App\Models\FundraisingCampaign;
 use App\Models\Party;
 use App\Models\PartyConsent;
+use App\Models\SupporterJourney;
 use App\Models\User;
 
 class BuildDonorToRetainedSupporterScenario
@@ -24,6 +30,9 @@ class BuildDonorToRetainedSupporterScenario
         private readonly CreateDonation $createDonation,
         private readonly DonationPaymentProvider $paymentProvider,
         private readonly RecordPartyConsent $recordPartyConsent,
+        private readonly ApproveSupporterJourney $approveJourney,
+        private readonly DispatchSupporterJourney $dispatchJourney,
+        private readonly TransitionSupporterJourneyRecipient $transitionRecipient,
     ) {}
 
     public function handle(Party $donor, User $actor): Donation
@@ -65,7 +74,7 @@ class BuildDonorToRetainedSupporterScenario
                 'occurred_at' => now()->toAtomString(),
             ], $actor);
         }
-        AudienceSegment::query()->updateOrCreate(
+        $segment = AudienceSegment::query()->updateOrCreate(
             ['organisation_id' => $donor->organisation_id, 'name' => 'Winter Warmth retained supporters'],
             [
                 'criteria' => [
@@ -80,6 +89,30 @@ class BuildDonorToRetainedSupporterScenario
                 'created_by_user_id' => $actor->id,
             ],
         );
+
+        if (! app()->environment(['local', 'testing']) || ! config('engagement.simulation_only')) {
+            return $donation->refresh();
+        }
+
+        $journey = SupporterJourney::query()->firstOrCreate(
+            ['organisation_id' => $donor->organisation_id, 'name' => 'Winter Warmth donor welcome'],
+            [
+                'id' => '40000000-0000-4000-8000-000000000001',
+                'audience_segment_id' => $segment->id,
+                'subject' => 'Thank you, {{ supporter_name }}',
+                'body' => 'Your {{ donation_count }} simulated contribution makes a difference.',
+                'status' => SupporterJourneyStatus::Draft,
+                'created_by_user_id' => $actor->id,
+            ],
+        );
+        if ($journey->status === SupporterJourneyStatus::Draft) {
+            $journey = $this->approveJourney->handle($journey, $actor);
+        }
+        $recipient = $this->dispatchJourney->handle($journey)->firstWhere('party_id', $donor->id);
+        if ($recipient !== null) {
+            $this->transitionRecipient->handle($recipient, SupporterJourneyEventType::Delivered, '40000000-0000-4000-8000-000000000002', $actor);
+            $this->transitionRecipient->handle($recipient->fresh(), SupporterJourneyEventType::MeaningfulAction, '40000000-0000-4000-8000-000000000003', $actor);
+        }
 
         return $donation->refresh();
     }

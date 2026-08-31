@@ -19,7 +19,7 @@ class RecordCaseMetric
                 'program_id' => $case->program_id,
                 'code' => $code,
                 'value' => $value,
-                'dimensions' => $dimensions,
+                'dimensions' => [...$dimensions, 'party_id' => $case->party_id],
                 'occurred_at' => $occurredAt,
                 'recorded_at' => now(),
             ],

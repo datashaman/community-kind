@@ -23,6 +23,9 @@ use App\Models\PartyContactPoint;
 use App\Models\Program;
 use App\Models\RoleAssignment;
 use App\Models\ServiceCase;
+use App\Models\SupporterJourney;
+use App\Models\SupporterJourneyEvent;
+use App\Models\SupporterJourneyRecipient;
 use App\Models\User;
 use App\OrganisationCache;
 use App\OrganisationContext;
@@ -90,6 +93,9 @@ it('seeds the versioned synthetic scenarios deterministically', function () {
         ->and(DonationPayment::withoutGlobalScopes()->sole()->status)->toBe(DonationPaymentStatus::Succeeded)
         ->and(DonationReceipt::withoutGlobalScopes()->sole()->marker)->toBe('Demo—Not a tax receipt')
         ->and(AudienceSegment::withoutGlobalScopes()->count())->toBe(1)
+        ->and(SupporterJourney::withoutGlobalScopes()->count())->toBe(1)
+        ->and(SupporterJourneyRecipient::withoutGlobalScopes()->count())->toBe(1)
+        ->and(SupporterJourneyEvent::withoutGlobalScopes()->count())->toBe(3)
         ->and(PartyConsent::withoutGlobalScopes()->where('purpose', ConsentPurpose::SupporterUpdates)->count())->toBe(1)
         ->and($showcaseCase->opened_at->toDateTimeString())->toBe('2026-06-02 06:00:00')
         ->and($showcaseCase->closed_at?->toDateTimeString())->toBe('2026-06-28 13:00:00')
@@ -118,6 +124,9 @@ it('seeds the versioned synthetic scenarios deterministically', function () {
         ->and(DonationPayment::withoutGlobalScopes()->count())->toBe(1)
         ->and(DonationReceipt::withoutGlobalScopes()->count())->toBe(1)
         ->and(AudienceSegment::withoutGlobalScopes()->count())->toBe(1)
+        ->and(SupporterJourney::withoutGlobalScopes()->count())->toBe(1)
+        ->and(SupporterJourneyRecipient::withoutGlobalScopes()->count())->toBe(1)
+        ->and(SupporterJourneyEvent::withoutGlobalScopes()->count())->toBe(3)
         ->and(PartyConsent::withoutGlobalScopes()->where('purpose', ConsentPurpose::SupporterUpdates)->count())->toBe(1);
 
     $harbourKind = Organisation::query()->findOrFail($harbourKindId);
