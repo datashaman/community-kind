@@ -2,6 +2,9 @@
 
 namespace App\Actions\Demo;
 
+use App\Actions\CaseConfidentiality\GrantRestrictedAccess;
+use App\Actions\CaseConfidentiality\ReclassifyServiceCase;
+use App\Actions\CaseConfidentiality\RecordCaseRiskAssessment;
 use App\Actions\CaseDelivery\CreateCaseAppointment;
 use App\Actions\CaseDelivery\CreateCaseGoal;
 use App\Actions\CaseDelivery\CreateCaseService;
@@ -18,7 +21,9 @@ use App\Actions\CaseDelivery\TransitionExternalReferral;
 use App\Actions\CaseDelivery\TransitionServiceCase;
 use App\Actions\Intake\CreateIntakeRequest;
 use App\Actions\Intake\TransitionIntakeRequest;
+use App\Actions\Parties\StoreSafeContactInstruction;
 use App\Enums\CaseAppointmentStatus;
+use App\Enums\CaseClassification;
 use App\Enums\CaseGoalStatus;
 use App\Enums\CaseServiceStatus;
 use App\Enums\CaseTaskStatus;
@@ -26,12 +31,14 @@ use App\Enums\EligibilityStatus;
 use App\Enums\ExternalReferralStatus;
 use App\Enums\IntakeStatus;
 use App\Enums\IntakeUrgency;
+use App\Enums\RestrictedAccessPermission;
 use App\Enums\ServiceCaseStatus;
 use App\Models\IntakeRequest;
 use App\Models\Membership;
 use App\Models\Organisation;
 use App\Models\Party;
 use App\Models\Program;
+use App\Models\RestrictedAccessGrant;
 use App\Models\ServiceCase;
 use App\Models\User;
 use Carbon\CarbonImmutable;
@@ -56,12 +63,18 @@ class BuildRequestToOutcomeScenario
         private readonly RecordCaseInteraction $recordInteraction,
         private readonly SaveCaseNote $saveNote,
         private readonly FinalizeCaseNote $finalizeNote,
+        private readonly GrantRestrictedAccess $grantRestrictedAccess,
+        private readonly ReclassifyServiceCase $reclassifyCase,
+        private readonly RecordCaseRiskAssessment $recordRisk,
+        private readonly StoreSafeContactInstruction $storeSafeContact,
     ) {}
 
     public function handle(Organisation $organisation, Program $program, Party $party, User $manager, Membership $workerMembership): ServiceCase
     {
         $existing = IntakeRequest::query()->where('idempotency_key', 'scenario-request-to-outcome-v1')->first();
         if ($existing?->serviceCase !== null) {
+            $this->ensureConfidentialityFixture($existing->serviceCase, $party, $manager, $workerMembership);
+
             return $existing->serviceCase;
         }
 
@@ -92,6 +105,7 @@ class BuildRequestToOutcomeScenario
             ]);
             $this->transitionIntake->handle($intake->refresh(), IntakeStatus::Accepted, 3, $manager, worker: $workerMembership);
             $case = $intake->refresh()->serviceCase()->firstOrFail();
+            $this->ensureConfidentialityFixture($case, $party, $manager, $workerMembership);
 
             Date::setTestNow($this->at('2026-06-03 09:00'));
             $this->transitionCase->handle($case, ServiceCaseStatus::Active, 1, now(), $manager);
@@ -138,5 +152,47 @@ class BuildRequestToOutcomeScenario
     private function at(string $localTime): CarbonImmutable
     {
         return CarbonImmutable::parse($localTime, 'Africa/Johannesburg')->utc();
+    }
+
+    private function ensureConfidentialityFixture(ServiceCase $case, Party $party, User $manager, Membership $workerMembership): void
+    {
+        $managerMembership = $manager->organisationMembership($case->organisation);
+        if ($managerMembership === null) {
+            throw new \LogicException('The demo Program manager requires an Organisation Membership.');
+        }
+
+        foreach ([
+            [$managerMembership, RestrictedAccessPermission::SensitiveData, $case->id, 'Synthetic safeguarding access.'],
+            [$workerMembership, RestrictedAccessPermission::SensitiveData, $case->id, 'Assigned worker safeguarding access.'],
+            [$managerMembership, RestrictedAccessPermission::IdentifiableCaseExport, null, 'Synthetic Program export fixture.'],
+        ] as [$membership, $permission, $serviceCaseId, $reason]) {
+            $exists = RestrictedAccessGrant::query()
+                ->active()
+                ->where('membership_id', $membership->id)
+                ->where('program_id', $case->program_id)
+                ->where('permission', $permission)
+                ->where('service_case_id', $serviceCaseId)
+                ->exists();
+
+            if (! $exists) {
+                $this->grantRestrictedAccess->handle($case, $membership, $permission, $reason, $manager);
+            }
+        }
+
+        if ($case->confidentiality !== CaseClassification::HighlyRestricted) {
+            $this->reclassifyCase->handle($case, CaseClassification::HighlyRestricted, 'Synthetic detailed risk fixture.', $manager);
+        }
+
+        if (! $case->riskAssessments()->exists()) {
+            $this->recordRisk->handle($case->refresh(), 'Synthetic non-graphic risk assessment for authorization testing.', $manager);
+        }
+
+        if (! $party->safeContactInstructions()->whereNull('ended_at')->exists()) {
+            $this->storeSafeContact->handle($party, [
+                'instruction' => 'Do not leave voicemail.',
+                'source' => 'synthetic_client_preference',
+                'effective_at' => now()->toAtomString(),
+            ], $manager);
+        }
     }
 }

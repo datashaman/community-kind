@@ -5,6 +5,7 @@ namespace App\Actions\Intake;
 use App\Actions\CaseDelivery\RecordCaseMetric;
 use App\Actions\CaseDelivery\RecordCaseWorkflowTransition;
 use App\Actions\Parties\RecordPartyConsent;
+use App\Enums\CaseClassification;
 use App\Enums\CaseMetricCode;
 use App\Enums\CaseWorkflowSubject;
 use App\Enums\ConsentDecision;
@@ -96,7 +97,9 @@ class TransitionIntakeRequest
                         'program_id' => $locked->program_id,
                         'party_id' => $locked->party_id,
                         'status' => ServiceCaseStatus::Open,
-                        'confidentiality' => 'confidential',
+                        'confidentiality' => CaseClassification::tryFrom(
+                            (string) data_get($locked->program->configuration, 'case_default_classification', ''),
+                        ) ?? CaseClassification::Confidential,
                         'opened_at' => now(),
                         'created_by_user_id' => $actor->id,
                     ],

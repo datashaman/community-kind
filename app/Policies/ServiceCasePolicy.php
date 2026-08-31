@@ -2,25 +2,17 @@
 
 namespace App\Policies;
 
-use App\Enums\OrganisationRole;
+use App\Authorization\CaseAccess;
 use App\Models\ServiceCase;
 use App\Models\User;
 
 class ServiceCasePolicy
 {
+    public function __construct(private readonly CaseAccess $access) {}
+
     public function view(User $user, ServiceCase $case): bool
     {
-        if ($this->managesProgram($user, $case)) {
-            return true;
-        }
-
-        $membership = $user->organisationMembership($case->organisation);
-
-        return $membership !== null
-            && ! $membership->isHeld()
-            && $user->hasOrganisationRole($case->organisation, OrganisationRole::CaseWorker, $case->program)
-            && $user->hasProgramAccess($case->program)
-            && $case->assignments()->where('membership_id', $membership->id)->where('status', 'active')->exists();
+        return $this->access->canView($user, $case);
     }
 
     public function update(User $user, ServiceCase $case): bool
@@ -28,9 +20,18 @@ class ServiceCasePolicy
         return $this->view($user, $case) && ! $case->status->isTerminal();
     }
 
-    private function managesProgram(User $user, ServiceCase $case): bool
+    public function viewSensitive(User $user, ServiceCase $case): bool
     {
-        return $user->hasOrganisationRole($case->organisation, OrganisationRole::ProgramManager, $case->program)
-            && $user->hasProgramAccess($case->program);
+        return $this->access->canViewSensitive($user, $case);
+    }
+
+    public function manageAccess(User $user, ServiceCase $case): bool
+    {
+        return $this->access->canManageAccess($user, $case);
+    }
+
+    public function export(User $user, ServiceCase $case): bool
+    {
+        return $this->access->canExport($user, $case);
     }
 }

@@ -231,6 +231,44 @@ export default function CaseShow({ caseRecord, canUpdate }: any) {
                     </div>
                 </div>
 
+                {caseRecord.safeContactBanner ? (
+                    <div
+                        role="alert"
+                        className="rounded-lg border border-amber-500/40 bg-amber-50 p-4 text-amber-950 dark:bg-amber-950/30 dark:text-amber-100"
+                    >
+                        <p className="text-xs font-semibold tracking-wide uppercase">
+                            Contact safety
+                        </p>
+                        <p className="mt-1 font-medium">
+                            {caseRecord.safeContactBanner}
+                        </p>
+                    </div>
+                ) : null}
+
+                {caseRecord.riskAssessments.length > 0 ? (
+                    <Card>
+                        <CardHeader>
+                            <CardTitle>Highly restricted risk detail</CardTitle>
+                        </CardHeader>
+                        <CardContent className="space-y-3">
+                            {caseRecord.riskAssessments.map((risk: any) => (
+                                <div
+                                    key={risk.id}
+                                    className="rounded-lg border p-3 text-sm"
+                                >
+                                    <Badge variant="destructive">
+                                        {risk.classification.replaceAll(
+                                            '_',
+                                            ' ',
+                                        )}
+                                    </Badge>
+                                    <p className="mt-2">{risk.content}</p>
+                                </div>
+                            ))}
+                        </CardContent>
+                    </Card>
+                ) : null}
+
                 {canUpdate ? (
                     <Card>
                         <CardHeader>

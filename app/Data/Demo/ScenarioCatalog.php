@@ -9,7 +9,7 @@ use InvalidArgumentException;
 
 final class ScenarioCatalog
 {
-    public const VERSION = '2026.3';
+    public const VERSION = '2026.4';
 
     public const AS_OF = '2026-06-30 23:59:59';
 
