@@ -39,6 +39,8 @@ use Illuminate\Support\Carbon;
  * @property-read Collection<int, OrganisationInvitation> $invitations
  * @property-read Collection<int, Membership> $memberships
  * @property-read Collection<int, User> $members
+ * @property-read Collection<int, PortalAccessGrant> $portalAccessGrants
+ * @property-read Collection<int, SupporterRegistration> $supporterRegistrations
  */
 #[Fillable(['name', 'slug', 'status', 'status_changed_at', 'deletion_scheduled_for', 'signed_links_invalidated_at', 'access_version', 'sandbox_pair_id', 'sandbox_template', 'demo_generation', 'is_synthetic'])]
 class Organisation extends Model
@@ -186,6 +188,18 @@ class Organisation extends Model
     public function auditEvents(): HasMany
     {
         return $this->hasMany(TenantAuditEvent::class);
+    }
+
+    /** @return HasMany<PortalAccessGrant, $this> */
+    public function portalAccessGrants(): HasMany
+    {
+        return $this->hasMany(PortalAccessGrant::class);
+    }
+
+    /** @return HasMany<SupporterRegistration, $this> */
+    public function supporterRegistrations(): HasMany
+    {
+        return $this->hasMany(SupporterRegistration::class);
     }
 
     /** @return HasMany<OrganisationOwnershipTransfer, $this> */

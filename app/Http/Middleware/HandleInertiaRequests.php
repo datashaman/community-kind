@@ -46,6 +46,26 @@ class HandleInertiaRequests extends Middleware
      */
     public function share(Request $request): array
     {
+        if ($request->session()->has('portal_access_grant_id')) {
+            return [
+                ...parent::share($request),
+                'name' => config('app.name'),
+                'auth' => ['user' => null],
+                'sidebarOpen' => false,
+                'canCreateOrganisation' => false,
+                'currentOrganisation' => null,
+                'organisations' => [],
+                'demoSandbox' => null,
+                'canViewParties' => false,
+                'canViewPrograms' => false,
+                'canViewIntakes' => false,
+                'canViewDonations' => false,
+                'canViewAudienceSegments' => false,
+                'canViewSupporterJourneys' => false,
+                'canViewAudit' => false,
+            ];
+        }
+
         $user = $request->user();
         $organisationData = null;
         $organisations = function () use ($user, &$organisationData): Collection {

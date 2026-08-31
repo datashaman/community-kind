@@ -22,7 +22,7 @@ class EnsureTrustedApplicationHost
             return $next($request);
         }
 
-        if (is_string($routeName) && str_starts_with($routeName, 'public.')) {
+        if (is_string($routeName) && (str_starts_with($routeName, 'public.') || str_starts_with($routeName, 'portal.'))) {
             return $next($request);
         }
 

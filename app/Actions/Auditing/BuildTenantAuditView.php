@@ -111,7 +111,13 @@ class BuildTenantAuditView
             TenantAuditEventType::DonationRefunded,
             TenantAuditEventType::RecurringMandateTransitioned => 'fundraising',
             TenantAuditEventType::AudienceSegmentCreated,
-            TenantAuditEventType::ImpactReportExported => 'engagement',
+            TenantAuditEventType::ImpactReportExported,
+            TenantAuditEventType::PortalAccessIssued,
+            TenantAuditEventType::PortalAccessVerified,
+            TenantAuditEventType::PortalAccessRevoked,
+            TenantAuditEventType::SupporterProfileUpdated,
+            TenantAuditEventType::SupporterConsentPreferencesUpdated,
+            TenantAuditEventType::SupporterRegistrationCancelled => 'engagement',
             default => 'service',
         };
     }

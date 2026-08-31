@@ -10,6 +10,7 @@ import { Textarea } from '@/components/ui/textarea';
 import { index, update } from '@/routes/parties';
 import { store as storeAddress } from '@/routes/parties/addresses';
 import { store as storeConsent } from '@/routes/parties/consents';
+import { store as storePortalAccessGrant } from '@/routes/parties/portal-access-grants';
 import { store as storeRelationship } from '@/routes/parties/relationships';
 import { store as storeSafeContact } from '@/routes/parties/safe-contact-instructions';
 
@@ -20,6 +21,8 @@ type Props = {
     canUpdate: boolean;
     canRecordConsent: boolean;
     canManageSafeContact: boolean;
+    canManagePortalAccess: boolean;
+    portalAccessUrl: string | null;
     programs: Program[];
     partyKinds: Option[];
     partyRoles: Option[];
@@ -48,6 +51,8 @@ export default function PartyShow({
     canUpdate,
     canRecordConsent,
     canManageSafeContact,
+    canManagePortalAccess,
+    portalAccessUrl,
     programs,
     partyKinds,
     partyRoles,
@@ -274,6 +279,70 @@ export default function PartyShow({
                                     </>
                                 )}
                             </Form>
+                        </CardContent>
+                    </Card>
+                ) : null}
+                {canManagePortalAccess ? (
+                    <Card>
+                        <CardHeader>
+                            <CardTitle>Supporter portal access</CardTitle>
+                        </CardHeader>
+                        <CardContent className="space-y-4">
+                            <p className="text-muted-foreground text-sm">
+                                Create a short-lived, single-use link for a
+                                verified user. Creating another link replaces
+                                the previous grant for this person and user.
+                            </p>
+                            <Form
+                                {...storePortalAccessGrant.form(args)}
+                                className="flex flex-col gap-3 sm:flex-row"
+                            >
+                                {({ errors, processing }) => (
+                                    <>
+                                        <div className="flex-1">
+                                            <Label htmlFor="portal-user-email">
+                                                Verified user email
+                                            </Label>
+                                            <Input
+                                                id="portal-user-email"
+                                                name="email"
+                                                type="email"
+                                                autoComplete="off"
+                                                required
+                                            />
+                                            <InputError
+                                                message={errors.email}
+                                            />
+                                        </div>
+                                        <Button
+                                            className="self-end"
+                                            type="submit"
+                                            disabled={processing}
+                                        >
+                                            Create portal link
+                                        </Button>
+                                    </>
+                                )}
+                            </Form>
+                            {portalAccessUrl ? (
+                                <div>
+                                    <Label htmlFor="portal-access-url">
+                                        New portal link
+                                    </Label>
+                                    <Input
+                                        id="portal-access-url"
+                                        value={portalAccessUrl}
+                                        readOnly
+                                        onFocus={(event) =>
+                                            event.currentTarget.select()
+                                        }
+                                    />
+                                    <p className="text-muted-foreground mt-1 text-xs">
+                                        Share this link securely. It is shown
+                                        only once and expires shortly.
+                                    </p>
+                                </div>
+                            ) : null}
                         </CardContent>
                     </Card>
                 ) : null}

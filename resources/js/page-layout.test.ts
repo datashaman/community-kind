@@ -10,4 +10,8 @@ describe('resolvePageLayout', () => {
     it('keeps the unauthenticated demo persona chooser out of the staff shell', () => {
         expect(resolvePageLayout('demo/personas')).toBeNull();
     });
+
+    it('keeps the supporter portal out of the staff shell', () => {
+        expect(resolvePageLayout('portal/show')).toBeNull();
+    });
 });

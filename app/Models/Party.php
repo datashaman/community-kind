@@ -25,6 +25,8 @@ use Illuminate\Database\Eloquent\SoftDeletes;
  * @property-read Organisation $organisation
  * @property-read Collection<int, Membership> $memberships
  * @property-read Collection<int, PartyContactPoint> $contactPoints
+ * @property-read Collection<int, PortalAccessGrant> $portalAccessGrants
+ * @property-read Collection<int, SupporterRegistration> $supporterRegistrations
  */
 #[Fillable(['organisation_id', 'kind', 'display_name'])]
 class Party extends Model
@@ -54,6 +56,18 @@ class Party extends Model
     public function contactPoints(): HasMany
     {
         return $this->hasMany(PartyContactPoint::class);
+    }
+
+    /** @return HasMany<PortalAccessGrant, $this> */
+    public function portalAccessGrants(): HasMany
+    {
+        return $this->hasMany(PortalAccessGrant::class, 'person_party_id');
+    }
+
+    /** @return HasMany<SupporterRegistration, $this> */
+    public function supporterRegistrations(): HasMany
+    {
+        return $this->hasMany(SupporterRegistration::class);
     }
 
     /** @return BelongsToMany<Program, $this> */

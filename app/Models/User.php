@@ -9,6 +9,7 @@ use Illuminate\Database\Eloquent\Attributes\Fillable;
 use Illuminate\Database\Eloquent\Attributes\Hidden;
 use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
+use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Foundation\Auth\User as Authenticatable;
 use Illuminate\Notifications\Notifiable;
 use Illuminate\Support\Carbon;
@@ -32,6 +33,7 @@ use Laravel\Fortify\TwoFactorAuthenticatable;
  * @property-read Collection<int, Organisation> $ownedOrganisations
  * @property-read Collection<int, Membership> $organisationMemberships
  * @property-read Collection<int, Organisation> $organisations
+ * @property-read Collection<int, PortalAccessGrant> $portalAccessGrants
  */
 #[Fillable(['name', 'email', 'password', 'current_organisation_id', 'recovery_codes_acknowledged_at'])]
 #[Hidden(['password', 'two_factor_secret', 'two_factor_recovery_codes', 'remember_token'])]
@@ -67,5 +69,11 @@ class User extends Authenticatable implements MustVerifyEmail
     public function hasAcknowledgedRecoveryCodes(): bool
     {
         return $this->recovery_codes_acknowledged_at !== null;
+    }
+
+    /** @return HasMany<PortalAccessGrant, $this> */
+    public function portalAccessGrants(): HasMany
+    {
+        return $this->hasMany(PortalAccessGrant::class);
     }
 }

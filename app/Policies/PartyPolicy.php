@@ -91,6 +91,11 @@ class PartyPolicy
             ->contains(fn (ServiceCase $case): bool => $this->caseAccess->canViewSensitive($user, $case));
     }
 
+    public function managePortalAccess(User $user, Party $party): bool
+    {
+        return $this->supporterSafe($user, $party);
+    }
+
     public function supporterSafe(User $user, Party $party): bool
     {
         return $this->hasRoleInAnyScope($user, $party->organisation, OrganisationRole::EngagementOfficer)

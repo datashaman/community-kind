@@ -2,6 +2,7 @@
 
 use App\Http\Middleware\EnforceAbsoluteSessionLifetime;
 use App\Http\Middleware\EnforceDemoSandbox;
+use App\Http\Middleware\EnforcePortalSession;
 use App\Http\Middleware\EnsureInstallationAccess;
 use App\Http\Middleware\EnsureTrustedApplicationHost;
 use App\Http\Middleware\HandleAppearance;
@@ -29,6 +30,7 @@ return Application::configure(basePath: dirname(__DIR__))
             EnsureInstallationAccess::class,
             EnforceAbsoluteSessionLifetime::class,
             EnforceDemoSandbox::class,
+            EnforcePortalSession::class,
             ProtectSensitiveFortifyRoutes::class,
             HandleAppearance::class,
             HandleInertiaRequests::class,
