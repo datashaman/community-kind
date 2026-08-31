@@ -9,6 +9,8 @@ use App\Http\Controllers\Organisations\CaseExportController;
 use App\Http\Controllers\Organisations\CaseItemController;
 use App\Http\Controllers\Organisations\CaseWorkflowController;
 use App\Http\Controllers\Organisations\DonationController;
+use App\Http\Controllers\Organisations\ImpactChartExportController;
+use App\Http\Controllers\Organisations\ImpactReportExportController;
 use App\Http\Controllers\Organisations\IntakeRequestController;
 use App\Http\Controllers\Organisations\IntakeTransitionController;
 use App\Http\Controllers\Organisations\OrganisationInvitationController;
@@ -92,6 +94,8 @@ Route::prefix('{current_organisation}')
     ->group(function () {
         Route::get('dashboard', DashboardController::class)->name('dashboard');
         Route::get('dashboard/service-operations/export', ServiceOperationsExportController::class)->name('dashboard.service-operations.export');
+        Route::get('dashboard/impact/export', ImpactReportExportController::class)->name('dashboard.impact.export');
+        Route::get('dashboard/impact/chart.svg', ImpactChartExportController::class)->name('dashboard.impact.chart.export');
         Route::get('programs', [ProgramController::class, 'index'])->name('programs.index');
         Route::resource('donations', DonationController::class)->only(['index', 'show']);
         Route::resource('audience-segments', AudienceSegmentController::class)->only(['index', 'store', 'show']);

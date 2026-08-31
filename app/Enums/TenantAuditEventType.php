@@ -23,6 +23,7 @@ enum TenantAuditEventType: string
     case DonationRefunded = 'donation_refunded';
     case RecurringMandateTransitioned = 'recurring_mandate_transitioned';
     case AudienceSegmentCreated = 'audience_segment_created';
+    case ImpactReportExported = 'impact_report_exported';
 
     /** @return array<string, string> */
     public function payloadSchema(): array
@@ -110,6 +111,12 @@ enum TenantAuditEventType: string
             self::AudienceSegmentCreated => [
                 'segment_id' => 'string',
                 'name' => 'string',
+            ],
+            self::ImpactReportExported => [
+                'registry_version' => 'string',
+                'filters_hash' => 'string',
+                'metric_count' => 'integer',
+                'format' => 'string',
             ],
         };
     }
