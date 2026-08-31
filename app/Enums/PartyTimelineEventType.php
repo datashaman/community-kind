@@ -12,4 +12,8 @@ enum PartyTimelineEventType: string
     case InterestAdded = 'interest_added';
     case ConsentRecorded = 'consent_recorded';
     case SafeContactInstructionRecorded = 'safe_contact_instruction_recorded';
+    case DonationCreated = 'donation_created';
+    case DonationPaymentTransitioned = 'donation_payment_transitioned';
+    case DonationRefunded = 'donation_refunded';
+    case RecurringMandateTransitioned = 'recurring_mandate_transitioned';
 }

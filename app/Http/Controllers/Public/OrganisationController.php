@@ -24,6 +24,7 @@ class OrganisationController extends Controller
                 'public_organisation' => $organisation->slug,
             ]),
             'sourceUrl' => rtrim((string) config('app.url'), '/').'/source-and-licence',
+            'donationUrl' => route('public.donations.create', ['public_organisation' => $organisation->slug]),
         ]);
     }
 }

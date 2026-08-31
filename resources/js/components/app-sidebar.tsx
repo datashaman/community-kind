@@ -2,6 +2,7 @@ import { Link, usePage } from '@inertiajs/react';
 import {
     ClipboardList,
     FolderGit2,
+    HandCoins,
     LayoutGrid,
     Scale,
     Settings2,
@@ -22,6 +23,7 @@ import {
     SidebarMenuItem,
 } from '@/components/ui/sidebar';
 import { dashboard } from '@/routes';
+import { index as donationsIndex } from '@/routes/donations';
 import { index as intakesIndex } from '@/routes/intakes';
 import { index as partiesIndex } from '@/routes/parties';
 import { index as programsIndex } from '@/routes/programs';
@@ -54,6 +56,15 @@ export function AppSidebar() {
                       title: 'Service requests',
                       href: intakesIndex(page.props.currentOrganisation.slug),
                       icon: ClipboardList,
+                  },
+              ]
+            : []),
+        ...(page.props.canViewDonations && page.props.currentOrganisation
+            ? [
+                  {
+                      title: 'Simulated donations',
+                      href: donationsIndex(page.props.currentOrganisation.slug),
+                      icon: HandCoins,
                   },
               ]
             : []),

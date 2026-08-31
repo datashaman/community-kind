@@ -4,7 +4,13 @@ use App\Actions\Demo\BuildOrganisationScenario;
 use App\Actions\Programs\BuildProgramReport;
 use App\Actions\Programs\SearchPrograms;
 use App\Data\Demo\ScenarioCatalog;
+use App\Enums\DonationPaymentStatus;
 use App\Enums\OrganisationStatus;
+use App\Models\Donation;
+use App\Models\DonationFund;
+use App\Models\DonationPayment;
+use App\Models\DonationReceipt;
+use App\Models\FundraisingCampaign;
 use App\Models\Membership;
 use App\Models\MetricEvent;
 use App\Models\Organisation;
@@ -73,6 +79,12 @@ it('seeds the versioned synthetic scenarios deterministically', function () {
         ->and(DB::table('membership_program')->count())->toBe(6)
         ->and(ServiceCase::withoutGlobalScopes()->count())->toBe(1)
         ->and(MetricEvent::withoutGlobalScopes()->count())->toBe(5)
+        ->and(FundraisingCampaign::withoutGlobalScopes()->count())->toBe(1)
+        ->and(DonationFund::withoutGlobalScopes()->count())->toBe(1)
+        ->and(Donation::withoutGlobalScopes()->count())->toBe(1)
+        ->and(DonationPayment::withoutGlobalScopes()->count())->toBe(1)
+        ->and(DonationPayment::withoutGlobalScopes()->sole()->status)->toBe(DonationPaymentStatus::Succeeded)
+        ->and(DonationReceipt::withoutGlobalScopes()->sole()->marker)->toBe('Demo—Not a tax receipt')
         ->and($showcaseCase->opened_at->toDateTimeString())->toBe('2026-06-02 06:00:00')
         ->and($showcaseCase->closed_at?->toDateTimeString())->toBe('2026-06-28 13:00:00')
         ->and($serviceMetric->occurred_at->toDateTimeString())->toBe('2026-06-10 10:00:00')
@@ -93,7 +105,12 @@ it('seeds the versioned synthetic scenarios deterministically', function () {
         ->and(PartyContactPoint::withoutGlobalScopes()->orderBy('id')->pluck('id')->all())->toBe($contactIds)
         ->and(Party::withoutGlobalScopes()->orderBy('uuid')->pluck('id', 'uuid')->all())->toBe($partyIds)
         ->and(ServiceCase::withoutGlobalScopes()->count())->toBe(1)
-        ->and(MetricEvent::withoutGlobalScopes()->count())->toBe(5);
+        ->and(MetricEvent::withoutGlobalScopes()->count())->toBe(5)
+        ->and(FundraisingCampaign::withoutGlobalScopes()->count())->toBe(1)
+        ->and(DonationFund::withoutGlobalScopes()->count())->toBe(1)
+        ->and(Donation::withoutGlobalScopes()->count())->toBe(1)
+        ->and(DonationPayment::withoutGlobalScopes()->count())->toBe(1)
+        ->and(DonationReceipt::withoutGlobalScopes()->count())->toBe(1);
 });
 
 it('keeps every scenario identity and reserved showcase explicitly synthetic', function () {

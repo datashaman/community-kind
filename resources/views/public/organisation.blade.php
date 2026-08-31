@@ -17,6 +17,7 @@
             <p class="eyebrow">CommunityKind organisation</p>
             <h1>{{ $organisationName }}</h1>
             <p>This is the verified public home of {{ $organisationName }}.</p>
+            <p><a href="{{ $donationUrl }}">Make a simulated donation</a></p>
             <p><a href="{{ $sourceUrl }}">Source and licence</a></p>
         </main>
     </body>

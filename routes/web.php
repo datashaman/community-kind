@@ -7,6 +7,7 @@ use App\Http\Controllers\Organisations\CaseDocumentController;
 use App\Http\Controllers\Organisations\CaseExportController;
 use App\Http\Controllers\Organisations\CaseItemController;
 use App\Http\Controllers\Organisations\CaseWorkflowController;
+use App\Http\Controllers\Organisations\DonationController;
 use App\Http\Controllers\Organisations\IntakeRequestController;
 use App\Http\Controllers\Organisations\IntakeTransitionController;
 use App\Http\Controllers\Organisations\OrganisationInvitationController;
@@ -19,6 +20,7 @@ use App\Http\Controllers\Organisations\PartySafeContactInstructionController;
 use App\Http\Controllers\Organisations\ProgramController;
 use App\Http\Controllers\Organisations\ServiceCaseController;
 use App\Http\Controllers\Organisations\ServiceOperationsExportController;
+use App\Http\Controllers\Public\DonationController as PublicDonationController;
 use App\Http\Controllers\Public\OrganisationController as PublicOrganisationController;
 use App\Http\Middleware\EnsureOrganisationAccess;
 use App\Http\Middleware\EnsureOrganisationMembership;
@@ -60,6 +62,8 @@ Route::domain('{public_organisation}.'.config('organisations.public_domain'))
     ->middleware(ResolvePublicOrganisation::class)
     ->group(function () use ($securityPolicy, $securityText): void {
         Route::get('/', PublicOrganisationController::class)->name('public.organisations.show');
+        Route::get('/donate', [PublicDonationController::class, 'create'])->name('public.donations.create');
+        Route::post('/donate', [PublicDonationController::class, 'store'])->middleware('throttle:10,1')->name('public.donations.store');
         Route::get('/.well-known/security.txt', $securityText)->name('public.security.txt');
         Route::get('/security-policy', $securityPolicy)->name('public.security.policy');
     });
@@ -87,6 +91,7 @@ Route::prefix('{current_organisation}')
         Route::get('dashboard', DashboardController::class)->name('dashboard');
         Route::get('dashboard/service-operations/export', ServiceOperationsExportController::class)->name('dashboard.service-operations.export');
         Route::get('programs', [ProgramController::class, 'index'])->name('programs.index');
+        Route::resource('donations', DonationController::class)->only(['index', 'show']);
         Route::resource('parties', PartyController::class)->only(['index', 'store', 'show', 'update']);
         Route::resource('intakes', IntakeRequestController::class)
             ->parameters(['intakes' => 'intake'])
