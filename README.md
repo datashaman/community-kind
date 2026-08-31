@@ -28,6 +28,7 @@ Install these services and tools locally:
 
 - PHP 8.4 or newer with the `mbstring`, `pdo_pgsql`, and `redis` extensions
 - Composer 2
+- Laravel Valet 4
 - Node.js 24 and npm 11 or newer
 - PostgreSQL 18
 - Redis 7
@@ -43,7 +44,8 @@ Update these values in `.env` for the locally installed services. Replace the
 database credentials with the user and password you created:
 
 ```dotenv
-APP_URL=http://localhost:8000
+APP_URL=https://community-kind.test
+ORGANISATION_PUBLIC_DOMAIN=community-kind.test
 ORGANISATION_SELF_SERVICE_PROVISIONING=true
 DB_HOST=127.0.0.1
 DB_DATABASE=community_kind
@@ -66,14 +68,25 @@ php artisan key:generate
 php artisan migrate
 ```
 
-Start the Laravel application, queue worker, and frontend development server:
+Link and secure the project with Valet. Valet routes the linked site's wildcard
+subdomains to the same Laravel application, so tenant hosts do not need separate
+local registrations:
 
 ```bash
-composer run dev
+valet link community-kind --secure
 ```
 
-Open `http://localhost:8000`. To inspect email locally, replace the log mailer
-with an SMTP catcher such as Mailpit and update the `MAIL_*` values in `.env`.
+Start the frontend development server and Horizon in separate terminals:
+
+```bash
+npm run dev
+php artisan horizon
+```
+
+Open `https://community-kind.test`. Tenant public pages use hosts such as
+`https://harbourkind.community-kind.test`. To inspect email locally, replace
+the log mailer with an SMTP catcher such as Mailpit and update the `MAIL_*`
+values in `.env`.
 
 ## Docker setup
 

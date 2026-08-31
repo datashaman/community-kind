@@ -2,9 +2,11 @@
 
 use App\Http\Controllers\DashboardController;
 use App\Http\Controllers\Organisations\OrganisationInvitationController;
+use App\Http\Controllers\Public\OrganisationController as PublicOrganisationController;
 use App\Http\Middleware\EnsureOrganisationAccess;
 use App\Http\Middleware\EnsureOrganisationMembership;
 use App\Http\Middleware\EnsureStaffSecurityRequirements;
+use App\Http\Middleware\ResolvePublicOrganisation;
 use App\Http\Middleware\UseOrganisationContext;
 use App\Models\Organisation;
 use Illuminate\Contracts\View\View;
@@ -13,10 +15,7 @@ use Illuminate\Http\Response;
 use Illuminate\Support\Facades\File;
 use Illuminate\Support\Facades\Route;
 
-Route::inertia('/', 'welcome')->name('home');
-Route::model('current_organisation', Organisation::class);
-
-Route::get('/.well-known/security.txt', function (Request $request): Response {
+$securityText = function (Request $request): Response {
     $host = $request->getSchemeAndHttpHost();
     $contents = implode("\n", [
         'Contact: '.config('security.vulnerability_contact'),
@@ -31,15 +30,29 @@ Route::get('/.well-known/security.txt', function (Request $request): Response {
         'Cache-Control' => 'public, max-age=3600',
         'X-Content-Type-Options' => 'nosniff',
     ]);
-})->name('security.txt');
-
-Route::get('/security-policy', fn (): Response => response(
+};
+$securityPolicy = fn (): Response => response(
     File::get(base_path('SECURITY.md')),
     headers: [
         'Content-Type' => 'text/markdown; charset=UTF-8',
         'X-Content-Type-Options' => 'nosniff',
     ],
-))->name('security.policy');
+);
+
+Route::domain('{public_organisation}.'.config('organisations.public_domain'))
+    ->middleware(ResolvePublicOrganisation::class)
+    ->group(function () use ($securityPolicy, $securityText): void {
+        Route::get('/', PublicOrganisationController::class)->name('public.organisations.show');
+        Route::get('/.well-known/security.txt', $securityText)->name('public.security.txt');
+        Route::get('/security-policy', $securityPolicy)->name('public.security.policy');
+    });
+
+Route::inertia('/', 'welcome')->name('home');
+Route::model('current_organisation', Organisation::class);
+
+Route::get('/.well-known/security.txt', $securityText)->name('security.txt');
+
+Route::get('/security-policy', $securityPolicy)->name('security.policy');
 
 Route::get('/source-and-licence', fn (): View => view('source-and-licence', [
     'repository' => config('source.repository'),

@@ -3,22 +3,35 @@
 use App\Models\Organisation;
 use Illuminate\Support\Carbon;
 
-it('publishes host-correct RFC 9116 discovery without tenant content on every hosted surface', function (string $host) {
+it('publishes host-correct RFC 9116 discovery without tenant content on the central host', function () {
     Organisation::factory()->create(['name' => 'Do not expose this tenant']);
 
-    $this->get("https://{$host}/.well-known/security.txt")
+    $this->get('https://localhost/.well-known/security.txt')
         ->assertOk()
         ->assertHeader('Content-Type', 'text/plain; charset=UTF-8')
         ->assertSee('Contact: https://github.com/datashaman/community-kind/security/advisories/new', false)
         ->assertSee('Expires: 2027-08-30T00:00:00Z', false)
-        ->assertSee("Canonical: https://{$host}/.well-known/security.txt", false)
-        ->assertSee("Policy: https://{$host}/security-policy", false)
+        ->assertSee('Canonical: https://localhost/.well-known/security.txt', false)
+        ->assertSee('Policy: https://localhost/security-policy', false)
         ->assertDontSee('Do not expose this tenant', false);
-})->with([
-    'central staff host' => 'platform.example.test',
-    'tenant public host' => 'harbourkind.example.test',
-    'custom domain' => 'community.example.org',
-]);
+});
+
+it('publishes host-correct RFC 9116 discovery without tenant content on an active public host', function () {
+    Organisation::factory()->create(['name' => 'Do not expose this tenant']);
+    Organisation::factory()->active()->create([
+        'name' => 'HarbourKind',
+        'slug' => 'harbourkind',
+    ]);
+
+    $this->get('https://harbourkind.community-kind.test/.well-known/security.txt')
+        ->assertOk()
+        ->assertHeader('Content-Type', 'text/plain; charset=UTF-8')
+        ->assertSee('Contact: https://github.com/datashaman/community-kind/security/advisories/new', false)
+        ->assertSee('Expires: 2027-08-30T00:00:00Z', false)
+        ->assertSee('Canonical: https://harbourkind.community-kind.test/.well-known/security.txt', false)
+        ->assertSee('Policy: https://harbourkind.community-kind.test/security-policy', false)
+        ->assertDontSee('Do not expose this tenant', false);
+});
 
 it('publishes the coordinated vulnerability-reporting policy', function () {
     $this->get('/security-policy')
