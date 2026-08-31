@@ -12,6 +12,7 @@ use App\Models\Party;
 use App\Models\Program;
 use App\OrganisationContext;
 use Illuminate\Database\Eloquent\Factories\Factory;
+use Illuminate\Support\Str;
 
 /**
  * @extends Factory<IntakeRequest>
@@ -26,6 +27,7 @@ class IntakeRequestFactory extends Factory
     public function definition(): array
     {
         return [
+            'id' => Str::uuid()->toString(),
             'organisation_id' => app(OrganisationContext::class)->id(),
             'program_id' => Program::factory()->state(['organisation_id' => app(OrganisationContext::class)->id()]),
             'party_id' => Party::factory()->state(['organisation_id' => app(OrganisationContext::class)->id()]),

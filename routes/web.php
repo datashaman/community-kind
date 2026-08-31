@@ -2,6 +2,8 @@
 
 use App\Http\Controllers\DashboardController;
 use App\Http\Controllers\Organisations\CaseAssignmentController;
+use App\Http\Controllers\Organisations\CaseItemController;
+use App\Http\Controllers\Organisations\CaseWorkflowController;
 use App\Http\Controllers\Organisations\IntakeRequestController;
 use App\Http\Controllers\Organisations\IntakeTransitionController;
 use App\Http\Controllers\Organisations\OrganisationInvitationController;
@@ -12,6 +14,7 @@ use App\Http\Controllers\Organisations\PartyDuplicateReviewController;
 use App\Http\Controllers\Organisations\PartyRelationshipController;
 use App\Http\Controllers\Organisations\PartySafeContactInstructionController;
 use App\Http\Controllers\Organisations\ProgramController;
+use App\Http\Controllers\Organisations\ServiceCaseController;
 use App\Http\Controllers\Public\OrganisationController as PublicOrganisationController;
 use App\Http\Middleware\EnsureOrganisationAccess;
 use App\Http\Middleware\EnsureOrganisationMembership;
@@ -85,6 +88,10 @@ Route::prefix('{current_organisation}')
             ->only(['index', 'store', 'show']);
         Route::post('intakes/{intake}/transitions', [IntakeTransitionController::class, 'store'])->name('intakes.transitions.store');
         Route::post('intakes/{intake}/assignments', [CaseAssignmentController::class, 'store'])->name('intakes.assignments.store');
+        Route::get('cases/{case}', [ServiceCaseController::class, 'show'])->name('cases.show');
+        Route::post('cases/{case}/transitions', [ServiceCaseController::class, 'transition'])->name('cases.transitions.store');
+        Route::post('cases/{case}/items', [CaseItemController::class, 'store'])->name('cases.items.store');
+        Route::post('cases/{case}/items/{subjectType}/{subject}/transitions', [CaseWorkflowController::class, 'store'])->name('cases.items.transitions.store');
         Route::post('duplicate-reviews/{duplicate_review}', [PartyDuplicateReviewController::class, 'store'])->name('duplicate-reviews.store');
         Route::delete('duplicate-reviews/{duplicate_review}', [PartyDuplicateReviewController::class, 'destroy'])->name('duplicate-reviews.destroy');
         Route::post('parties/{party}/consents', [PartyConsentController::class, 'store'])->name('parties.consents.store');
