@@ -21,7 +21,7 @@ final class RecordPartyConsent
     ) {}
 
     /** @param array{purpose: ConsentPurpose, channel?: ConsentChannel, decision: ConsentDecision, wording_version: string, wording: string, source: string, occurred_at: string} $attributes */
-    public function handle(Party $party, array $attributes, User $actor): PartyConsent
+    public function handle(Party $party, array $attributes, ?User $actor): PartyConsent
     {
         $this->organisationContext->ensureOwns($party->organisation_id);
 
@@ -48,7 +48,7 @@ final class RecordPartyConsent
                 ...$attributes,
                 'channel' => $channel,
                 'supersedes_id' => $latest?->id,
-                'recorded_by_user_id' => $actor->id,
+                'recorded_by_user_id' => $actor?->id,
             ]);
             $this->recordTimelineEvent->handle(
                 $party,

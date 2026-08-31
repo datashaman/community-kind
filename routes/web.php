@@ -29,6 +29,7 @@ use App\Http\Controllers\Organisations\ServiceCaseController;
 use App\Http\Controllers\Organisations\ServiceOperationsExportController;
 use App\Http\Controllers\Organisations\SupporterJourneyController;
 use App\Http\Controllers\Organisations\TenantAuditEventController;
+use App\Http\Controllers\Organisations\VolunteerOpportunityController;
 use App\Http\Controllers\Portal\PortalAccessController;
 use App\Http\Controllers\Portal\PortalConsentPreferenceController;
 use App\Http\Controllers\Portal\PortalController;
@@ -37,6 +38,7 @@ use App\Http\Controllers\Portal\PortalRecurringMandateController;
 use App\Http\Controllers\Portal\PortalRegistrationController;
 use App\Http\Controllers\Public\DonationController as PublicDonationController;
 use App\Http\Controllers\Public\OrganisationController as PublicOrganisationController;
+use App\Http\Controllers\Public\VolunteerOpportunityController as PublicVolunteerOpportunityController;
 use App\Http\Middleware\EnsureOrganisationAccess;
 use App\Http\Middleware\EnsureOrganisationMembership;
 use App\Http\Middleware\EnsurePortalAccess;
@@ -81,6 +83,9 @@ Route::domain('{public_organisation}.'.config('organisations.public_domain'))
         Route::get('/', PublicOrganisationController::class)->name('public.organisations.show');
         Route::get('/donate', [PublicDonationController::class, 'create'])->name('public.donations.create');
         Route::post('/donate', [PublicDonationController::class, 'store'])->middleware('throttle:10,1')->name('public.donations.store');
+        Route::get('/volunteer', [PublicVolunteerOpportunityController::class, 'index'])->name('public.volunteers.index');
+        Route::get('/volunteer/{opportunity}', [PublicVolunteerOpportunityController::class, 'show'])->name('public.volunteers.show');
+        Route::post('/volunteer/{opportunity}', [PublicVolunteerOpportunityController::class, 'store'])->middleware('throttle:10,1')->name('public.volunteers.store');
         Route::get('/portal/access/{token}', [PortalAccessController::class, 'use'])
             ->middleware('throttle:20,1')
             ->name('portal.access.use');
@@ -129,6 +134,11 @@ Route::prefix('{current_organisation}')
         Route::resource('donations', DonationController::class)->only(['index', 'show']);
         Route::resource('audience-segments', AudienceSegmentController::class)->only(['index', 'store', 'show']);
         Route::resource('supporter-journeys', SupporterJourneyController::class)->only(['index', 'store', 'show']);
+        Route::resource('volunteers', VolunteerOpportunityController::class)->only(['index', 'store', 'show']);
+        Route::post('volunteers/{volunteer}/applications/{application}/transitions', [VolunteerOpportunityController::class, 'transitionApplication'])->name('volunteers.applications.transitions.store');
+        Route::post('volunteers/{volunteer}/applications/{application}/credentials', [VolunteerOpportunityController::class, 'storeCredential'])->name('volunteers.applications.credentials.store');
+        Route::post('volunteers/{volunteer}/shifts', [VolunteerOpportunityController::class, 'storeShift'])->name('volunteers.shifts.store');
+        Route::post('volunteers/{volunteer}/assignments/{assignment}/transitions', [VolunteerOpportunityController::class, 'transitionAssignment'])->name('volunteers.assignments.transitions.store');
         Route::post('supporter-journeys/{supporter_journey}/approve', [SupporterJourneyController::class, 'approve'])->name('supporter-journeys.approve');
         Route::post('supporter-journeys/{supporter_journey}/dispatch', [SupporterJourneyController::class, 'dispatch'])->name('supporter-journeys.dispatch');
         Route::post('supporter-journeys/{supporter_journey}/recipients/{recipient}/transitions', [SupporterJourneyController::class, 'transition'])->name('supporter-journeys.recipients.transitions.store');

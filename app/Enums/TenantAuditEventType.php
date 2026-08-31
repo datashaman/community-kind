@@ -33,6 +33,14 @@ enum TenantAuditEventType: string
     case SupporterProfileUpdated = 'supporter_profile_updated';
     case SupporterConsentPreferencesUpdated = 'supporter_consent_preferences_updated';
     case SupporterRegistrationCancelled = 'supporter_registration_cancelled';
+    case VolunteerOpportunityCreated = 'volunteer_opportunity_created';
+    case VolunteerApplicationSubmitted = 'volunteer_application_submitted';
+    case VolunteerApplicationTransitioned = 'volunteer_application_transitioned';
+    case VolunteerCredentialRecorded = 'volunteer_credential_recorded';
+    case VolunteerCredentialExpired = 'volunteer_credential_expired';
+    case VolunteerShiftCreated = 'volunteer_shift_created';
+    case VolunteerAssignmentTransitioned = 'volunteer_assignment_transitioned';
+    case VolunteerHoursRecorded = 'volunteer_hours_recorded';
 
     /** @return array<string, string> */
     public function payloadSchema(): array
@@ -165,6 +173,14 @@ enum TenantAuditEventType: string
                 'party_uuid' => 'string',
                 'kind' => 'string',
             ],
+            self::VolunteerOpportunityCreated => ['opportunity_id' => 'string', 'capacity' => 'integer'],
+            self::VolunteerApplicationSubmitted => ['application_id' => 'string', 'opportunity_id' => 'string', 'party_uuid' => 'string'],
+            self::VolunteerApplicationTransitioned => ['application_id' => 'string', 'from_status' => 'string', 'to_status' => 'string'],
+            self::VolunteerCredentialRecorded => ['credential_id' => 'string', 'application_id' => 'string', 'status' => 'string'],
+            self::VolunteerCredentialExpired => ['credential_id' => 'string', 'application_id' => 'string'],
+            self::VolunteerShiftCreated => ['shift_id' => 'string', 'opportunity_id' => 'string', 'capacity' => 'integer'],
+            self::VolunteerAssignmentTransitioned => ['assignment_id' => 'string', 'from_status' => 'string', 'to_status' => 'string'],
+            self::VolunteerHoursRecorded => ['hours_id' => 'string', 'assignment_id' => 'string', 'minutes' => 'integer'],
         };
     }
 }

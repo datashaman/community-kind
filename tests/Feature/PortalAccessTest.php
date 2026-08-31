@@ -13,6 +13,8 @@ use App\Enums\RecurringMandateStatus;
 use App\Enums\SupporterRegistrationKind;
 use App\Enums\SupporterRegistrationStatus;
 use App\Enums\TenantAuditEventType;
+use App\Enums\VolunteerApplicationStatus;
+use App\Enums\VolunteerAssignmentStatus;
 use App\Models\AudienceSegment;
 use App\Models\Donation;
 use App\Models\Organisation;
@@ -23,6 +25,11 @@ use App\Models\RecurringMandate;
 use App\Models\SupporterRegistration;
 use App\Models\TenantAuditEvent;
 use App\Models\User;
+use App\Models\VolunteerApplication;
+use App\Models\VolunteerAssignment;
+use App\Models\VolunteerCredential;
+use App\Models\VolunteerOpportunity;
+use App\Models\VolunteerShift;
 use App\OrganisationContext;
 use Inertia\Testing\AssertableInertia as Assert;
 
@@ -120,12 +127,22 @@ it('shows only the linked supporter projection and no staff or other-party data'
             'party_id' => $fixture['party']->id,
             'status' => RecurringMandateStatus::Active,
         ]);
-        SupporterRegistration::factory()->create([
+        $registration = SupporterRegistration::factory()->create([
             'party_id' => $fixture['party']->id,
             'kind' => SupporterRegistrationKind::Volunteer,
             'title' => 'Saturday food garden',
             'status' => SupporterRegistrationStatus::Confirmed,
         ]);
+        $opportunity = VolunteerOpportunity::factory()->create();
+        $application = VolunteerApplication::factory()->create([
+            'volunteer_opportunity_id' => $opportunity->id,
+            'party_id' => $fixture['party']->id,
+            'supporter_registration_id' => $registration->id,
+            'status' => VolunteerApplicationStatus::Approved,
+        ]);
+        VolunteerCredential::factory()->create(['volunteer_application_id' => $application->id, 'party_id' => $fixture['party']->id]);
+        $shift = VolunteerShift::factory()->create(['volunteer_opportunity_id' => $opportunity->id]);
+        VolunteerAssignment::factory()->create(['volunteer_shift_id' => $shift->id, 'volunteer_application_id' => $application->id, 'party_id' => $fixture['party']->id, 'status' => VolunteerAssignmentStatus::Confirmed]);
     });
 
     $this->get(supporterPortalUrl($fixture, "/portal/access/{$fixture['token']}"));
@@ -140,6 +157,10 @@ it('shows only the linked supporter projection and no staff or other-party data'
             ->where('profile.email', 'amina@example.test')
             ->has('recurringMandates', 1)
             ->where('registrations.0.title', 'Saturday food garden')
+            ->where('registrations.0.volunteer.applicationStatus', 'approved')
+            ->has('registrations.0.volunteer.credentials', 1)
+            ->has('registrations.0.volunteer.assignments', 1)
+            ->missing('registrations.0.volunteer.cases')
             ->missing('party')
             ->missing('roles')
             ->missing('programs')

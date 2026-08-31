@@ -31,6 +31,21 @@ type Registration = {
     status: string;
     startsAt: string | null;
     canCancel: boolean;
+    volunteer: {
+        applicationStatus: string;
+        onboardingStatus: string;
+        credentials: {
+            type: string;
+            status: string;
+            expiresAt: string | null;
+        }[];
+        assignments: {
+            title: string;
+            startsAt: string;
+            status: string;
+            minutes: number | null;
+        }[];
+    } | null;
 };
 type Props = {
     organisation: { name: string; slug: string };
@@ -296,6 +311,61 @@ export default function PortalShow({
                                             <Badge variant="outline">
                                                 {registration.status}
                                             </Badge>
+                                            {registration.volunteer ? (
+                                                <div className="mt-3 space-y-2 text-sm text-slate-600 dark:text-slate-300">
+                                                    <p>
+                                                        Application:{' '}
+                                                        {
+                                                            registration
+                                                                .volunteer
+                                                                .applicationStatus
+                                                        }{' '}
+                                                        · Onboarding:{' '}
+                                                        {
+                                                            registration
+                                                                .volunteer
+                                                                .onboardingStatus
+                                                        }
+                                                    </p>
+                                                    {registration.volunteer.credentials.map(
+                                                        (credential) => (
+                                                            <p
+                                                                key={`${credential.type}-${credential.expiresAt ?? 'none'}`}
+                                                            >
+                                                                {
+                                                                    credential.type
+                                                                }
+                                                                :{' '}
+                                                                {
+                                                                    credential.status
+                                                                }
+                                                            </p>
+                                                        ),
+                                                    )}
+                                                    {registration.volunteer.assignments.map(
+                                                        (assignment) => (
+                                                            <p
+                                                                key={`${assignment.title}-${assignment.startsAt}`}
+                                                            >
+                                                                {
+                                                                    assignment.title
+                                                                }{' '}
+                                                                ·{' '}
+                                                                {new Date(
+                                                                    assignment.startsAt,
+                                                                ).toLocaleString()}{' '}
+                                                                ·{' '}
+                                                                {
+                                                                    assignment.status
+                                                                }
+                                                                {assignment.minutes
+                                                                    ? ` · ${assignment.minutes} minutes`
+                                                                    : ''}
+                                                            </p>
+                                                        ),
+                                                    )}
+                                                </div>
+                                            ) : null}
                                         </div>
                                         {registration.canCancel ? (
                                             <Form

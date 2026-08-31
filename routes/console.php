@@ -39,3 +39,8 @@ Schedule::command('demo:sandbox:purge')
     ->daily()
     ->onOneServer()
     ->withoutOverlapping(60);
+
+Schedule::command('volunteers:expire-credentials')
+    ->dailyAt('02:00')
+    ->onOneServer()
+    ->withoutOverlapping(60);

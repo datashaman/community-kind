@@ -118,6 +118,14 @@ class BuildTenantAuditView
             TenantAuditEventType::SupporterProfileUpdated,
             TenantAuditEventType::SupporterConsentPreferencesUpdated,
             TenantAuditEventType::SupporterRegistrationCancelled => 'engagement',
+            TenantAuditEventType::VolunteerOpportunityCreated,
+            TenantAuditEventType::VolunteerApplicationSubmitted,
+            TenantAuditEventType::VolunteerApplicationTransitioned,
+            TenantAuditEventType::VolunteerCredentialRecorded,
+            TenantAuditEventType::VolunteerCredentialExpired,
+            TenantAuditEventType::VolunteerShiftCreated,
+            TenantAuditEventType::VolunteerAssignmentTransitioned,
+            TenantAuditEventType::VolunteerHoursRecorded => 'engagement',
             default => 'service',
         };
     }

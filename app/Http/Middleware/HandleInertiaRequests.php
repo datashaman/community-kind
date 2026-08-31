@@ -11,6 +11,7 @@ use App\Models\Program;
 use App\Models\SandboxPair;
 use App\Models\SupporterJourney;
 use App\Models\TenantAuditEvent;
+use App\Models\VolunteerOpportunity;
 use Illuminate\Http\Request;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\Gate;
@@ -63,6 +64,7 @@ class HandleInertiaRequests extends Middleware
                 'canViewAudienceSegments' => false,
                 'canViewSupporterJourneys' => false,
                 'canViewAudit' => false,
+                'canViewVolunteers' => false,
             ];
         }
 
@@ -119,6 +121,8 @@ class HandleInertiaRequests extends Middleware
                 && Gate::allows('viewAny', [SupporterJourney::class, $routeOrganisation]),
             'canViewAudit' => fn (): bool => $routeOrganisation instanceof Organisation
                 && Gate::allows('viewAny', [TenantAuditEvent::class, $routeOrganisation]),
+            'canViewVolunteers' => fn (): bool => $routeOrganisation instanceof Organisation
+                && Gate::allows('viewAny', [VolunteerOpportunity::class, $routeOrganisation]),
         ];
     }
 }
