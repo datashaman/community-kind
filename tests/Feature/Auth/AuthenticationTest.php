@@ -32,6 +32,7 @@ class AuthenticationTest extends TestCase
         $invitation = OrganisationInvitation::factory()->forToken($token)->create([
             'organisation_id' => $organisation->id,
             'email' => 'invited@example.com',
+            'offers_ownership' => true,
             'invited_by' => $owner->id,
         ]);
 
@@ -41,7 +42,8 @@ class AuthenticationTest extends TestCase
         $response->assertInertia(fn (Assert $page) => $page
             ->component('auth/login')
             ->where('organisationInvitation.code', $token)
-            ->where('organisationInvitation.organisationName', 'Laravel Organisation'),
+            ->where('organisationInvitation.organisationName', 'Laravel Organisation')
+            ->where('organisationInvitation.offersOwnership', true),
         );
     }
 

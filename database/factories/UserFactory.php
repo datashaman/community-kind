@@ -45,7 +45,8 @@ class UserFactory extends Factory
         return $this->afterCreating(function ($user) {
             $organisation = Organisation::factory()->active()->create();
 
-            $organisation->members()->attach($user, [
+            $organisation->memberships()->create([
+                'user_id' => $user->id,
                 'is_owner' => true,
             ]);
 

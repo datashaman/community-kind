@@ -138,7 +138,7 @@ class FortifyServiceProvider extends ServiceProvider
     /**
      * Get the pending organisation invitation context for auth pages.
      *
-     * @return array{code: string, email: string, organisationName: string}|null
+     * @return array{code: string, email: string, organisationName: string, offersOwnership: bool}|null
      */
     private function organisationInvitation(Request $request): ?array
     {
@@ -158,6 +158,7 @@ class FortifyServiceProvider extends ServiceProvider
             'code' => $invitationCode,
             'email' => $invitation->email,
             'organisationName' => $invitation->organisation->name,
+            'offersOwnership' => $invitation->offers_ownership,
         ];
     }
 }

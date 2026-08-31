@@ -4,6 +4,7 @@ namespace App\Models;
 
 use App\Concerns\GeneratesUniqueOrganisationSlugs;
 use App\Enums\OrganisationStatus;
+use App\OrganisationContext;
 use Database\Factories\OrganisationFactory;
 use Illuminate\Database\Eloquent\Attributes\Fillable;
 use Illuminate\Database\Eloquent\Collection;
@@ -68,6 +69,15 @@ class Organisation extends Model
             ->first();
     }
 
+    public function hasOtherCapableOwner(Membership $membership): bool
+    {
+        return app(OrganisationContext::class)->run($this, fn (): bool => $this->memberships()
+            ->where('is_owner', true)
+            ->whereKeyNot($membership->id)
+            ->get()
+            ->contains(fn (Membership $ownerMembership) => ! $ownerMembership->isHeld()));
+    }
+
     /**
      * Get the organisation's owners.
      *
@@ -87,7 +97,8 @@ class Organisation extends Model
     {
         return $this->belongsToMany(User::class, 'organisation_members', 'organisation_id', 'user_id')
             ->using(Membership::class)
-            ->withPivot(['role', 'is_owner'])
+            ->withPivot(['id', 'person_party_id', 'role', 'is_owner', 'accepted_at', 'ended_at'])
+            ->wherePivotNull('ended_at')
             ->withTimestamps();
     }
 
@@ -97,6 +108,12 @@ class Organisation extends Model
      * @return HasMany<Membership, $this>
      */
     public function memberships(): HasMany
+    {
+        return $this->hasMany(Membership::class)->whereNull('ended_at');
+    }
+
+    /** @return HasMany<Membership, $this> */
+    public function membershipHistory(): HasMany
     {
         return $this->hasMany(Membership::class);
     }
@@ -119,6 +136,12 @@ class Organisation extends Model
     public function programs(): HasMany
     {
         return $this->hasMany(Program::class);
+    }
+
+    /** @return HasMany<Party, $this> */
+    public function parties(): HasMany
+    {
+        return $this->hasMany(Party::class);
     }
 
     /** @return HasMany<OrganisationAccessHold, $this> */

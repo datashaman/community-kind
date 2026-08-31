@@ -3,6 +3,7 @@
 namespace App\Http\Controllers;
 
 use App\Models\OrganisationInvitation;
+use App\OrganisationContext;
 use Illuminate\Http\Request;
 use Inertia\Inertia;
 use Inertia\Response;
@@ -23,14 +24,31 @@ class DashboardController extends Controller
                 ->orWhere('expires_at', '>=', now()))
             ->latest()
             ->get()
-            ->map(fn (OrganisationInvitation $invitation) => [
-                'id' => $invitation->id,
-                'inviterName' => $invitation->inviter->name,
-                'organisation' => [
-                    'name' => $invitation->organisation->name,
-                    'slug' => $invitation->organisation->slug,
-                ],
-            ]);
+            ->map(function (OrganisationInvitation $invitation): array {
+                app(OrganisationContext::class)->run(
+                    $invitation->organisation,
+                    fn () => $invitation->load(['personParty', 'roleAssignments.program']),
+                );
+
+                return [
+                    'id' => $invitation->id,
+                    'inviterName' => $invitation->inviter->name,
+                    'personName' => $invitation->person_party_id === null
+                        ? $invitation->new_person_name
+                        : $invitation->personParty->display_name,
+                    'offersOwnership' => $invitation->offers_ownership,
+                    'roleAssignments' => $invitation->roleAssignments->map(fn ($assignment) => [
+                        'roleLabel' => $assignment->role->label(),
+                        'scopeLabel' => $assignment->program_id === null
+                            ? 'Organisation-wide'
+                            : $assignment->program->name,
+                    ])->values()->all(),
+                    'organisation' => [
+                        'name' => $invitation->organisation->name,
+                        'slug' => $invitation->organisation->slug,
+                    ],
+                ];
+            });
 
         return Inertia::render('dashboard', [
             'pendingInvitations' => $pendingInvitations,

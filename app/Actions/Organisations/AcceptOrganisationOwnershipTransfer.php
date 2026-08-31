@@ -8,6 +8,7 @@ use App\Models\Membership;
 use App\Models\Organisation;
 use App\Models\OrganisationOwnershipTransfer;
 use App\Models\User;
+use App\OrganisationContext;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Validation\ValidationException;
 
@@ -30,14 +31,21 @@ class AcceptOrganisationOwnershipTransfer
 
             $nominatorMembership = Membership::where('organisation_id', $organisation->id)
                 ->where('user_id', $transfer->nominated_by_user_id)
+                ->whereNull('ended_at')
                 ->lockForUpdate()
                 ->first();
             $nomineeMembership = Membership::where('organisation_id', $organisation->id)
                 ->where('user_id', $nominee->id)
+                ->whereNull('ended_at')
                 ->lockForUpdate()
                 ->first();
 
-            if (! $nominatorMembership?->is_owner || $nomineeMembership === null) {
+            $membershipOnHold = app(OrganisationContext::class)->run(
+                $organisation,
+                fn (): bool => $nominatorMembership?->isHeld() === true || $nomineeMembership?->isHeld() === true,
+            );
+
+            if (! $nominatorMembership?->is_owner || $nomineeMembership === null || $membershipOnHold) {
                 throw ValidationException::withMessages(['transfer' => __('This ownership transfer is no longer valid.')]);
             }
 

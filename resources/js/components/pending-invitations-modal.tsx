@@ -67,8 +67,23 @@ export default function PendingInvitationsModal({
                                 </p>
                                 <p className="text-muted-foreground text-sm">
                                     {invitation.inviterName} invited you to join
-                                    this organisation.
+                                    this organisation as {invitation.personName}
+                                    .
                                 </p>
+                                <p className="text-muted-foreground text-sm">
+                                    {invitation.roleAssignments
+                                        .map(
+                                            (assignment) =>
+                                                `${assignment.roleLabel} (${assignment.scopeLabel})`,
+                                        )
+                                        .join(', ')}
+                                </p>
+                                {invitation.offersOwnership ? (
+                                    <p className="text-sm font-medium">
+                                        Accepting also accepts Organisation
+                                        Owner responsibility.
+                                    </p>
+                                ) : null}
                             </div>
 
                             <div className="mt-4 flex justify-end gap-2">

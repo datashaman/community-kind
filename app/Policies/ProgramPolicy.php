@@ -14,7 +14,7 @@ class ProgramPolicy
      */
     public function viewAny(User $user, Organisation $organisation): bool
     {
-        return $user->organisationRole($organisation) === OrganisationRole::OrganisationAdministrator;
+        return $user->hasOrganisationRole($organisation, OrganisationRole::OrganisationAdministrator);
     }
 
     /**
@@ -22,10 +22,8 @@ class ProgramPolicy
      */
     public function view(User $user, Program $program): bool
     {
-        $role = $user->organisationRole($program->organisation);
-
-        return $role === OrganisationRole::OrganisationAdministrator
-            || ($role !== null && $user->hasProgramAccess($program));
+        return collect(OrganisationRole::cases())
+            ->contains(fn (OrganisationRole $role) => $user->hasOrganisationRole($program->organisation, $role, $program));
     }
 
     /**
@@ -41,10 +39,8 @@ class ProgramPolicy
      */
     public function update(User $user, Program $program): bool
     {
-        $role = $user->organisationRole($program->organisation);
-
-        return $role === OrganisationRole::OrganisationAdministrator
-            || ($role === OrganisationRole::ProgramManager && $user->hasProgramAccess($program));
+        return $user->hasOrganisationRole($program->organisation, OrganisationRole::OrganisationAdministrator)
+            || $user->hasOrganisationRole($program->organisation, OrganisationRole::ProgramManager, $program);
     }
 
     /**
