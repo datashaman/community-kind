@@ -164,7 +164,12 @@ it('allows only engagement officers to follow supporter-safe simulated donation 
         return $donation;
     });
 
-    $this->actingAs($engagement)->get(route('donations.index', $organisation))->assertOk()->assertSee('Simulated donations');
+    $this->actingAs($engagement)
+        ->get(route('donations.index', $organisation))
+        ->assertOk()
+        ->assertInertia(fn (Assert $page) => $page
+            ->component('donations/index')
+            ->has('donations.data', 1));
     $showUrl = '/'.$organisation->slug.'/donations/'.$donation->getKey();
     expect($donation->getKey())->toBeString()->not->toBeEmpty()
         ->and($showUrl)->toEndWith((string) $donation->getKey());
