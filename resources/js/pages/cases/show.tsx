@@ -12,6 +12,11 @@ import { show as showIntake } from '@/routes/intakes';
 import { store as storeItem } from '@/routes/cases/items';
 import { store as transitionItem } from '@/routes/cases/items/transitions';
 import { store as transitionCase } from '@/routes/cases/transitions';
+import {
+    download as downloadDocument,
+    replace as replaceDocument,
+    store as storeDocument,
+} from '@/routes/cases/documents';
 
 const nextStates: Record<string, Record<string, string[]>> = {
     goal: {
@@ -184,7 +189,11 @@ function ItemCard({ type, item, args, services, canUpdate }: any) {
     );
 }
 
-export default function CaseShow({ caseRecord, canUpdate }: any) {
+export default function CaseShow({
+    caseRecord,
+    canUpdate,
+    canViewSensitive,
+}: any) {
     const organisation = usePage().props.currentOrganisation!;
     const args = [organisation.slug, caseRecord.id] as [string, string];
     const [kind, setKind] = useState('goal');
@@ -268,6 +277,158 @@ export default function CaseShow({ caseRecord, canUpdate }: any) {
                         </CardContent>
                     </Card>
                 ) : null}
+
+                <Card>
+                    <CardHeader>
+                        <CardTitle>Case documents</CardTitle>
+                    </CardHeader>
+                    <CardContent className="space-y-4">
+                        {canUpdate ? (
+                            <Form
+                                action={storeDocument.url(args)}
+                                method="post"
+                                className="grid gap-3 md:grid-cols-[1fr_14rem_auto]"
+                            >
+                                {({ errors, processing }) => (
+                                    <>
+                                        <div className="space-y-2">
+                                            <Label htmlFor="case-document">
+                                                PDF, JPEG, or PNG
+                                            </Label>
+                                            <Input
+                                                id="case-document"
+                                                type="file"
+                                                name="document"
+                                                accept="application/pdf,image/jpeg,image/png"
+                                                required
+                                            />
+                                        </div>
+                                        <div className="space-y-2">
+                                            <Label htmlFor="document-classification">
+                                                Classification
+                                            </Label>
+                                            <select
+                                                id="document-classification"
+                                                name="classification"
+                                                defaultValue={
+                                                    caseRecord.confidentiality
+                                                }
+                                                className="h-9 w-full rounded-md border bg-transparent px-3"
+                                            >
+                                                <option value="confidential">
+                                                    Confidential
+                                                </option>
+                                                {canViewSensitive ? (
+                                                    <option value="highly_restricted">
+                                                        Highly restricted
+                                                    </option>
+                                                ) : null}
+                                            </select>
+                                        </div>
+                                        <Button
+                                            className="self-end"
+                                            disabled={processing}
+                                        >
+                                            Upload securely
+                                        </Button>
+                                        <InputError
+                                            className="md:col-span-3"
+                                            message={errors.document}
+                                        />
+                                    </>
+                                )}
+                            </Form>
+                        ) : null}
+                        {caseRecord.documents.map((document: any) => (
+                            <div
+                                key={document.id}
+                                className="flex flex-col gap-3 rounded-lg border p-3 sm:flex-row sm:items-center sm:justify-between"
+                            >
+                                <div>
+                                    <p className="font-medium">
+                                        {document.displayName}
+                                    </p>
+                                    <div className="mt-1 flex gap-2">
+                                        <Badge variant="outline">
+                                            {document.classification.replaceAll(
+                                                '_',
+                                                ' ',
+                                            )}
+                                        </Badge>
+                                        <Badge variant="secondary">
+                                            {document.state.replaceAll(
+                                                '_',
+                                                ' ',
+                                            )}
+                                        </Badge>
+                                    </div>
+                                </div>
+                                <div className="flex flex-wrap gap-2">
+                                    {document.downloadable ? (
+                                        <Button asChild variant="outline">
+                                            <a
+                                                href={downloadDocument.url([
+                                                    organisation.slug,
+                                                    caseRecord.id,
+                                                    document.id,
+                                                ])}
+                                            >
+                                                Download
+                                            </a>
+                                        </Button>
+                                    ) : null}
+                                    {canUpdate ? (
+                                        <Form
+                                            action={replaceDocument.url([
+                                                organisation.slug,
+                                                caseRecord.id,
+                                                document.id,
+                                            ])}
+                                            method="post"
+                                            className="flex flex-wrap gap-2"
+                                        >
+                                            {({ errors, processing }) => (
+                                                <>
+                                                    <Input
+                                                        type="file"
+                                                        name="document"
+                                                        aria-label={`Replacement for ${document.displayName}`}
+                                                        accept="application/pdf,image/jpeg,image/png"
+                                                        className="max-w-64"
+                                                        required
+                                                    />
+                                                    <input
+                                                        type="hidden"
+                                                        name="classification"
+                                                        value={
+                                                            document.classification
+                                                        }
+                                                    />
+                                                    <Button
+                                                        disabled={processing}
+                                                    >
+                                                        Replace
+                                                    </Button>
+                                                    <InputError
+                                                        className="basis-full"
+                                                        message={
+                                                            errors.document
+                                                        }
+                                                    />
+                                                </>
+                                            )}
+                                        </Form>
+                                    ) : null}
+                                </div>
+                            </div>
+                        ))}
+                        {caseRecord.documents.length === 0 ? (
+                            <p className="text-muted-foreground text-sm">
+                                No case documents.
+                            </p>
+                        ) : null}
+                    </CardContent>
+                </Card>
 
                 {canUpdate ? (
                     <Card>

@@ -3,6 +3,7 @@
 use App\Http\Controllers\DashboardController;
 use App\Http\Controllers\Organisations\CaseAssignmentController;
 use App\Http\Controllers\Organisations\CaseConfidentialityController;
+use App\Http\Controllers\Organisations\CaseDocumentController;
 use App\Http\Controllers\Organisations\CaseExportController;
 use App\Http\Controllers\Organisations\CaseItemController;
 use App\Http\Controllers\Organisations\CaseWorkflowController;
@@ -96,6 +97,9 @@ Route::prefix('{current_organisation}')
         Route::post('cases/{case}/restricted-access-grants', [CaseConfidentialityController::class, 'grant'])->name('cases.restricted-access-grants.store');
         Route::delete('cases/{case}/restricted-access-grants/{grant}', [CaseConfidentialityController::class, 'revoke'])->name('cases.restricted-access-grants.destroy');
         Route::post('cases/{case}/risk-assessments', [CaseConfidentialityController::class, 'risk'])->name('cases.risk-assessments.store');
+        Route::post('cases/{case}/documents', [CaseDocumentController::class, 'store'])->middleware('throttle:'.config('case_documents.max_attempts_per_minute').',1')->name('cases.documents.store');
+        Route::post('cases/{case}/documents/{document}/replacement', [CaseDocumentController::class, 'replace'])->middleware('throttle:'.config('case_documents.max_attempts_per_minute').',1')->name('cases.documents.replace');
+        Route::get('cases/{case}/documents/{document}/download', [CaseDocumentController::class, 'download'])->name('cases.documents.download');
         Route::get('programs/{program}/cases/export', CaseExportController::class)->name('programs.cases.export');
         Route::post('cases/{case}/items', [CaseItemController::class, 'store'])->name('cases.items.store');
         Route::post('cases/{case}/items/{subjectType}/{subject}/transitions', [CaseWorkflowController::class, 'store'])->name('cases.items.transitions.store');

@@ -13,6 +13,10 @@ enum TenantAuditEventType: string
     case RestrictedAccessGranted = 'restricted_access_granted';
     case RestrictedAccessRevoked = 'restricted_access_revoked';
     case IdentifiableCaseExported = 'identifiable_case_exported';
+    case CaseDocumentUploaded = 'case_document_uploaded';
+    case CaseDocumentScanCompleted = 'case_document_scan_completed';
+    case CaseDocumentDownloaded = 'case_document_downloaded';
+    case CaseDocumentReplaced = 'case_document_replaced';
 
     /** @return array<string, string> */
     public function payloadSchema(): array
@@ -54,6 +58,23 @@ enum TenantAuditEventType: string
             self::IdentifiableCaseExported => [
                 'program_id' => 'integer',
                 'record_count' => 'integer',
+            ],
+            self::CaseDocumentUploaded, self::CaseDocumentReplaced => [
+                'case_id' => 'string',
+                'document_id' => 'string',
+                'generation' => 'integer',
+                'classification' => 'string',
+            ],
+            self::CaseDocumentScanCompleted => [
+                'document_id' => 'string',
+                'generation' => 'integer',
+                'outcome' => 'string',
+            ],
+            self::CaseDocumentDownloaded => [
+                'case_id' => 'string',
+                'document_id' => 'string',
+                'generation' => 'integer',
+                'classification' => 'string',
             ],
         };
     }

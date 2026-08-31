@@ -4,12 +4,14 @@ namespace App\Http\Controllers\Organisations;
 
 use App\Actions\Auditing\RecordTenantAuditEvent;
 use App\Actions\CaseDelivery\TransitionServiceCase;
+use App\Authorization\CaseAccess;
 use App\Data\Values\ClassifiedValue;
 use App\Enums\ServiceCaseStatus;
 use App\Enums\TenantAuditEventType;
 use App\Http\Controllers\Controller;
 use App\Http\Requests\Organisations\TransitionServiceCaseRequest;
 use App\Models\CaseAppointment;
+use App\Models\CaseDocument;
 use App\Models\CaseGoal;
 use App\Models\CaseInteraction;
 use App\Models\CaseNote;
@@ -34,6 +36,7 @@ class ServiceCaseController extends Controller
         Organisation $currentOrganisation,
         string $case,
         RecordTenantAuditEvent $recordAudit,
+        CaseAccess $caseAccess,
     ): Response {
         $serviceCase = ServiceCase::query()->findOrFail($case);
         Gate::authorize('view', $serviceCase);
@@ -54,6 +57,7 @@ class ServiceCaseController extends Controller
             'party:id,uuid,display_name', 'program:id,organisation_id,name,configuration', 'intakeRequest:id',
             'assignments.membership.user:id,name', 'goals', 'services', 'referrals', 'tasks', 'appointments',
             'interactions', 'notes', 'outcome', 'workflowTransitions' => fn ($query) => $query->orderByDesc('recorded_at'),
+            'documents.currentVersion', 'documents.versions' => fn ($query) => $query->latest('generation'),
         ]);
 
         if ($canViewSensitive) {
@@ -97,6 +101,20 @@ class ServiceCaseController extends Controller
                         'effectiveAt' => $risk->effective_at->toAtomString(),
                     ])->values()
                     : [],
+                'documents' => $serviceCase->documents
+                    ->filter(fn (CaseDocument $document): bool => $caseAccess->canViewDocument($request->user(), $document))
+                    ->map(function (CaseDocument $document): array {
+                        $latest = $document->versions->first();
+
+                        return [
+                            'id' => $document->id,
+                            'displayName' => $document->encrypted_display_name->reveal(),
+                            'classification' => $document->classification->value,
+                            'generation' => $document->generation,
+                            'state' => $latest?->state->value ?? 'awaiting_upload',
+                            'downloadable' => $document->currentVersion?->state->value === 'clean',
+                        ];
+                    })->values(),
             ],
             'canUpdate' => Gate::allows('update', $serviceCase),
             'canManageAccess' => Gate::allows('manageAccess', $serviceCase),

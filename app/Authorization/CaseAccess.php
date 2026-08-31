@@ -5,6 +5,7 @@ namespace App\Authorization;
 use App\Enums\CaseClassification;
 use App\Enums\OrganisationRole;
 use App\Enums\RestrictedAccessPermission;
+use App\Models\CaseDocument;
 use App\Models\Membership;
 use App\Models\Program;
 use App\Models\RestrictedAccessGrant;
@@ -42,6 +43,18 @@ class CaseAccess
     {
         return $this->canViewConfidential($user, $case)
             && $this->hasGrant($user, $case, RestrictedAccessPermission::SensitiveData);
+    }
+
+    public function canViewDocument(User $user, CaseDocument $document): bool
+    {
+        $case = $document->serviceCase;
+
+        if (! $this->canView($user, $case)) {
+            return false;
+        }
+
+        return $document->classification === CaseClassification::Confidential
+            || $this->canViewSensitive($user, $case);
     }
 
     public function canManageAccess(User $user, ServiceCase $case): bool

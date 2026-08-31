@@ -6,6 +6,7 @@ use App\Concerns\BelongsToOrganisation;
 use App\Enums\CaseClassification;
 use App\Enums\ServiceCaseStatus;
 use Database\Factories\ServiceCaseFactory;
+use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Database\Eloquent\Concerns\HasUuids;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
@@ -32,6 +33,7 @@ use Illuminate\Support\Carbon;
  * @property-read Program $program
  * @property-read Party $party
  * @property-read CaseOutcome|null $outcome
+ * @property-read Collection<int, CaseDocument> $documents
  */
 class ServiceCase extends Model
 {
@@ -134,6 +136,12 @@ class ServiceCase extends Model
     public function riskAssessments(): HasMany
     {
         return $this->hasMany(CaseRiskAssessment::class);
+    }
+
+    /** @return HasMany<CaseDocument, $this> */
+    public function documents(): HasMany
+    {
+        return $this->hasMany(CaseDocument::class);
     }
 
     protected function casts(): array
