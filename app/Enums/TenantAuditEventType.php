@@ -17,6 +17,7 @@ enum TenantAuditEventType: string
     case CaseDocumentScanCompleted = 'case_document_scan_completed';
     case CaseDocumentDownloaded = 'case_document_downloaded';
     case CaseDocumentReplaced = 'case_document_replaced';
+    case ServiceOperationsExported = 'service_operations_exported';
 
     /** @return array<string, string> */
     public function payloadSchema(): array
@@ -75,6 +76,10 @@ enum TenantAuditEventType: string
                 'document_id' => 'string',
                 'generation' => 'integer',
                 'classification' => 'string',
+            ],
+            self::ServiceOperationsExported => [
+                'program_id' => 'nullable_integer',
+                'record_count' => 'integer',
             ],
         };
     }

@@ -2,6 +2,8 @@
 
 namespace App\Http\Controllers;
 
+use App\Actions\ServiceMonitoring\BuildServiceOperationsDashboard;
+use App\Models\Organisation;
 use App\Models\OrganisationInvitation;
 use App\OrganisationContext;
 use Illuminate\Http\Request;
@@ -10,7 +12,7 @@ use Inertia\Response;
 
 class DashboardController extends Controller
 {
-    public function __invoke(Request $request): Response
+    public function __invoke(Request $request, Organisation $currentOrganisation, BuildServiceOperationsDashboard $buildDashboard): Response
     {
         $email = strtolower($request->user()->email);
 
@@ -52,6 +54,11 @@ class DashboardController extends Controller
 
         return Inertia::render('dashboard', [
             'pendingInvitations' => $pendingInvitations,
+            'serviceOperations' => $buildDashboard->handle(
+                $request->user(),
+                $currentOrganisation,
+                $request->filled('program_id') ? $request->integer('program_id') : null,
+            ),
         ]);
     }
 }

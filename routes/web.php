@@ -18,6 +18,7 @@ use App\Http\Controllers\Organisations\PartyRelationshipController;
 use App\Http\Controllers\Organisations\PartySafeContactInstructionController;
 use App\Http\Controllers\Organisations\ProgramController;
 use App\Http\Controllers\Organisations\ServiceCaseController;
+use App\Http\Controllers\Organisations\ServiceOperationsExportController;
 use App\Http\Controllers\Public\OrganisationController as PublicOrganisationController;
 use App\Http\Middleware\EnsureOrganisationAccess;
 use App\Http\Middleware\EnsureOrganisationMembership;
@@ -84,6 +85,7 @@ Route::prefix('{current_organisation}')
     ->middleware(['auth', 'verified', EnsureStaffSecurityRequirements::class, EnsureOrganisationMembership::class, UseOrganisationContext::class, EnsureOrganisationAccess::class.':full'])
     ->group(function () {
         Route::get('dashboard', DashboardController::class)->name('dashboard');
+        Route::get('dashboard/service-operations/export', ServiceOperationsExportController::class)->name('dashboard.service-operations.export');
         Route::get('programs', [ProgramController::class, 'index'])->name('programs.index');
         Route::resource('parties', PartyController::class)->only(['index', 'store', 'show', 'update']);
         Route::resource('intakes', IntakeRequestController::class)
