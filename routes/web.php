@@ -2,6 +2,8 @@
 
 use App\Http\Controllers\DashboardController;
 use App\Http\Controllers\Organisations\CaseAssignmentController;
+use App\Http\Controllers\Organisations\CaseConfidentialityController;
+use App\Http\Controllers\Organisations\CaseExportController;
 use App\Http\Controllers\Organisations\CaseItemController;
 use App\Http\Controllers\Organisations\CaseWorkflowController;
 use App\Http\Controllers\Organisations\IntakeRequestController;
@@ -90,6 +92,11 @@ Route::prefix('{current_organisation}')
         Route::post('intakes/{intake}/assignments', [CaseAssignmentController::class, 'store'])->name('intakes.assignments.store');
         Route::get('cases/{case}', [ServiceCaseController::class, 'show'])->name('cases.show');
         Route::post('cases/{case}/transitions', [ServiceCaseController::class, 'transition'])->name('cases.transitions.store');
+        Route::post('cases/{case}/classification', [CaseConfidentialityController::class, 'reclassify'])->name('cases.classification.store');
+        Route::post('cases/{case}/restricted-access-grants', [CaseConfidentialityController::class, 'grant'])->name('cases.restricted-access-grants.store');
+        Route::delete('cases/{case}/restricted-access-grants/{grant}', [CaseConfidentialityController::class, 'revoke'])->name('cases.restricted-access-grants.destroy');
+        Route::post('cases/{case}/risk-assessments', [CaseConfidentialityController::class, 'risk'])->name('cases.risk-assessments.store');
+        Route::get('programs/{program}/cases/export', CaseExportController::class)->name('programs.cases.export');
         Route::post('cases/{case}/items', [CaseItemController::class, 'store'])->name('cases.items.store');
         Route::post('cases/{case}/items/{subjectType}/{subject}/transitions', [CaseWorkflowController::class, 'store'])->name('cases.items.transitions.store');
         Route::post('duplicate-reviews/{duplicate_review}', [PartyDuplicateReviewController::class, 'store'])->name('duplicate-reviews.store');

@@ -1,22 +1,26 @@
 <?php
 
+use App\Actions\CaseConfidentiality\GrantRestrictedAccess;
 use App\Enums\ConsentDecision;
 use App\Enums\ConsentPurpose;
 use App\Enums\OrganisationRole;
 use App\Enums\PartyBusinessRole;
 use App\Enums\PartyKind;
+use App\Enums\RestrictedAccessPermission;
+use App\Models\IntakeRequest;
 use App\Models\Organisation;
 use App\Models\Party;
 use App\Models\PartyConsent;
 use App\Models\PartyRole;
 use App\Models\PartySafeContactInstruction;
 use App\Models\Program;
+use App\Models\ServiceCase;
 use App\Models\User;
 use App\OrganisationContext;
 use Illuminate\Database\QueryException;
 use Illuminate\Support\Facades\DB;
 
-function partyProfileFixture(OrganisationRole $role = OrganisationRole::OrganisationAdministrator): array
+function partyProfileFixture(OrganisationRole $role = OrganisationRole::ProgramManager): array
 {
     $user = User::factory()->create();
     $organisation = Organisation::factory()->active()->create();
@@ -87,13 +91,16 @@ it('preserves immutable consent grant and withdrawal history with exact provenan
     });
 });
 
-it('limits Party safe-contact content to assigned Program managers', function () {
+it('limits Party safe-contact content to service staff with explicit sensitive access', function () {
     extract(partyProfileFixture(OrganisationRole::ProgramManager));
     $administrator = User::factory()->create();
     $organisation->memberships()->create(['user_id' => $administrator->id, 'role' => OrganisationRole::OrganisationAdministrator]);
-    $party = app(OrganisationContext::class)->run($organisation, function () use ($organisation, $program): Party {
+    $party = app(OrganisationContext::class)->run($organisation, function () use ($organisation, $program, $membership, $user): Party {
         $party = Party::factory()->for($organisation)->create();
         $party->programs()->attach($program);
+        $intake = IntakeRequest::factory()->create(['program_id' => $program->id, 'party_id' => $party->id]);
+        $case = ServiceCase::factory()->create(['intake_request_id' => $intake->id, 'program_id' => $program->id, 'party_id' => $party->id]);
+        app(GrantRestrictedAccess::class)->handle($case, $membership, RestrictedAccessPermission::SensitiveData, 'Test safeguarding access.', $user);
 
         return $party;
     });

@@ -2,20 +2,26 @@
 
 namespace App\Policies;
 
+use App\Authorization\CaseAccess;
 use App\Enums\OrganisationRole;
 use App\Models\Organisation;
 use App\Models\Party;
+use App\Models\ServiceCase;
 use App\Models\User;
 
 class PartyPolicy
 {
+    public function __construct(private readonly CaseAccess $caseAccess) {}
+
     /**
      * Determine whether the user can view any models.
      */
     public function viewAny(User $user, Organisation $organisation): bool
     {
         return $user->hasOrganisationRole($organisation, OrganisationRole::OrganisationAdministrator)
-            || $this->hasRoleInAnyScope($user, $organisation, OrganisationRole::ProgramManager);
+            || $this->hasRoleInAnyScope($user, $organisation, OrganisationRole::ProgramManager)
+            || $this->hasRoleInAnyScope($user, $organisation, OrganisationRole::CaseWorker)
+            || $this->hasRoleInAnyScope($user, $organisation, OrganisationRole::EngagementOfficer);
     }
 
     /**
@@ -31,13 +37,24 @@ class PartyPolicy
             return true;
         }
 
-        return $party->programs()
+        if ($party->programs()
             ->get()
             ->contains(fn ($program): bool => $user->hasOrganisationRole(
                 $party->organisation,
                 OrganisationRole::ProgramManager,
                 $program,
-            ));
+            ))) {
+            return true;
+        }
+
+        if ($this->supporterSafe($user, $party)) {
+            return true;
+        }
+
+        return ServiceCase::query()
+            ->where('party_id', $party->id)
+            ->get()
+            ->contains(fn (ServiceCase $case): bool => $this->caseAccess->canViewConfidential($user, $case));
     }
 
     /**
@@ -45,7 +62,7 @@ class PartyPolicy
      */
     public function create(User $user, Organisation $organisation): bool
     {
-        return $user->hasOrganisationRole($organisation, OrganisationRole::OrganisationAdministrator);
+        return $this->hasRoleInAnyScope($user, $organisation, OrganisationRole::ProgramManager);
     }
 
     /**
@@ -53,27 +70,30 @@ class PartyPolicy
      */
     public function update(User $user, Party $party): bool
     {
-        return $user->hasOrganisationRole($party->organisation, OrganisationRole::OrganisationAdministrator);
+        return $this->hasProgramManagerAccess($user, $party);
     }
 
     public function recordConsent(User $user, Party $party): bool
     {
-        return $this->view($user, $party);
+        return $this->hasProgramManagerAccess($user, $party)
+            || ServiceCase::query()
+                ->where('party_id', $party->id)
+                ->get()
+                ->contains(fn (ServiceCase $case): bool => $this->caseAccess->canViewConfidential($user, $case));
     }
 
     public function manageSafeContact(User $user, Party $party): bool
     {
-        if ($user->hasOrganisationRole($party->organisation, OrganisationRole::ProgramManager)) {
-            return true;
-        }
-
-        return $party->programs()
+        return ServiceCase::query()
+            ->where('party_id', $party->id)
             ->get()
-            ->contains(fn ($program): bool => $user->hasOrganisationRole(
-                $party->organisation,
-                OrganisationRole::ProgramManager,
-                $program,
-            ));
+            ->contains(fn (ServiceCase $case): bool => $this->caseAccess->canViewSensitive($user, $case));
+    }
+
+    public function supporterSafe(User $user, Party $party): bool
+    {
+        return $this->hasRoleInAnyScope($user, $party->organisation, OrganisationRole::EngagementOfficer)
+            && $party->businessRoles()->whereIn('role', ['donor', 'volunteer', 'partner_contact', 'event_attendee'])->exists();
     }
 
     /**
@@ -112,5 +132,18 @@ class PartyPolicy
             ->whereNull('ended_at')
             ->where('role', $role)
             ->exists();
+    }
+
+    private function hasProgramManagerAccess(User $user, Party $party): bool
+    {
+        if ($user->hasOrganisationRole($party->organisation, OrganisationRole::ProgramManager)) {
+            return true;
+        }
+
+        return $party->programs()->get()->contains(fn ($program): bool => $user->hasOrganisationRole(
+            $party->organisation,
+            OrganisationRole::ProgramManager,
+            $program,
+        ));
     }
 }

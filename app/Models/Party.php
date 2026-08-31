@@ -106,6 +106,12 @@ class Party extends Model
         return $this->hasMany(PartyTimelineEvent::class);
     }
 
+    /** @return HasMany<ServiceCase, $this> */
+    public function serviceCases(): HasMany
+    {
+        return $this->hasMany(ServiceCase::class);
+    }
+
     /** @return array<string, string> */
     protected function casts(): array
     {

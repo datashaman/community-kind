@@ -15,11 +15,13 @@ use App\Models\Organisation;
 use App\Models\Party;
 use App\Models\PartyContactPoint;
 use App\Models\PartyRole;
+use App\Models\Program;
 use App\Models\User;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Gate;
+use Illuminate\Validation\ValidationException;
 use Inertia\Inertia;
 use Inertia\Response;
 
@@ -29,27 +31,39 @@ class PartyController extends Controller
     {
         Gate::authorize('viewAny', [Party::class, $currentOrganisation]);
         $request->validate(['query' => ['nullable', 'string', 'max:100']]);
+        $user = $request->user();
+        $canSearchNames = ! $user->hasOrganisationRole($currentOrganisation, OrganisationRole::OrganisationAdministrator);
+        $canCreate = Gate::allows('create', [Party::class, $currentOrganisation]);
         $parties = $this->visibleParties($request->user(), $currentOrganisation)
             ->with(['businessRoles', 'programs:id,name,slug'])
-            ->when($request->string('query')->isNotEmpty(), fn (Builder $query) => $query
+            ->when($canSearchNames && $request->string('query')->isNotEmpty(), fn (Builder $query) => $query
                 ->where('display_name', 'like', '%'.$request->string('query')->toString().'%'))
             ->orderBy('display_name')
             ->orderBy('id')
             ->paginate(25)
             ->withQueryString()
-            ->through(fn (Party $party): array => [
-                'uuid' => $party->uuid,
-                'kind' => $party->kind->value,
-                'displayName' => $party->display_name,
-                'roles' => $party->businessRoles->map(fn (PartyRole $role): string => $role->role->label())->values(),
-                'programs' => $party->programs->pluck('name')->values(),
-            ]);
+            ->through(function (Party $party) use ($user): array {
+                $supporterSafe = Gate::allows('supporterSafe', $party);
+                $administrativeMetadata = $user->hasOrganisationRole($party->organisation, OrganisationRole::OrganisationAdministrator);
+
+                return [
+                    'uuid' => $party->uuid,
+                    'kind' => $party->kind->value,
+                    'displayName' => $administrativeMetadata ? 'Administrative Party record' : $party->display_name,
+                    'roles' => $administrativeMetadata
+                        ? []
+                        : $party->businessRoles
+                            ->reject(fn (PartyRole $role): bool => $supporterSafe && $role->role === PartyBusinessRole::Client)
+                            ->map(fn (PartyRole $role): string => $role->role->label())->values(),
+                    'programs' => $supporterSafe || $administrativeMetadata ? [] : $party->programs->pluck('name')->values(),
+                ];
+            });
 
         return Inertia::render('parties/index', [
             'parties' => $parties,
             'query' => $request->string('query')->toString(),
-            'canCreate' => Gate::allows('create', [Party::class, $currentOrganisation]),
-            ...$this->formOptions($currentOrganisation),
+            'canCreate' => $canCreate,
+            ...($canCreate ? $this->formOptions($currentOrganisation, $user) : $this->emptyFormOptions()),
         ]);
     }
 
@@ -59,9 +73,11 @@ class PartyController extends Controller
         CreatePartyProfile $createPartyProfile,
     ): RedirectResponse {
         Gate::authorize('create', [Party::class, $currentOrganisation]);
+        $attributes = $this->profileAttributes($request);
+        $this->ensureProgramScope($request->user(), $currentOrganisation, $attributes['program_ids']);
         $party = $createPartyProfile->handle(
             $currentOrganisation,
-            $this->profileAttributes($request),
+            $attributes,
             $request->user(),
         );
 
@@ -72,6 +88,9 @@ class PartyController extends Controller
     {
         $party = $this->findParty($party);
         Gate::authorize('view', $party);
+        $supporterSafe = Gate::allows('supporterSafe', $party);
+        $administrativeMetadata = $request->user()->hasOrganisationRole($party->organisation, OrganisationRole::OrganisationAdministrator);
+        $serviceProjection = ! $supporterSafe && ! $administrativeMetadata;
         $party->load([
             'addresses',
             'businessRoles',
@@ -83,6 +102,7 @@ class PartyController extends Controller
             'timelineEvents' => fn ($query) => $query->latest('occurred_at')->latest('id')->limit(100),
         ]);
         $canManageSafeContact = Gate::allows('manageSafeContact', $party);
+        $canUpdate = Gate::allows('update', $party);
 
         if ($canManageSafeContact) {
             $party->load(['safeContactInstructions' => fn ($query) => $query->latest('effective_at')]);
@@ -92,20 +112,22 @@ class PartyController extends Controller
             'party' => [
                 'uuid' => $party->uuid,
                 'kind' => $party->kind->value,
-                'displayName' => $party->display_name,
-                'email' => $this->contactValue($party, PartyContactType::Email),
-                'telephone' => $this->contactValue($party, PartyContactType::Telephone),
-                'programIds' => $party->programs->modelKeys(),
-                'roles' => $party->businessRoles->pluck('role')->map->value->values(),
-                'interests' => $party->interests->pluck('label')->values(),
-                'addresses' => $party->addresses->map(fn ($address): array => [
+                'displayName' => $administrativeMetadata ? 'Administrative Party record' : $party->display_name,
+                'email' => $administrativeMetadata ? null : $this->contactValue($party, PartyContactType::Email),
+                'telephone' => $administrativeMetadata ? null : $this->contactValue($party, PartyContactType::Telephone),
+                'programIds' => $serviceProjection ? $party->programs->modelKeys() : [],
+                'roles' => $administrativeMetadata ? [] : $party->businessRoles->pluck('role')
+                    ->reject(fn (PartyBusinessRole $role): bool => $supporterSafe && $role === PartyBusinessRole::Client)
+                    ->map->value->values(),
+                'interests' => $serviceProjection ? $party->interests->pluck('label')->values() : [],
+                'addresses' => $serviceProjection ? $party->addresses->map(fn ($address): array => [
                     'id' => $address->id,
                     'label' => $address->label,
                     'address' => $address->encrypted_value->reveal(),
                     'serviceArea' => $address->service_area,
                     'countryCode' => $address->country_code,
-                ])->values(),
-                'relationships' => $party->relationships->map(fn ($relationship): array => [
+                ])->values() : [],
+                'relationships' => $serviceProjection ? $party->relationships->map(fn ($relationship): array => [
                     'id' => $relationship->id,
                     'type' => $relationship->type,
                     'relatedParty' => [
@@ -114,8 +136,8 @@ class PartyController extends Controller
                     ],
                     'startedAt' => $relationship->started_at?->toAtomString(),
                     'endedAt' => $relationship->ended_at?->toAtomString(),
-                ])->values(),
-                'consents' => $party->consents->map(fn ($consent): array => [
+                ])->values() : [],
+                'consents' => $serviceProjection ? $party->consents->map(fn ($consent): array => [
                     'id' => $consent->id,
                     'purpose' => $consent->purpose->value,
                     'decision' => $consent->decision->value,
@@ -124,7 +146,7 @@ class PartyController extends Controller
                     'source' => $consent->source,
                     'occurredAt' => $consent->occurred_at->toAtomString(),
                     'supersedesId' => $consent->supersedes_id,
-                ])->values(),
+                ])->values() : [],
                 'safeContactInstructions' => $canManageSafeContact
                     ? $party->safeContactInstructions->map(fn ($instruction): array => [
                         'id' => $instruction->id,
@@ -134,17 +156,19 @@ class PartyController extends Controller
                         'endedAt' => $instruction->ended_at?->toAtomString(),
                     ])->values()
                     : [],
-                'timeline' => $party->timelineEvents->map(fn ($event): array => [
+                'timeline' => $serviceProjection ? $party->timelineEvents->map(fn ($event): array => [
                     'id' => $event->id,
                     'type' => $event->type->value,
                     'summary' => $event->summary,
                     'occurredAt' => $event->occurred_at->toAtomString(),
-                ])->values(),
+                ])->values() : [],
+                'supporterSafe' => $supporterSafe,
+                'administrativeMetadata' => $administrativeMetadata,
             ],
-            'canUpdate' => Gate::allows('update', $party),
+            'canUpdate' => $canUpdate,
             'canRecordConsent' => Gate::allows('recordConsent', $party),
             'canManageSafeContact' => $canManageSafeContact,
-            'relationshipCandidates' => Party::query()
+            'relationshipCandidates' => $serviceProjection ? $this->visibleParties($request->user(), $currentOrganisation)
                 ->whereKeyNot($party->id)
                 ->orderBy('display_name')
                 ->limit(100)
@@ -153,8 +177,8 @@ class PartyController extends Controller
                     'id' => $candidate->id,
                     'uuid' => $candidate->uuid,
                     'displayName' => $candidate->display_name,
-                ]),
-            ...$this->formOptions($currentOrganisation),
+                ]) : [],
+            ...($canUpdate ? $this->formOptions($currentOrganisation, $request->user()) : $this->emptyFormOptions()),
         ]);
     }
 
@@ -166,7 +190,9 @@ class PartyController extends Controller
     ): RedirectResponse {
         $party = $this->findParty($party);
         Gate::authorize('update', $party);
-        $updatePartyProfile->handle($party, $this->profileAttributes($request), $request->user());
+        $attributes = $this->profileAttributes($request);
+        $this->ensureProgramScope($request->user(), $currentOrganisation, $attributes['program_ids']);
+        $updatePartyProfile->handle($party, $attributes, $request->user());
 
         return back();
     }
@@ -188,10 +214,10 @@ class PartyController extends Controller
     }
 
     /** @return array{programs: mixed, partyKinds: list<array{value: string, label: string}>, partyRoles: list<array{value: string, label: string}>} */
-    private function formOptions(Organisation $organisation): array
+    private function formOptions(Organisation $organisation, User $user): array
     {
         return [
-            'programs' => $organisation->programs()->orderBy('name')->get(['id', 'name', 'slug']),
+            'programs' => $this->managedPrograms($organisation, $user)->orderBy('name')->get(['id', 'name', 'slug']),
             'partyKinds' => array_values(collect(PartyKind::cases())->map(fn (PartyKind $kind): array => [
                 'value' => $kind->value,
                 'label' => ucfirst($kind->value),
@@ -201,6 +227,39 @@ class PartyController extends Controller
                 'label' => $role->label(),
             ])->all()),
         ];
+    }
+
+    /** @return array{programs: array<never>, partyKinds: array<never>, partyRoles: array<never>} */
+    private function emptyFormOptions(): array
+    {
+        return ['programs' => [], 'partyKinds' => [], 'partyRoles' => []];
+    }
+
+    /** @param list<int> $programIds */
+    private function ensureProgramScope(User $user, Organisation $organisation, array $programIds): void
+    {
+        if ($programIds === []) {
+            throw ValidationException::withMessages(['program_ids' => 'A Program-managed Party must belong to at least one Program.']);
+        }
+
+        $allowedIds = $this->managedPrograms($organisation, $user)->pluck('id');
+        if (collect($programIds)->diff($allowedIds)->isNotEmpty()) {
+            throw ValidationException::withMessages(['program_ids' => 'You may only manage Parties in your assigned Programs.']);
+        }
+    }
+
+    /** @return Builder<Program> */
+    private function managedPrograms(Organisation $organisation, User $user): Builder
+    {
+        $membership = $user->organisationMembership($organisation);
+        $programIds = $membership?->roleAssignments()
+            ->whereNull('ended_at')
+            ->where('role', OrganisationRole::ProgramManager)
+            ->pluck('program_id');
+
+        return Program::query()
+            ->where('organisation_id', $organisation->id)
+            ->when(! $programIds?->contains(null), fn (Builder $query) => $query->whereKey($programIds ?? []));
     }
 
     private function contactValue(Party $party, PartyContactType $type): ?string
@@ -224,6 +283,11 @@ class PartyController extends Controller
             return Party::query();
         }
 
+        if ($this->hasRoleInAnyScope($user, $organisation, OrganisationRole::EngagementOfficer)) {
+            return Party::query()->whereHas('businessRoles', fn (Builder $query) => $query
+                ->whereIn('role', ['donor', 'volunteer', 'partner_contact', 'event_attendee']));
+        }
+
         $membership = $user->organisationMembership($organisation);
         $programIds = $membership?->roleAssignments()
             ->whereNull('ended_at')
@@ -234,6 +298,25 @@ class PartyController extends Controller
             return Party::query();
         }
 
-        return Party::query()->whereHas('programs', fn (Builder $query) => $query->whereKey($programIds ?? []));
+        $membershipId = $membership?->id;
+
+        return Party::query()->where(function (Builder $query) use ($programIds, $membershipId): void {
+            $query->whereHas('programs', fn (Builder $programs) => $programs->whereKey($programIds ?? []));
+
+            if ($membershipId !== null) {
+                $query->orWhereHas('serviceCases.assignments', fn (Builder $assignments) => $assignments
+                    ->where('membership_id', $membershipId)
+                    ->where('status', 'active'));
+            }
+        });
+    }
+
+    private function hasRoleInAnyScope(User $user, Organisation $organisation, OrganisationRole $role): bool
+    {
+        $membership = $user->organisationMembership($organisation);
+
+        return $membership !== null
+            && ! $membership->isHeld()
+            && $membership->roleAssignments()->whereNull('ended_at')->where('role', $role)->exists();
     }
 }

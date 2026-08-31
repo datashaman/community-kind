@@ -60,7 +60,7 @@ it('seeds the versioned synthetic scenarios deterministically', function () {
         ->map(fn (int|string $count): int => (int) $count)
         ->all();
 
-    expect(ScenarioCatalog::VERSION)->toBe('2026.3')
+    expect(ScenarioCatalog::VERSION)->toBe('2026.4')
         ->and(ScenarioCatalog::AS_OF)->toBe('2026-06-30 23:59:59')
         ->and(Date::getTestNow())->toBeNull()
         ->and(Organisation::query()->count())->toBe(2)

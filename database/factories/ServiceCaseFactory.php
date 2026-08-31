@@ -2,6 +2,7 @@
 
 namespace Database\Factories;
 
+use App\Enums\CaseClassification;
 use App\Enums\ServiceCaseStatus;
 use App\Models\IntakeRequest;
 use App\Models\ServiceCase;
@@ -26,7 +27,7 @@ class ServiceCaseFactory extends Factory
             'program_id' => fn (array $attributes): int => IntakeRequest::query()->where('id', $attributes['intake_request_id'])->firstOrFail()->program_id,
             'party_id' => fn (array $attributes): int => IntakeRequest::query()->where('id', $attributes['intake_request_id'])->firstOrFail()->party_id,
             'status' => ServiceCaseStatus::Open,
-            'confidentiality' => 'confidential',
+            'confidentiality' => CaseClassification::Confidential,
             'opened_at' => now(),
         ];
     }

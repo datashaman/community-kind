@@ -2,9 +2,11 @@
 
 namespace App\Http\Controllers\Organisations;
 
+use App\Actions\Auditing\RecordTenantAuditEvent;
 use App\Actions\CaseDelivery\TransitionServiceCase;
 use App\Data\Values\ClassifiedValue;
 use App\Enums\ServiceCaseStatus;
+use App\Enums\TenantAuditEventType;
 use App\Http\Controllers\Controller;
 use App\Http\Requests\Organisations\TransitionServiceCaseRequest;
 use App\Models\CaseAppointment;
@@ -27,15 +29,39 @@ use LogicException;
 
 class ServiceCaseController extends Controller
 {
-    public function show(Request $request, Organisation $currentOrganisation, string $case): Response
-    {
+    public function show(
+        Request $request,
+        Organisation $currentOrganisation,
+        string $case,
+        RecordTenantAuditEvent $recordAudit,
+    ): Response {
         $serviceCase = ServiceCase::query()->findOrFail($case);
         Gate::authorize('view', $serviceCase);
+        $canViewSensitive = Gate::allows('viewSensitive', $serviceCase);
+        $recordAudit->handle($serviceCase->organisation, TenantAuditEventType::CaseViewed, 'service_case', $serviceCase->id, [
+            'case_id' => $serviceCase->id,
+            'classification' => $serviceCase->confidentiality->value,
+        ], $request->user());
+
+        if ($canViewSensitive) {
+            $recordAudit->handle($serviceCase->organisation, TenantAuditEventType::RestrictedCaseViewed, 'service_case', $serviceCase->id, [
+                'case_id' => $serviceCase->id,
+                'classification' => $serviceCase->confidentiality->value,
+            ], $request->user());
+        }
+
         $serviceCase->load([
             'party:id,uuid,display_name', 'program:id,organisation_id,name,configuration', 'intakeRequest:id',
             'assignments.membership.user:id,name', 'goals', 'services', 'referrals', 'tasks', 'appointments',
             'interactions', 'notes', 'outcome', 'workflowTransitions' => fn ($query) => $query->orderByDesc('recorded_at'),
         ]);
+
+        if ($canViewSensitive) {
+            $serviceCase->load([
+                'riskAssessments' => fn ($query) => $query->whereNull('ended_at')->latest('effective_at'),
+                'party.safeContactInstructions' => fn ($query) => $query->whereNull('ended_at')->latest('effective_at'),
+            ]);
+        }
 
         return Inertia::render('cases/show', [
             'caseRecord' => [
@@ -60,8 +86,21 @@ class ServiceCaseController extends Controller
                 'notes' => $serviceCase->notes->map(fn (CaseNote $note): array => ['id' => $note->id, 'status' => $note->status->value, 'version' => $note->version, 'content' => $note->encrypted_content->reveal(), 'correctsNoteId' => $note->corrects_note_id, 'finalizedAt' => $note->finalized_at?->toAtomString()]),
                 'outcome' => $serviceCase->outcome === null ? null : ['measures' => $serviceCase->outcome->measures, 'narrative' => $serviceCase->outcome->encrypted_content->reveal(), 'effectiveAt' => $serviceCase->outcome->effective_at->toAtomString()],
                 'transitions' => $serviceCase->workflowTransitions->map(fn ($transition): array => ['id' => $transition->id, 'subjectType' => $transition->subject_type->value, 'from' => $transition->from_status, 'to' => $transition->to_status, 'reason' => $transition->reason, 'effectiveAt' => $transition->effective_at->toAtomString(), 'version' => $transition->version]),
+                'safeContactBanner' => $canViewSensitive
+                    ? $serviceCase->party->safeContactInstructions->first()?->encrypted_value->reveal()
+                    : null,
+                'riskAssessments' => $canViewSensitive
+                    ? $serviceCase->riskAssessments->map(fn ($risk): array => [
+                        'id' => $risk->id,
+                        'content' => $risk->encrypted_content->reveal(),
+                        'classification' => $risk->classification->value,
+                        'effectiveAt' => $risk->effective_at->toAtomString(),
+                    ])->values()
+                    : [],
             ],
             'canUpdate' => Gate::allows('update', $serviceCase),
+            'canManageAccess' => Gate::allows('manageAccess', $serviceCase),
+            'canViewSensitive' => $canViewSensitive,
         ]);
     }
 

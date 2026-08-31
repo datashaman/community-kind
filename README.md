@@ -92,7 +92,7 @@ php artisan config:clear
 php artisan db:seed
 ```
 
-Scenario catalog version `2026.3` uses the fixed reporting instant
+Scenario catalog version `2026.4` uses the fixed reporting instant
 `2026-06-30 23:59:59` in each Organisation's local timezone: HarbourKind uses
 `Africa/Johannesburg` and ZAR, while NeighbourLink uses `Europe/London` and
 GBP. It can be seeded repeatedly without duplicating its records. All demo

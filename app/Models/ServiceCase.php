@@ -3,6 +3,7 @@
 namespace App\Models;
 
 use App\Concerns\BelongsToOrganisation;
+use App\Enums\CaseClassification;
 use App\Enums\ServiceCaseStatus;
 use Database\Factories\ServiceCaseFactory;
 use Illuminate\Database\Eloquent\Concerns\HasUuids;
@@ -21,7 +22,7 @@ use Illuminate\Support\Carbon;
  * @property int $party_id
  * @property ServiceCaseStatus $status
  * @property int $version
- * @property string $confidentiality
+ * @property CaseClassification $confidentiality
  * @property Carbon $opened_at
  * @property Carbon|null $closed_at
  * @property string|null $closure_reason
@@ -123,10 +124,23 @@ class ServiceCase extends Model
         return $this->hasMany(CaseWorkflowTransition::class);
     }
 
+    /** @return HasMany<RestrictedAccessGrant, $this> */
+    public function restrictedAccessGrants(): HasMany
+    {
+        return $this->hasMany(RestrictedAccessGrant::class);
+    }
+
+    /** @return HasMany<CaseRiskAssessment, $this> */
+    public function riskAssessments(): HasMany
+    {
+        return $this->hasMany(CaseRiskAssessment::class);
+    }
+
     protected function casts(): array
     {
         return [
             'status' => ServiceCaseStatus::class,
+            'confidentiality' => CaseClassification::class,
             'opened_at' => 'datetime',
             'closed_at' => 'datetime',
             'follow_up_at' => 'datetime',
