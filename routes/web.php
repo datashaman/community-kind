@@ -21,6 +21,7 @@ use App\Http\Controllers\Organisations\PartySafeContactInstructionController;
 use App\Http\Controllers\Organisations\ProgramController;
 use App\Http\Controllers\Organisations\ServiceCaseController;
 use App\Http\Controllers\Organisations\ServiceOperationsExportController;
+use App\Http\Controllers\Organisations\SupporterJourneyController;
 use App\Http\Controllers\Public\DonationController as PublicDonationController;
 use App\Http\Controllers\Public\OrganisationController as PublicOrganisationController;
 use App\Http\Middleware\EnsureOrganisationAccess;
@@ -94,6 +95,10 @@ Route::prefix('{current_organisation}')
         Route::get('programs', [ProgramController::class, 'index'])->name('programs.index');
         Route::resource('donations', DonationController::class)->only(['index', 'show']);
         Route::resource('audience-segments', AudienceSegmentController::class)->only(['index', 'store', 'show']);
+        Route::resource('supporter-journeys', SupporterJourneyController::class)->only(['index', 'store', 'show']);
+        Route::post('supporter-journeys/{supporter_journey}/approve', [SupporterJourneyController::class, 'approve'])->name('supporter-journeys.approve');
+        Route::post('supporter-journeys/{supporter_journey}/dispatch', [SupporterJourneyController::class, 'dispatch'])->name('supporter-journeys.dispatch');
+        Route::post('supporter-journeys/{supporter_journey}/recipients/{recipient}/transitions', [SupporterJourneyController::class, 'transition'])->name('supporter-journeys.recipients.transitions.store');
         Route::resource('parties', PartyController::class)->only(['index', 'store', 'show', 'update']);
         Route::resource('intakes', IntakeRequestController::class)
             ->parameters(['intakes' => 'intake'])

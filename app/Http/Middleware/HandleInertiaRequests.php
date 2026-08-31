@@ -8,6 +8,7 @@ use App\Models\IntakeRequest;
 use App\Models\Organisation;
 use App\Models\Party;
 use App\Models\Program;
+use App\Models\SupporterJourney;
 use Illuminate\Http\Request;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\Gate;
@@ -70,6 +71,8 @@ class HandleInertiaRequests extends Middleware
                 && Gate::allows('viewAny', [Donation::class, $routeOrganisation]),
             'canViewAudienceSegments' => fn (): bool => $routeOrganisation instanceof Organisation
                 && Gate::allows('viewAny', [AudienceSegment::class, $routeOrganisation]),
+            'canViewSupporterJourneys' => fn (): bool => $routeOrganisation instanceof Organisation
+                && Gate::allows('viewAny', [SupporterJourney::class, $routeOrganisation]),
         ];
     }
 }
