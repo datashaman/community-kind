@@ -10,6 +10,7 @@ use Illuminate\Database\Eloquent\Concerns\HasUlids;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Support\Carbon;
 use LogicException;
 
 /**
@@ -18,6 +19,8 @@ use LogicException;
  * @property string $supporter_journey_recipient_id
  * @property string $idempotency_key
  * @property SupporterJourneyEventType $type
+ * @property Carbon $occurred_at
+ * @property-read SupporterJourneyRecipient $recipient
  */
 #[Fillable(['organisation_id', 'supporter_journey_recipient_id', 'idempotency_key', 'type', 'from_status', 'to_status', 'metadata', 'occurred_at'])]
 class SupporterJourneyEvent extends Model

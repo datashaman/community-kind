@@ -20,6 +20,7 @@ use Illuminate\Database\Eloquent\Relations\HasMany;
  * @property SupporterJourneyRecipientStatus $status
  * @property int $attempt_count
  * @property-read Party $party
+ * @property-read SupporterJourney $journey
  */
 #[Fillable(['organisation_id', 'supporter_journey_id', 'party_id', 'status', 'attempt_count', 'last_attempted_at'])]
 class SupporterJourneyRecipient extends Model
