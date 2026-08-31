@@ -5,6 +5,7 @@ import {
     HandCoins,
     LayoutGrid,
     ListFilter,
+    MessagesSquare,
     Scale,
     Settings2,
     UsersRound,
@@ -29,6 +30,7 @@ import { index as donationsIndex } from '@/routes/donations';
 import { index as intakesIndex } from '@/routes/intakes';
 import { index as partiesIndex } from '@/routes/parties';
 import { index as programsIndex } from '@/routes/programs';
+import { index as supporterJourneysIndex } from '@/routes/supporter-journeys';
 import type { NavItem } from '@/types';
 
 export function AppSidebar() {
@@ -78,6 +80,18 @@ export function AppSidebar() {
                           page.props.currentOrganisation.slug,
                       ),
                       icon: ListFilter,
+                  },
+              ]
+            : []),
+        ...(page.props.canViewSupporterJourneys &&
+        page.props.currentOrganisation
+            ? [
+                  {
+                      title: 'Welcome journeys',
+                      href: supporterJourneysIndex(
+                          page.props.currentOrganisation.slug,
+                      ),
+                      icon: MessagesSquare,
                   },
               ]
             : []),
