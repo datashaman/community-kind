@@ -33,6 +33,7 @@ final class VersionedAuditPayload
             'string' => is_string($value) && $value !== '',
             'nullable_string' => $value === null || (is_string($value) && $value !== ''),
             'integer' => is_int($value),
+            'nullable_integer' => $value === null || is_int($value),
             'boolean' => is_bool($value),
             'string_list' => is_array($value)
                 && array_is_list($value)
