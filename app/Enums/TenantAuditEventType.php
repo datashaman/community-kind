@@ -24,6 +24,7 @@ enum TenantAuditEventType: string
     case RecurringMandateTransitioned = 'recurring_mandate_transitioned';
     case AudienceSegmentCreated = 'audience_segment_created';
     case ImpactReportExported = 'impact_report_exported';
+    case AuditViewAccessed = 'audit_view_accessed';
 
     /** @return array<string, string> */
     public function payloadSchema(): array
@@ -117,6 +118,11 @@ enum TenantAuditEventType: string
                 'filters_hash' => 'string',
                 'metric_count' => 'integer',
                 'format' => 'string',
+            ],
+            self::AuditViewAccessed => [
+                'record_count' => 'integer',
+                'scope' => 'string',
+                'role' => 'string',
             ],
         };
     }

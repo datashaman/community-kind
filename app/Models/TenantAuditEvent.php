@@ -11,12 +11,16 @@ use Illuminate\Database\Eloquent\Concerns\HasUlids;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Support\Carbon;
 use LogicException;
 
 /**
  * @property TenantAuditEventType $type
+ * @property string $id
+ * @property int|null $actor_user_id
  * @property int $schema_version
  * @property array<string, mixed> $payload
+ * @property Carbon $occurred_at
  */
 #[Fillable(['organisation_id', 'actor_user_id', 'type', 'schema_version', 'subject_type', 'subject_id', 'payload', 'occurred_at'])]
 class TenantAuditEvent extends Model

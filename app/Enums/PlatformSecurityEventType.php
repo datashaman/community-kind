@@ -15,6 +15,8 @@ enum PlatformSecurityEventType: string
     case InstallationControlApplied = 'installation_control_applied';
     case InstallationControlReleased = 'installation_control_released';
     case CredentialRotationCoordinated = 'credential_rotation_coordinated';
+    case AuditIntegrityCheckFailed = 'audit_integrity_check_failed';
+    case IncidentExerciseCompleted = 'incident_exercise_completed';
 
     /** @return array<string, string> */
     public function payloadSchema(): array
@@ -80,6 +82,16 @@ enum PlatformSecurityEventType: string
             self::CredentialRotationCoordinated => [
                 'incident_uuid' => 'string',
                 'credential_reference' => 'string',
+            ],
+            self::AuditIntegrityCheckFailed => [
+                'manifest_date' => 'string',
+                'reason_code' => 'string',
+                'manifest_digest' => 'nullable_string',
+            ],
+            self::IncidentExerciseCompleted => [
+                'exercise_id' => 'string',
+                'scenario_count' => 'integer',
+                'pack_digest' => 'string',
             ],
         };
     }

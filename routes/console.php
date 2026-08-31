@@ -19,3 +19,13 @@ Schedule::command('case-documents:reconcile')
     ->hourly()
     ->onOneServer()
     ->withoutOverlapping(10);
+
+Schedule::command('audit:digest:create')
+    ->dailyAt('00:15')
+    ->onOneServer()
+    ->withoutOverlapping(60);
+
+Schedule::command('audit:digest:verify')
+    ->dailyAt('01:00')
+    ->onOneServer()
+    ->withoutOverlapping(60);

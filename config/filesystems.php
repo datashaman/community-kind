@@ -69,6 +69,20 @@ return [
             'report' => true,
         ],
 
+        'audit_recovery' => [
+            'driver' => env('AUDIT_RECOVERY_STORAGE_DRIVER', 'local'),
+            'root' => storage_path('app/audit-recovery'),
+            'key' => env('AUDIT_RECOVERY_AWS_ACCESS_KEY_ID'),
+            'secret' => env('AUDIT_RECOVERY_AWS_SECRET_ACCESS_KEY'),
+            'region' => env('AUDIT_RECOVERY_AWS_DEFAULT_REGION'),
+            'bucket' => env('AUDIT_RECOVERY_AWS_BUCKET'),
+            'endpoint' => env('AUDIT_RECOVERY_AWS_ENDPOINT'),
+            'use_path_style_endpoint' => env('AUDIT_RECOVERY_AWS_USE_PATH_STYLE_ENDPOINT', false),
+            'visibility' => 'private',
+            'throw' => true,
+            'report' => true,
+        ],
+
         's3' => [
             'driver' => 's3',
             'key' => env('AWS_ACCESS_KEY_ID'),

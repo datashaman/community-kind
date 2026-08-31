@@ -7,6 +7,7 @@ import {
     ListFilter,
     MessagesSquare,
     Scale,
+    ScrollText,
     Settings2,
     UsersRound,
 } from 'lucide-react';
@@ -26,6 +27,7 @@ import {
 } from '@/components/ui/sidebar';
 import { dashboard } from '@/routes';
 import { index as audienceSegmentsIndex } from '@/routes/audience-segments';
+import { index as auditIndex } from '@/routes/audit';
 import { index as donationsIndex } from '@/routes/donations';
 import { index as intakesIndex } from '@/routes/intakes';
 import { index as partiesIndex } from '@/routes/parties';
@@ -101,6 +103,15 @@ export function AppSidebar() {
                       title: 'Program configuration',
                       href: programsIndex(page.props.currentOrganisation.slug),
                       icon: Settings2,
+                  },
+              ]
+            : []),
+        ...(page.props.canViewAudit && page.props.currentOrganisation
+            ? [
+                  {
+                      title: 'Audit history',
+                      href: auditIndex(page.props.currentOrganisation.slug),
+                      icon: ScrollText,
                   },
               ]
             : []),
