@@ -18,6 +18,10 @@ enum TenantAuditEventType: string
     case CaseDocumentDownloaded = 'case_document_downloaded';
     case CaseDocumentReplaced = 'case_document_replaced';
     case ServiceOperationsExported = 'service_operations_exported';
+    case DonationCreated = 'donation_created';
+    case DonationPaymentTransitioned = 'donation_payment_transitioned';
+    case DonationRefunded = 'donation_refunded';
+    case RecurringMandateTransitioned = 'recurring_mandate_transitioned';
 
     /** @return array<string, string> */
     public function payloadSchema(): array
@@ -80,6 +84,27 @@ enum TenantAuditEventType: string
             self::ServiceOperationsExported => [
                 'program_id' => 'nullable_integer',
                 'record_count' => 'integer',
+            ],
+            self::DonationCreated => [
+                'donation_id' => 'string',
+                'frequency' => 'string',
+            ],
+            self::DonationPaymentTransitioned => [
+                'donation_id' => 'string',
+                'payment_id' => 'string',
+                'from_status' => 'string',
+                'to_status' => 'string',
+            ],
+            self::DonationRefunded => [
+                'donation_id' => 'string',
+                'payment_id' => 'string',
+                'refund_id' => 'string',
+            ],
+            self::RecurringMandateTransitioned => [
+                'donation_id' => 'string',
+                'mandate_id' => 'string',
+                'from_status' => 'string',
+                'to_status' => 'string',
             ],
         };
     }

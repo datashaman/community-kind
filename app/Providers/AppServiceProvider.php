@@ -6,6 +6,8 @@ use App\Contracts\MalwareScanner;
 use App\Cryptography\ClassifiedDataEncrypter;
 use App\Cryptography\ContactBlindIndexer;
 use App\Cryptography\VersionedKeyRing;
+use App\Donations\DonationPaymentProvider;
+use App\Donations\SimulatedDonationPaymentProvider;
 use App\Scanning\ClamdMalwareScanner;
 use Carbon\CarbonImmutable;
 use Illuminate\Support\Facades\Date;
@@ -22,6 +24,7 @@ class AppServiceProvider extends ServiceProvider
     public function register(): void
     {
         $this->app->bind(MalwareScanner::class, ClamdMalwareScanner::class);
+        $this->app->bind(DonationPaymentProvider::class, SimulatedDonationPaymentProvider::class);
         $this->app->bind(
             ClassifiedDataEncrypter::class,
             fn () => new ClassifiedDataEncrypter(new VersionedKeyRing('classified_data.encryption')),
