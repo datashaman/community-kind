@@ -4,6 +4,7 @@ import {
     FolderGit2,
     HandCoins,
     LayoutGrid,
+    ListFilter,
     Scale,
     Settings2,
     UsersRound,
@@ -23,6 +24,7 @@ import {
     SidebarMenuItem,
 } from '@/components/ui/sidebar';
 import { dashboard } from '@/routes';
+import { index as audienceSegmentsIndex } from '@/routes/audience-segments';
 import { index as donationsIndex } from '@/routes/donations';
 import { index as intakesIndex } from '@/routes/intakes';
 import { index as partiesIndex } from '@/routes/parties';
@@ -65,6 +67,17 @@ export function AppSidebar() {
                       title: 'Simulated donations',
                       href: donationsIndex(page.props.currentOrganisation.slug),
                       icon: HandCoins,
+                  },
+              ]
+            : []),
+        ...(page.props.canViewAudienceSegments && page.props.currentOrganisation
+            ? [
+                  {
+                      title: 'Saved audiences',
+                      href: audienceSegmentsIndex(
+                          page.props.currentOrganisation.slug,
+                      ),
+                      icon: ListFilter,
                   },
               ]
             : []),

@@ -90,6 +90,7 @@ final class BuildOrganisationScenario
                     );
                     $this->buildDonorToRetainedSupporterScenario->handle(
                         Party::query()->where('uuid', '12000000-0000-4000-8000-000000000002')->firstOrFail(),
+                        User::query()->where('email', 'engagement@harbourkind.example.test')->firstOrFail(),
                     );
                 }
             });

@@ -2,6 +2,7 @@
 
 namespace Database\Factories;
 
+use App\Enums\ConsentChannel;
 use App\Enums\ConsentDecision;
 use App\Enums\ConsentPurpose;
 use App\Models\Party;
@@ -25,6 +26,7 @@ class PartyConsentFactory extends Factory
             'organisation_id' => app(OrganisationContext::class)->id(),
             'party_id' => Party::factory()->state(['organisation_id' => app(OrganisationContext::class)->id()]),
             'purpose' => ConsentPurpose::Service,
+            'channel' => ConsentChannel::NotApplicable,
             'decision' => ConsentDecision::Granted,
             'wording_version' => 'v1',
             'wording' => 'I consent to receiving this service.',

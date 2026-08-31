@@ -22,6 +22,7 @@ enum TenantAuditEventType: string
     case DonationPaymentTransitioned = 'donation_payment_transitioned';
     case DonationRefunded = 'donation_refunded';
     case RecurringMandateTransitioned = 'recurring_mandate_transitioned';
+    case AudienceSegmentCreated = 'audience_segment_created';
 
     /** @return array<string, string> */
     public function payloadSchema(): array
@@ -105,6 +106,10 @@ enum TenantAuditEventType: string
                 'mandate_id' => 'string',
                 'from_status' => 'string',
                 'to_status' => 'string',
+            ],
+            self::AudienceSegmentCreated => [
+                'segment_id' => 'string',
+                'name' => 'string',
             ],
         };
     }

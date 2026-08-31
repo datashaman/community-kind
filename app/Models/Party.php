@@ -112,6 +112,12 @@ class Party extends Model
         return $this->hasMany(ServiceCase::class);
     }
 
+    /** @return HasMany<Donation, $this> */
+    public function donations(): HasMany
+    {
+        return $this->hasMany(Donation::class);
+    }
+
     /** @return array<string, string> */
     protected function casts(): array
     {

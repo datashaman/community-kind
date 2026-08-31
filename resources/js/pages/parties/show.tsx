@@ -291,6 +291,9 @@ export default function PartyShow({
                                     <div className="flex gap-2">
                                         <Badge>{consent.purpose}</Badge>
                                         <Badge variant="outline">
+                                            {consent.channel}
+                                        </Badge>
+                                        <Badge variant="outline">
                                             {consent.decision}
                                         </Badge>
                                     </div>
@@ -344,14 +347,34 @@ export default function PartyShow({
                                             name="purpose"
                                             className="h-9 rounded-md border bg-transparent px-3"
                                         >
-                                            <option value="service">
-                                                Service
+                                            {!party.supporterSafe ? (
+                                                <>
+                                                    <option value="service">
+                                                        Service
+                                                    </option>
+                                                    <option value="referral">
+                                                        Referral
+                                                    </option>
+                                                    <option value="safe_contact">
+                                                        Safe contact
+                                                    </option>
+                                                </>
+                                            ) : null}
+                                            <option value="supporter_updates">
+                                                Supporter updates
                                             </option>
-                                            <option value="referral">
-                                                Referral
+                                        </select>
+                                        <select
+                                            name="channel"
+                                            className="h-9 rounded-md border bg-transparent px-3"
+                                        >
+                                            <option value="not_applicable">
+                                                Not applicable
                                             </option>
-                                            <option value="safe_contact">
-                                                Safe contact
+                                            <option value="email">Email</option>
+                                            <option value="sms">SMS</option>
+                                            <option value="telephone">
+                                                Telephone
                                             </option>
                                         </select>
                                         <select
@@ -363,6 +386,9 @@ export default function PartyShow({
                                             </option>
                                             <option value="withdrawn">
                                                 Withdrawn
+                                            </option>
+                                            <option value="suppressed">
+                                                Suppressed
                                             </option>
                                         </select>
                                         <Input

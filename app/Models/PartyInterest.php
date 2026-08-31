@@ -9,6 +9,11 @@ use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 
+/**
+ * @property int $party_id
+ * @property string $slug
+ * @property string $label
+ */
 #[Fillable(['organisation_id', 'party_id', 'slug', 'label'])]
 class PartyInterest extends Model
 {

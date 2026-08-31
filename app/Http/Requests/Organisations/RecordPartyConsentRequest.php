@@ -2,6 +2,7 @@
 
 namespace App\Http\Requests\Organisations;
 
+use App\Enums\ConsentChannel;
 use App\Enums\ConsentDecision;
 use App\Enums\ConsentPurpose;
 use Illuminate\Contracts\Validation\ValidationRule;
@@ -27,6 +28,7 @@ class RecordPartyConsentRequest extends FormRequest
     {
         return [
             'purpose' => ['required', Rule::enum(ConsentPurpose::class)],
+            'channel' => ['nullable', Rule::enum(ConsentChannel::class)],
             'decision' => ['required', Rule::enum(ConsentDecision::class)],
             'wording_version' => ['required', 'string', 'max:64'],
             'wording' => ['required', 'string', 'max:2000'],

@@ -2,6 +2,7 @@
 
 namespace App\Actions\Parties;
 
+use App\Enums\ConsentChannel;
 use App\Enums\ConsentDecision;
 use App\Enums\ConsentPurpose;
 use App\Enums\PartyTimelineEventType;
@@ -19,16 +20,18 @@ final class RecordPartyConsent
         private readonly RecordPartyTimelineEvent $recordTimelineEvent,
     ) {}
 
-    /** @param array{purpose: ConsentPurpose, decision: ConsentDecision, wording_version: string, wording: string, source: string, occurred_at: string} $attributes */
+    /** @param array{purpose: ConsentPurpose, channel?: ConsentChannel, decision: ConsentDecision, wording_version: string, wording: string, source: string, occurred_at: string} $attributes */
     public function handle(Party $party, array $attributes, User $actor): PartyConsent
     {
         $this->organisationContext->ensureOwns($party->organisation_id);
 
         return DB::transaction(function () use ($party, $attributes, $actor): PartyConsent {
             $party = Party::query()->lockForUpdate()->findOrFail($party->id);
+            $channel = $attributes['channel'] ?? ConsentChannel::NotApplicable;
             $latest = PartyConsent::query()
                 ->where('party_id', $party->id)
                 ->where('purpose', $attributes['purpose'])
+                ->where('channel', $channel)
                 ->latest('occurred_at')
                 ->latest('id')
                 ->lockForUpdate()
@@ -43,6 +46,7 @@ final class RecordPartyConsent
                 'organisation_id' => $party->organisation_id,
                 'party_id' => $party->id,
                 ...$attributes,
+                'channel' => $channel,
                 'supersedes_id' => $latest?->id,
                 'recorded_by_user_id' => $actor->id,
             ]);

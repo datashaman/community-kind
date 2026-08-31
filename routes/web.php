@@ -1,6 +1,7 @@
 <?php
 
 use App\Http\Controllers\DashboardController;
+use App\Http\Controllers\Organisations\AudienceSegmentController;
 use App\Http\Controllers\Organisations\CaseAssignmentController;
 use App\Http\Controllers\Organisations\CaseConfidentialityController;
 use App\Http\Controllers\Organisations\CaseDocumentController;
@@ -92,6 +93,7 @@ Route::prefix('{current_organisation}')
         Route::get('dashboard/service-operations/export', ServiceOperationsExportController::class)->name('dashboard.service-operations.export');
         Route::get('programs', [ProgramController::class, 'index'])->name('programs.index');
         Route::resource('donations', DonationController::class)->only(['index', 'show']);
+        Route::resource('audience-segments', AudienceSegmentController::class)->only(['index', 'store', 'show']);
         Route::resource('parties', PartyController::class)->only(['index', 'store', 'show', 'update']);
         Route::resource('intakes', IntakeRequestController::class)
             ->parameters(['intakes' => 'intake'])
