@@ -36,6 +36,7 @@ final class BuildOrganisationScenario
     public function __construct(
         private readonly OrganisationContext $organisationContext,
         private readonly StorePartyContact $storePartyContact,
+        private readonly BuildRequestToOutcomeScenario $buildRequestToOutcomeScenario,
     ) {}
 
     /** @param ScenarioDefinition $scenario */
@@ -77,6 +78,16 @@ final class BuildOrganisationScenario
                 }
 
                 $this->upsertPartyPopulation($organisation, $scenario);
+
+                if ($scenario['slug'] === 'harbourkind') {
+                    $this->buildRequestToOutcomeScenario->handle(
+                        $organisation,
+                        Program::query()->where('slug', 'housing-support')->firstOrFail(),
+                        Party::query()->where('uuid', '12000000-0000-4000-8000-000000000001')->firstOrFail(),
+                        User::query()->where('email', 'manager@harbourkind.example.test')->firstOrFail(),
+                        Membership::query()->whereHas('user', fn ($query) => $query->where('email', 'caseworker@harbourkind.example.test'))->firstOrFail(),
+                    );
+                }
             });
 
             return $organisation;

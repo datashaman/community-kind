@@ -5,6 +5,7 @@ import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Label } from '@/components/ui/label';
+import { show as showCase } from '@/routes/cases';
 import { index } from '@/routes/intakes';
 import { store as assign } from '@/routes/intakes/assignments';
 import { store as transition } from '@/routes/intakes/transitions';
@@ -407,6 +408,18 @@ export default function IntakeShow({ intake, canTransition, workers }: any) {
                                 ).toLocaleString()}
                             </div>
                         ))}
+                        {intake.case ? (
+                            <Button asChild variant="outline">
+                                <Link
+                                    href={showCase.url([
+                                        organisation.slug,
+                                        intake.case.id,
+                                    ])}
+                                >
+                                    Open case delivery
+                                </Link>
+                            </Button>
+                        ) : null}
                         {intake.case && canTransition ? (
                             <Form
                                 action={assign.url(args)}

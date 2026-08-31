@@ -2,7 +2,11 @@
 
 namespace App\Actions\Intake;
 
+use App\Actions\CaseDelivery\RecordCaseMetric;
+use App\Actions\CaseDelivery\RecordCaseWorkflowTransition;
 use App\Actions\Parties\RecordPartyConsent;
+use App\Enums\CaseMetricCode;
+use App\Enums\CaseWorkflowSubject;
 use App\Enums\ConsentDecision;
 use App\Enums\ConsentPurpose;
 use App\Enums\EligibilityStatus;
@@ -24,6 +28,8 @@ class TransitionIntakeRequest
         private readonly OrganisationContext $organisationContext,
         private readonly AssignCaseWorker $assignCaseWorker,
         private readonly RecordPartyConsent $recordPartyConsent,
+        private readonly RecordCaseWorkflowTransition $recordCaseWorkflowTransition,
+        private readonly RecordCaseMetric $recordCaseMetric,
     ) {}
 
     /** @param array{urgency?: IntakeUrgency, eligibility_status?: EligibilityStatus, eligibility_context?: array<string, mixed>, risk_flags?: list<string>} $triage */
@@ -95,6 +101,11 @@ class TransitionIntakeRequest
                         'created_by_user_id' => $actor->id,
                     ],
                 );
+
+                if ($case->wasRecentlyCreated) {
+                    $this->recordCaseWorkflowTransition->handle($case, CaseWorkflowSubject::CaseRecord, $case->id, null, ServiceCaseStatus::Open->value, 1, $case->opened_at, $actor);
+                    $this->recordCaseMetric->handle($case, CaseMetricCode::CaseOpened, $case->opened_at, "case:{$case->id}:opened");
+                }
 
                 if ($worker !== null) {
                     $this->assignCaseWorker->handle($case, $worker, $actor, $reason);

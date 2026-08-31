@@ -6,11 +6,13 @@ use App\Actions\Programs\SearchPrograms;
 use App\Data\Demo\ScenarioCatalog;
 use App\Enums\OrganisationStatus;
 use App\Models\Membership;
+use App\Models\MetricEvent;
 use App\Models\Organisation;
 use App\Models\Party;
 use App\Models\PartyContactPoint;
 use App\Models\Program;
 use App\Models\RoleAssignment;
+use App\Models\ServiceCase;
 use App\Models\User;
 use App\OrganisationCache;
 use App\OrganisationContext;
@@ -41,6 +43,8 @@ it('seeds the versioned synthetic scenarios deterministically', function () {
     $partyIds = Party::withoutGlobalScopes()->orderBy('uuid')->pluck('id', 'uuid')->all();
     $harbourKindId = Organisation::query()->where('slug', 'harbourkind')->valueOrFail('id');
     $neighbourLinkId = Organisation::query()->where('slug', 'neighbourlink')->valueOrFail('id');
+    $showcaseCase = ServiceCase::withoutGlobalScopes()->firstOrFail();
+    $serviceMetric = MetricEvent::withoutGlobalScopes()->where('code', 'service_delivered')->firstOrFail();
     $harbourKindPartyCounts = DB::table('parties')
         ->where('organisation_id', $harbourKindId)
         ->selectRaw('kind, count(*) as aggregate')
@@ -56,7 +60,7 @@ it('seeds the versioned synthetic scenarios deterministically', function () {
         ->map(fn (int|string $count): int => (int) $count)
         ->all();
 
-    expect(ScenarioCatalog::VERSION)->toBe('2026.2')
+    expect(ScenarioCatalog::VERSION)->toBe('2026.3')
         ->and(ScenarioCatalog::AS_OF)->toBe('2026-06-30 23:59:59')
         ->and(Date::getTestNow())->toBeNull()
         ->and(Organisation::query()->count())->toBe(2)
@@ -67,6 +71,11 @@ it('seeds the versioned synthetic scenarios deterministically', function () {
         ->and(Program::withoutGlobalScopes()->count())->toBe(4)
         ->and(RoleAssignment::withoutGlobalScopes()->count())->toBe(10)
         ->and(DB::table('membership_program')->count())->toBe(6)
+        ->and(ServiceCase::withoutGlobalScopes()->count())->toBe(1)
+        ->and(MetricEvent::withoutGlobalScopes()->count())->toBe(5)
+        ->and($showcaseCase->opened_at->toDateTimeString())->toBe('2026-06-02 06:00:00')
+        ->and($showcaseCase->closed_at?->toDateTimeString())->toBe('2026-06-28 13:00:00')
+        ->and($serviceMetric->occurred_at->toDateTimeString())->toBe('2026-06-10 10:00:00')
         ->and(Membership::withoutGlobalScopes()->where('organisation_id', $harbourKindId)->count())->toBe(9)
         ->and(Membership::withoutGlobalScopes()->where('organisation_id', $neighbourLinkId)->count())->toBe(3)
         ->and($harbourKindPartyCounts)->toBe(['household' => 100, 'organisation' => 150, 'person' => 1750])
@@ -82,7 +91,9 @@ it('seeds the versioned synthetic scenarios deterministically', function () {
         ->and(Membership::withoutGlobalScopes()->count())->toBe(12)
         ->and(Party::withoutGlobalScopes()->count())->toBe(2030)
         ->and(PartyContactPoint::withoutGlobalScopes()->orderBy('id')->pluck('id')->all())->toBe($contactIds)
-        ->and(Party::withoutGlobalScopes()->orderBy('uuid')->pluck('id', 'uuid')->all())->toBe($partyIds);
+        ->and(Party::withoutGlobalScopes()->orderBy('uuid')->pluck('id', 'uuid')->all())->toBe($partyIds)
+        ->and(ServiceCase::withoutGlobalScopes()->count())->toBe(1)
+        ->and(MetricEvent::withoutGlobalScopes()->count())->toBe(5);
 });
 
 it('keeps every scenario identity and reserved showcase explicitly synthetic', function () {

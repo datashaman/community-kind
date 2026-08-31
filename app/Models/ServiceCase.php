@@ -10,6 +10,7 @@ use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
+use Illuminate\Database\Eloquent\Relations\HasOne;
 use Illuminate\Support\Carbon;
 
 /**
@@ -19,11 +20,17 @@ use Illuminate\Support\Carbon;
  * @property int $program_id
  * @property int $party_id
  * @property ServiceCaseStatus $status
+ * @property int $version
  * @property string $confidentiality
  * @property Carbon $opened_at
+ * @property Carbon|null $closed_at
+ * @property string|null $closure_reason
+ * @property Carbon|null $follow_up_at
+ * @property array<string, bool>|null $closure_checklist
  * @property-read Organisation $organisation
  * @property-read Program $program
  * @property-read Party $party
+ * @property-read CaseOutcome|null $outcome
  */
 class ServiceCase extends Model
 {
@@ -62,8 +69,68 @@ class ServiceCase extends Model
         return $this->hasMany(CaseAssignment::class);
     }
 
+    /** @return HasMany<CaseGoal, $this> */
+    public function goals(): HasMany
+    {
+        return $this->hasMany(CaseGoal::class);
+    }
+
+    /** @return HasMany<CaseService, $this> */
+    public function services(): HasMany
+    {
+        return $this->hasMany(CaseService::class);
+    }
+
+    /** @return HasMany<ExternalReferral, $this> */
+    public function referrals(): HasMany
+    {
+        return $this->hasMany(ExternalReferral::class);
+    }
+
+    /** @return HasMany<CaseTask, $this> */
+    public function tasks(): HasMany
+    {
+        return $this->hasMany(CaseTask::class);
+    }
+
+    /** @return HasMany<CaseAppointment, $this> */
+    public function appointments(): HasMany
+    {
+        return $this->hasMany(CaseAppointment::class);
+    }
+
+    /** @return HasMany<CaseInteraction, $this> */
+    public function interactions(): HasMany
+    {
+        return $this->hasMany(CaseInteraction::class);
+    }
+
+    /** @return HasMany<CaseNote, $this> */
+    public function notes(): HasMany
+    {
+        return $this->hasMany(CaseNote::class);
+    }
+
+    /** @return HasOne<CaseOutcome, $this> */
+    public function outcome(): HasOne
+    {
+        return $this->hasOne(CaseOutcome::class);
+    }
+
+    /** @return HasMany<CaseWorkflowTransition, $this> */
+    public function workflowTransitions(): HasMany
+    {
+        return $this->hasMany(CaseWorkflowTransition::class);
+    }
+
     protected function casts(): array
     {
-        return ['status' => ServiceCaseStatus::class, 'opened_at' => 'datetime'];
+        return [
+            'status' => ServiceCaseStatus::class,
+            'opened_at' => 'datetime',
+            'closed_at' => 'datetime',
+            'follow_up_at' => 'datetime',
+            'closure_checklist' => 'array',
+        ];
     }
 }

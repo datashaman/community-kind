@@ -25,6 +25,7 @@ final class RecordPartyConsent
         $this->organisationContext->ensureOwns($party->organisation_id);
 
         return DB::transaction(function () use ($party, $attributes, $actor): PartyConsent {
+            $party = Party::query()->lockForUpdate()->findOrFail($party->id);
             $latest = PartyConsent::query()
                 ->where('party_id', $party->id)
                 ->where('purpose', $attributes['purpose'])
