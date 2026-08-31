@@ -2,11 +2,12 @@
 
 namespace App\Actions\Parties;
 
+use App\Actions\Security\RecordPlatformSecurityEvent;
 use App\Cryptography\ClassifiedDataEncrypter;
 use App\Data\Values\ClassifiedValue;
+use App\Enums\PlatformSecurityEventType;
 use App\Models\Organisation;
 use App\Models\PartyContactPoint;
-use App\Models\PlatformSecurityEvent;
 use App\OrganisationContext;
 
 class RotatePartyContactDataEncryption
@@ -14,6 +15,7 @@ class RotatePartyContactDataEncryption
     public function __construct(
         private readonly OrganisationContext $organisationContext,
         private readonly ClassifiedDataEncrypter $encrypter,
+        private readonly RecordPlatformSecurityEvent $recordPlatformSecurityEvent,
     ) {}
 
     public function handle(Organisation $organisation): int
@@ -39,16 +41,15 @@ class RotatePartyContactDataEncryption
                 $rotated++;
             });
 
-        PlatformSecurityEvent::query()->create([
-            'type' => 'party_contact_data_key_rotated',
-            'metadata' => [
+        $this->recordPlatformSecurityEvent->handle(
+            PlatformSecurityEventType::PartyContactDataKeyRotated,
+            [
                 'organisation_uuid' => $organisation->uuid,
                 'record_count' => $rotated,
                 'from_versions' => array_values(array_unique($previousVersions)),
                 'to_version' => $currentVersion,
             ],
-            'occurred_at' => now(),
-        ]);
+        );
 
         return $rotated;
     }

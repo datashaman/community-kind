@@ -2,10 +2,11 @@
 
 namespace App\Actions\Parties;
 
+use App\Actions\Security\RecordPlatformSecurityEvent;
 use App\Cryptography\ContactBlindIndexer;
+use App\Enums\PlatformSecurityEventType;
 use App\Models\Organisation;
 use App\Models\PartyContactPoint;
-use App\Models\PlatformSecurityEvent;
 use App\OrganisationContext;
 
 class RebuildPartyContactBlindIndexes
@@ -13,6 +14,7 @@ class RebuildPartyContactBlindIndexes
     public function __construct(
         private readonly OrganisationContext $organisationContext,
         private readonly ContactBlindIndexer $blindIndexer,
+        private readonly RecordPlatformSecurityEvent $recordPlatformSecurityEvent,
     ) {}
 
     public function handle(Organisation $organisation): int
@@ -50,16 +52,15 @@ class RebuildPartyContactBlindIndexes
             $rebuilt++;
         });
 
-        PlatformSecurityEvent::query()->create([
-            'type' => 'party_contact_index_key_rebuilt',
-            'metadata' => [
+        $this->recordPlatformSecurityEvent->handle(
+            PlatformSecurityEventType::PartyContactIndexKeyRebuilt,
+            [
                 'organisation_uuid' => $organisation->uuid,
                 'record_count' => $rebuilt,
                 'current_version' => $currentVersion,
                 'previous_version' => $previousVersion,
             ],
-            'occurred_at' => now(),
-        ]);
+        );
 
         return $rebuilt;
     }

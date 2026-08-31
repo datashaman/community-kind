@@ -4,6 +4,7 @@ namespace App\Http\Controllers\Settings;
 
 use App\Actions\Security\RecordPlatformSecurityEvent;
 use App\Actions\Security\RevokeOtherBrowserSessions;
+use App\Enums\PlatformSecurityEventType;
 use App\Http\Controllers\Controller;
 use App\Http\Requests\Settings\RevokeOtherBrowserSessionsRequest;
 use Illuminate\Http\RedirectResponse;
@@ -22,10 +23,10 @@ class OtherBrowserSessionController extends Controller
             $revokedCount = $revokeOtherBrowserSessions->handle($user, $request->session()->getId());
 
             $recordPlatformSecurityEvent->handle(
-                type: 'other_browser_sessions_revoked',
+                type: PlatformSecurityEventType::OtherBrowserSessionsRevoked,
+                metadata: ['revoked_count' => $revokedCount],
                 actor: $user,
                 subject: $user,
-                metadata: ['revoked_count' => $revokedCount],
             );
         });
 

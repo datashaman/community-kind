@@ -1,6 +1,7 @@
 <?php
 
 use App\Http\Middleware\EnforceAbsoluteSessionLifetime;
+use App\Http\Middleware\EnsureInstallationAccess;
 use App\Http\Middleware\HandleAppearance;
 use App\Http\Middleware\HandleInertiaRequests;
 use App\Http\Middleware\ProtectSensitiveFortifyRoutes;
@@ -21,6 +22,7 @@ return Application::configure(basePath: dirname(__DIR__))
         $middleware->encryptCookies(except: ['appearance', 'sidebar_state']);
 
         $middleware->web(append: [
+            EnsureInstallationAccess::class,
             EnforceAbsoluteSessionLifetime::class,
             ProtectSensitiveFortifyRoutes::class,
             HandleAppearance::class,

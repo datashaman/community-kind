@@ -5,6 +5,7 @@ namespace App\Http\Controllers\Organisations;
 use App\Actions\Programs\BuildProgramReport;
 use App\Actions\Programs\ExportPrograms;
 use App\Actions\Programs\SearchPrograms;
+use App\Actions\Programs\UpdateProgram;
 use App\Http\Controllers\Controller;
 use App\Http\Requests\Organisations\UpdateProgramRequest;
 use App\Models\Organisation;
@@ -25,11 +26,14 @@ class ProgramController extends Controller
         return response()->json($program->only(['id', 'organisation_id', 'name', 'slug']));
     }
 
-    public function update(UpdateProgramRequest $request, Organisation $organisation, string $program): JsonResponse
+    public function update(UpdateProgramRequest $request, Organisation $organisation, string $program, UpdateProgram $updateProgram): JsonResponse
     {
         $program = $this->findProgram($program);
         Gate::authorize('update', $program);
-        $program->update($request->validated());
+        $program = $updateProgram->handle($program, [
+            'name' => $request->string('name')->toString(),
+            'slug' => $request->string('slug')->toString(),
+        ], $request->user());
 
         return response()->json($program->only(['id', 'organisation_id', 'name', 'slug']));
     }

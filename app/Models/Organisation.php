@@ -170,6 +170,12 @@ class Organisation extends Model
         return $this->hasMany(OrganisationLifecycleEvent::class);
     }
 
+    /** @return HasMany<TenantAuditEvent, $this> */
+    public function auditEvents(): HasMany
+    {
+        return $this->hasMany(TenantAuditEvent::class);
+    }
+
     /** @return HasMany<OrganisationOwnershipTransfer, $this> */
     public function ownershipTransfers(): HasMany
     {

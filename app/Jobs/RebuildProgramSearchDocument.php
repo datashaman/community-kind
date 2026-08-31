@@ -10,6 +10,7 @@ use App\Enums\OrganisationLifecycleEventType;
 use App\Models\Organisation;
 use App\Models\Program;
 use App\OrganisationContext;
+use App\Queue\Middleware\PauseForInstallationControl;
 use Illuminate\Contracts\Queue\ShouldQueue;
 use Illuminate\Foundation\Queue\Queueable;
 use LogicException;
@@ -68,4 +69,10 @@ class RebuildProgramSearchDocument implements ShouldQueue
     public int $accessVersion;
 
     public int $programId;
+
+    /** @return list<object> */
+    public function middleware(): array
+    {
+        return [new PauseForInstallationControl];
+    }
 }
