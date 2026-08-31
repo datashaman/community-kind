@@ -204,7 +204,7 @@ return [
     'defaults' => [
         'community-kind' => [
             'connection' => 'redis',
-            'queue' => ['critical', 'security', 'default', 'bulk'],
+            'queue' => ['critical', 'default', 'bulk'],
             'balance' => 'auto',
             'autoScalingStrategy' => 'time',
             'maxProcesses' => 1,
@@ -213,6 +213,18 @@ return [
             'memory' => 128,
             'tries' => 1,
             'timeout' => 60,
+            'nice' => 0,
+        ],
+        'community-kind-security' => [
+            'connection' => 'redis',
+            'queue' => ['security'],
+            'balance' => false,
+            'maxProcesses' => 1,
+            'maxTime' => 0,
+            'maxJobs' => 0,
+            'memory' => 512,
+            'tries' => 1,
+            'timeout' => 160,
             'nice' => 0,
         ],
     ],
@@ -224,11 +236,17 @@ return [
                 'balanceMaxShift' => 1,
                 'balanceCooldown' => 3,
             ],
+            'community-kind-security' => [
+                'maxProcesses' => 2,
+            ],
         ],
 
         'local' => [
             'community-kind' => [
                 'maxProcesses' => 3,
+            ],
+            'community-kind-security' => [
+                'maxProcesses' => 1,
             ],
         ],
     ],

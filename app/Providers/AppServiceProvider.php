@@ -2,9 +2,11 @@
 
 namespace App\Providers;
 
+use App\Contracts\MalwareScanner;
 use App\Cryptography\ClassifiedDataEncrypter;
 use App\Cryptography\ContactBlindIndexer;
 use App\Cryptography\VersionedKeyRing;
+use App\Scanning\ClamdMalwareScanner;
 use Carbon\CarbonImmutable;
 use Illuminate\Support\Facades\Date;
 use Illuminate\Support\Facades\DB;
@@ -19,6 +21,7 @@ class AppServiceProvider extends ServiceProvider
      */
     public function register(): void
     {
+        $this->app->bind(MalwareScanner::class, ClamdMalwareScanner::class);
         $this->app->bind(
             ClassifiedDataEncrypter::class,
             fn () => new ClassifiedDataEncrypter(new VersionedKeyRing('classified_data.encryption')),

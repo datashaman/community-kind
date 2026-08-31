@@ -14,3 +14,8 @@ Schedule::command('organisations:purge-scheduled')
     ->daily()
     ->onOneServer()
     ->withoutOverlapping(60);
+
+Schedule::command('case-documents:reconcile')
+    ->hourly()
+    ->onOneServer()
+    ->withoutOverlapping(10);

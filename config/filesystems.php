@@ -47,6 +47,28 @@ return [
             'report' => false,
         ],
 
+        'case_quarantine' => [
+            'driver' => 'local',
+            'root' => env('CASE_DOCUMENT_QUARANTINE_PATH') ?: storage_path('case-quarantine'),
+            'visibility' => 'private',
+            'throw' => true,
+            'report' => true,
+        ],
+
+        'case_documents' => [
+            'driver' => env('CASE_DOCUMENT_STORAGE_DRIVER', 'local'),
+            'root' => storage_path('app/case-documents'),
+            'key' => env('AWS_ACCESS_KEY_ID'),
+            'secret' => env('AWS_SECRET_ACCESS_KEY'),
+            'region' => env('AWS_DEFAULT_REGION'),
+            'bucket' => env('CASE_DOCUMENT_AWS_BUCKET') ?: env('AWS_BUCKET'),
+            'endpoint' => env('AWS_ENDPOINT'),
+            'use_path_style_endpoint' => env('AWS_USE_PATH_STYLE_ENDPOINT', false),
+            'visibility' => 'private',
+            'throw' => true,
+            'report' => true,
+        ],
+
         's3' => [
             'driver' => 's3',
             'key' => env('AWS_ACCESS_KEY_ID'),
