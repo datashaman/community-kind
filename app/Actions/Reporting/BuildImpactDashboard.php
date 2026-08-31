@@ -21,6 +21,8 @@ use App\Models\PartyAddress;
 use App\Models\Program;
 use App\Models\SupporterJourneyEvent;
 use App\Models\User;
+use App\Models\VolunteerApplication;
+use App\Models\VolunteerHourEntry;
 use App\Reporting\MetricRegistry;
 use Carbon\CarbonImmutable;
 use Illuminate\Database\Eloquent\Builder;
@@ -117,8 +119,34 @@ class BuildImpactDashboard
             'fundraising.net_raised' => $this->successfulDonations($start, $end, $filters, true),
             'engagement.welcome_deliveries' => $this->journeyMetric(SupporterJourneyEventType::Delivered, $start, $end, $filters, false),
             'engagement.meaningful_action_rate' => $this->journeyMetric(SupporterJourneyEventType::MeaningfulAction, $start, $end, $filters, true),
+            'engagement.volunteer_applications' => $this->volunteerApplications($start, $end, $filters),
+            'engagement.volunteer_hours' => $this->volunteerHours($start, $end, $filters),
             default => ['value' => null, 'sampleSize' => 0],
         };
+    }
+
+    /** @param array<string, mixed> $filters
+     * @return array{value: float, sampleSize: int}
+     */
+    private function volunteerApplications(CarbonImmutable $start, CarbonImmutable $end, array $filters): array
+    {
+        $applications = VolunteerApplication::query()->with(['party.addresses', 'party.businessRoles'])
+            ->where('submitted_at', '>=', $start)->where('submitted_at', '<', $end)->get()
+            ->filter(fn (VolunteerApplication $application): bool => $this->matchesParty($application->party, $filters));
+
+        return ['value' => (float) $applications->count(), 'sampleSize' => $applications->pluck('party_id')->unique()->count()];
+    }
+
+    /** @param array<string, mixed> $filters
+     * @return array{value: float, sampleSize: int}
+     */
+    private function volunteerHours(CarbonImmutable $start, CarbonImmutable $end, array $filters): array
+    {
+        $entries = VolunteerHourEntry::query()->with(['party.addresses', 'party.businessRoles'])
+            ->where('occurred_at', '>=', $start)->where('occurred_at', '<', $end)->get()
+            ->filter(fn (VolunteerHourEntry $entry): bool => $this->matchesParty($entry->party, $filters));
+
+        return ['value' => round($entries->sum('minutes') / 60, 2), 'sampleSize' => $entries->pluck('party_id')->unique()->count()];
     }
 
     /** @param array<string, mixed> $filters

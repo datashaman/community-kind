@@ -10,6 +10,7 @@ import {
     ScrollText,
     Settings2,
     UsersRound,
+    HeartHandshake,
 } from 'lucide-react';
 import AppLogo from '@/components/app-logo';
 import { NavFooter } from '@/components/nav-footer';
@@ -33,6 +34,7 @@ import { index as intakesIndex } from '@/routes/intakes';
 import { index as partiesIndex } from '@/routes/parties';
 import { index as programsIndex } from '@/routes/programs';
 import { index as supporterJourneysIndex } from '@/routes/supporter-journeys';
+import { index as volunteersIndex } from '@/routes/volunteers';
 import type { NavItem } from '@/types';
 
 export function AppSidebar() {
@@ -94,6 +96,17 @@ export function AppSidebar() {
                           page.props.currentOrganisation.slug,
                       ),
                       icon: MessagesSquare,
+                  },
+              ]
+            : []),
+        ...(page.props.canViewVolunteers && page.props.currentOrganisation
+            ? [
+                  {
+                      title: 'Volunteering',
+                      href: volunteersIndex(
+                          page.props.currentOrganisation.slug,
+                      ),
+                      icon: HeartHandshake,
                   },
               ]
             : []),

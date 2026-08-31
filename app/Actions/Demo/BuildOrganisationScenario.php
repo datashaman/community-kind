@@ -38,6 +38,7 @@ final class BuildOrganisationScenario
         private readonly StorePartyContact $storePartyContact,
         private readonly BuildRequestToOutcomeScenario $buildRequestToOutcomeScenario,
         private readonly BuildDonorToRetainedSupporterScenario $buildDonorToRetainedSupporterScenario,
+        private readonly BuildVolunteerScenario $buildVolunteerScenario,
     ) {}
 
     /** @param ScenarioDefinition $scenario */
@@ -105,6 +106,11 @@ final class BuildOrganisationScenario
                     $this->buildDonorToRetainedSupporterScenario->handle(
                         Party::query()->where('uuid', $donor['uuid'])->firstOrFail(),
                         User::query()->where('email', $engagement['email'])->firstOrFail(),
+                    );
+                    $this->buildVolunteerScenario->handle(
+                        $organisation,
+                        User::query()->where('email', $engagement['email'])->firstOrFail(),
+                        $scenario['reporting_at'],
                     );
                 }
             });

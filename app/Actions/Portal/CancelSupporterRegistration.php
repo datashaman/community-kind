@@ -4,9 +4,11 @@ namespace App\Actions\Portal;
 
 use App\Actions\Auditing\RecordTenantAuditEvent;
 use App\Actions\Parties\RecordPartyTimelineEvent;
+use App\Actions\Volunteering\TransitionVolunteerApplication;
 use App\Enums\PartyTimelineEventType;
 use App\Enums\SupporterRegistrationStatus;
 use App\Enums\TenantAuditEventType;
+use App\Enums\VolunteerApplicationStatus;
 use App\Models\PortalAccessGrant;
 use App\Models\SupporterRegistration;
 use App\OrganisationContext;
@@ -18,6 +20,7 @@ final class CancelSupporterRegistration
         private readonly OrganisationContext $context,
         private readonly RecordPartyTimelineEvent $recordTimeline,
         private readonly RecordTenantAuditEvent $recordAudit,
+        private readonly TransitionVolunteerApplication $transitionVolunteerApplication,
     ) {}
 
     public function handle(PortalAccessGrant $grant, SupporterRegistration $registration): SupporterRegistration
@@ -61,6 +64,10 @@ final class CancelSupporterRegistration
                 ],
                 $grant->user,
             );
+            $application = $locked->volunteerApplication()->first();
+            if ($application !== null && in_array(VolunteerApplicationStatus::Withdrawn, $application->status->allowedTransitions(), true)) {
+                $this->transitionVolunteerApplication->handle($application, VolunteerApplicationStatus::Withdrawn, $grant->user);
+            }
 
             return $locked->refresh();
         });

@@ -19,4 +19,8 @@ enum PartyTimelineEventType: string
     case SupporterJourneyTransitioned = 'supporter_journey_transitioned';
     case SupporterRegistrationTransitioned = 'supporter_registration_transitioned';
     case PortalAccessChanged = 'portal_access_changed';
+    case VolunteerApplicationTransitioned = 'volunteer_application_transitioned';
+    case VolunteerCredentialExpired = 'volunteer_credential_expired';
+    case VolunteerAssignmentTransitioned = 'volunteer_assignment_transitioned';
+    case VolunteerHoursRecorded = 'volunteer_hours_recorded';
 }
