@@ -8,6 +8,7 @@ use App\OrganisationContext;
 use Database\Factories\OrganisationFactory;
 use Illuminate\Database\Eloquent\Attributes\Fillable;
 use Illuminate\Database\Eloquent\Collection;
+use Illuminate\Database\Eloquent\Concerns\HasUuids;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsToMany;
@@ -18,6 +19,7 @@ use Illuminate\Support\Carbon;
 
 /**
  * @property int $id
+ * @property string $uuid
  * @property string $name
  * @property string $slug
  * @property OrganisationStatus $status
@@ -36,7 +38,13 @@ use Illuminate\Support\Carbon;
 class Organisation extends Model
 {
     /** @use HasFactory<OrganisationFactory> */
-    use GeneratesUniqueOrganisationSlugs, HasFactory, SoftDeletes;
+    use GeneratesUniqueOrganisationSlugs, HasFactory, HasUuids, SoftDeletes;
+
+    /** @return list<string> */
+    public function uniqueIds(): array
+    {
+        return ['uuid'];
+    }
 
     /** @var array<string, mixed> */
     protected $attributes = [
@@ -142,6 +150,12 @@ class Organisation extends Model
     public function parties(): HasMany
     {
         return $this->hasMany(Party::class);
+    }
+
+    /** @return HasMany<PartyContactPoint, $this> */
+    public function partyContactPoints(): HasMany
+    {
+        return $this->hasMany(PartyContactPoint::class);
     }
 
     /** @return HasMany<OrganisationAccessHold, $this> */
