@@ -18,6 +18,7 @@ use Laravel\Scout\Searchable;
  * @property int $organisation_id
  * @property string $name
  * @property string $slug
+ * @property array<string, mixed> $configuration
  * @property-read Organisation $organisation
  */
 #[Fillable(['organisation_id', 'name', 'slug', 'configuration'])]

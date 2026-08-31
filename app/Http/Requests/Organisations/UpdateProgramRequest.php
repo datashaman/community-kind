@@ -42,7 +42,7 @@ class UpdateProgramRequest extends FormRequest
                     ->where('organisation_id', $organisation instanceof Organisation ? $organisation->id : 0)
                     ->ignore($program?->id),
             ],
-            'configuration' => ['sometimes', 'array:labels,stages,outcome_measures,taxonomies'],
+            'configuration' => ['sometimes', 'array:labels,stages,outcome_measures,taxonomies,intake_fields,eligibility_fields,risk_flags'],
             'configuration.labels' => ['required_with:configuration', 'array:request,case'],
             'configuration.labels.request' => ['required_with:configuration', 'string', 'max:100'],
             'configuration.labels.case' => ['required_with:configuration', 'string', 'max:100'],
@@ -61,6 +61,20 @@ class UpdateProgramRequest extends FormRequest
             'configuration.taxonomies.*.label' => ['required', 'string', 'max:100'],
             'configuration.taxonomies.*.values' => ['required', 'array', 'max:50'],
             'configuration.taxonomies.*.values.*' => ['required', 'string', 'max:100', 'distinct'],
+            'configuration.intake_fields' => ['sometimes', 'array', 'max:30'],
+            'configuration.intake_fields.*' => ['array:key,label,type,required'],
+            'configuration.intake_fields.*.key' => ['required', 'string', 'max:64', 'regex:/^[a-z][a-z0-9_]*$/', 'distinct'],
+            'configuration.intake_fields.*.label' => ['required', 'string', 'max:100'],
+            'configuration.intake_fields.*.type' => ['required', Rule::in(['text', 'textarea', 'boolean', 'date'])],
+            'configuration.intake_fields.*.required' => ['required', 'boolean'],
+            'configuration.eligibility_fields' => ['sometimes', 'array', 'max:20'],
+            'configuration.eligibility_fields.*' => ['array:key,label'],
+            'configuration.eligibility_fields.*.key' => ['required', 'string', 'max:64', 'regex:/^[a-z][a-z0-9_]*$/', 'distinct'],
+            'configuration.eligibility_fields.*.label' => ['required', 'string', 'max:100'],
+            'configuration.risk_flags' => ['sometimes', 'array', 'max:20'],
+            'configuration.risk_flags.*' => ['array:key,label'],
+            'configuration.risk_flags.*.key' => ['required', 'string', 'max:64', 'regex:/^[a-z][a-z0-9_]*$/', 'distinct'],
+            'configuration.risk_flags.*.label' => ['required', 'string', 'max:100'],
         ];
     }
 }

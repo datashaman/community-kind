@@ -1,10 +1,14 @@
 <?php
 
 use App\Http\Controllers\DashboardController;
+use App\Http\Controllers\Organisations\CaseAssignmentController;
+use App\Http\Controllers\Organisations\IntakeRequestController;
+use App\Http\Controllers\Organisations\IntakeTransitionController;
 use App\Http\Controllers\Organisations\OrganisationInvitationController;
 use App\Http\Controllers\Organisations\PartyAddressController;
 use App\Http\Controllers\Organisations\PartyConsentController;
 use App\Http\Controllers\Organisations\PartyController;
+use App\Http\Controllers\Organisations\PartyDuplicateReviewController;
 use App\Http\Controllers\Organisations\PartyRelationshipController;
 use App\Http\Controllers\Organisations\PartySafeContactInstructionController;
 use App\Http\Controllers\Organisations\ProgramController;
@@ -76,6 +80,13 @@ Route::prefix('{current_organisation}')
         Route::get('dashboard', DashboardController::class)->name('dashboard');
         Route::get('programs', [ProgramController::class, 'index'])->name('programs.index');
         Route::resource('parties', PartyController::class)->only(['index', 'store', 'show', 'update']);
+        Route::resource('intakes', IntakeRequestController::class)
+            ->parameters(['intakes' => 'intake'])
+            ->only(['index', 'store', 'show']);
+        Route::post('intakes/{intake}/transitions', [IntakeTransitionController::class, 'store'])->name('intakes.transitions.store');
+        Route::post('intakes/{intake}/assignments', [CaseAssignmentController::class, 'store'])->name('intakes.assignments.store');
+        Route::post('duplicate-reviews/{duplicate_review}', [PartyDuplicateReviewController::class, 'store'])->name('duplicate-reviews.store');
+        Route::delete('duplicate-reviews/{duplicate_review}', [PartyDuplicateReviewController::class, 'destroy'])->name('duplicate-reviews.destroy');
         Route::post('parties/{party}/consents', [PartyConsentController::class, 'store'])->name('parties.consents.store');
         Route::post('parties/{party}/addresses', [PartyAddressController::class, 'store'])->name('parties.addresses.store');
         Route::post('parties/{party}/relationships', [PartyRelationshipController::class, 'store'])->name('parties.relationships.store');
