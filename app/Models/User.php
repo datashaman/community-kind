@@ -34,6 +34,7 @@ use Laravel\Fortify\TwoFactorAuthenticatable;
  * @property-read Collection<int, Membership> $organisationMemberships
  * @property-read Collection<int, Organisation> $organisations
  * @property-read Collection<int, PortalAccessGrant> $portalAccessGrants
+ * @property-read Collection<int, BillingAccountMembership> $billingAccountMemberships
  */
 #[Fillable(['name', 'email', 'password', 'current_organisation_id', 'recovery_codes_acknowledged_at'])]
 #[Hidden(['password', 'two_factor_secret', 'two_factor_recovery_codes', 'remember_token'])]
@@ -75,5 +76,11 @@ class User extends Authenticatable implements MustVerifyEmail
     public function portalAccessGrants(): HasMany
     {
         return $this->hasMany(PortalAccessGrant::class);
+    }
+
+    /** @return HasMany<BillingAccountMembership, $this> */
+    public function billingAccountMemberships(): HasMany
+    {
+        return $this->hasMany(BillingAccountMembership::class);
     }
 }
