@@ -20,7 +20,7 @@ use Laravel\Scout\Searchable;
  * @property string $slug
  * @property-read Organisation $organisation
  */
-#[Fillable(['organisation_id', 'name', 'slug'])]
+#[Fillable(['organisation_id', 'name', 'slug', 'configuration'])]
 class Program extends Model
 {
     /** @use HasFactory<ProgramFactory> */
@@ -47,6 +47,14 @@ class Program extends Model
             ->withPivotValue('organisation_id', app(OrganisationContext::class)->id());
     }
 
+    /** @return BelongsToMany<Party, $this> */
+    public function parties(): BelongsToMany
+    {
+        return $this->belongsToMany(Party::class, 'party_program')
+            ->withPivotValue('organisation_id', app(OrganisationContext::class)->id())
+            ->withTimestamps();
+    }
+
     /** @return array<string, int|string> */
     public function toSearchableArray(): array
     {
@@ -56,5 +64,11 @@ class Program extends Model
             'name' => $this->name,
             'slug' => $this->slug,
         ];
+    }
+
+    /** @return array<string, string> */
+    protected function casts(): array
+    {
+        return ['configuration' => 'array'];
     }
 }

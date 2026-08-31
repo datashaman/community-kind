@@ -3,6 +3,7 @@
 namespace App\Data\Demo;
 
 use App\Enums\OrganisationRole;
+use App\Enums\PartyBusinessRole;
 use App\Enums\PartyKind;
 use InvalidArgumentException;
 
@@ -29,9 +30,9 @@ final class ScenarioCatalog
      * @return list<array{
      *     uuid: string, name: string, slug: string, timezone: string, currency: string, reporting_at: string, synthetic: true,
      *     party_population: array<string, int>,
-     *     programs: list<array{name: string, slug: string}>,
+     *     programs: list<array{name: string, slug: string, configuration: array<string, mixed>}>,
      *     members: list<array{party_uuid: string, name: string, email: string, telephone: string, owner: bool, role: OrganisationRole|null, program_slugs: list<string>}>,
-     *     parties: list<array{uuid: string, kind: PartyKind, name: string, email?: string, telephone?: string}>
+     *     parties: list<array{uuid: string, kind: PartyKind, name: string, email?: string, telephone?: string, program_slugs?: list<string>, roles?: list<PartyBusinessRole>, interests?: list<string>}>
      * }>
      */
     public static function organisations(): array
@@ -51,9 +52,9 @@ final class ScenarioCatalog
                     PartyKind::Household->value => 100,
                 ],
                 'programs' => [
-                    ['name' => 'Community Drop-in and Material Relief', 'slug' => 'community-drop-in'],
-                    ['name' => 'Housing and Homelessness Support', 'slug' => 'housing-support'],
-                    ['name' => 'Newcomer Settlement', 'slug' => 'newcomer-settlement'],
+                    self::program('Community Drop-in and Material Relief', 'community-drop-in', 'Request', 'Support case', ['received' => 'Received', 'assisted' => 'Assisted']),
+                    self::program('Housing and Homelessness Support', 'housing-support', 'Housing request', 'Housing journey', ['referred' => 'Referred', 'housed' => 'Housed']),
+                    self::program('Newcomer Settlement', 'newcomer-settlement', 'Settlement request', 'Settlement journey', ['intake' => 'Intake', 'settled' => 'Settled']),
                 ],
                 'members' => [
                     self::member('11000000-0000-4000-8000-000000000001', 'HarbourKind Demo Administrator', 'admin@harbourkind.example.test', '+1 202-555-0101', true, OrganisationRole::OrganisationAdministrator),
@@ -67,10 +68,10 @@ final class ScenarioCatalog
                     self::member('11000000-0000-4000-8000-000000000009', 'HarbourKind Demo Settlement Manager', 'settlement.manager@harbourkind.example.test', '+1 202-555-0109', false, OrganisationRole::ProgramManager, ['newcomer-settlement']),
                 ],
                 'parties' => [
-                    self::party('12000000-0000-4000-8000-000000000001', PartyKind::Person, 'Synthetic Client Amina Example', 'amina.client@harbourkind.example.test', '+1 202-555-0111'),
-                    self::party('12000000-0000-4000-8000-000000000002', PartyKind::Person, 'Synthetic Donor Rowan Example', 'rowan.donor@harbourkind.example.test', '+1 202-555-0112'),
-                    self::party('12000000-0000-4000-8000-000000000003', PartyKind::Household, 'Synthetic Hart Household'),
-                    self::party('12000000-0000-4000-8000-000000000004', PartyKind::Organisation, 'Synthetic Brightwell Community Fund', 'contact@brightwell.example.test', '+1 202-555-0113'),
+                    self::party('12000000-0000-4000-8000-000000000001', PartyKind::Person, 'Synthetic Client Amina Example', 'amina.client@harbourkind.example.test', '+1 202-555-0111', ['housing-support'], [PartyBusinessRole::Client, PartyBusinessRole::Volunteer], ['Housing', 'Employment']),
+                    self::party('12000000-0000-4000-8000-000000000002', PartyKind::Person, 'Synthetic Donor Rowan Example', 'rowan.donor@harbourkind.example.test', '+1 202-555-0112', ['community-drop-in'], [PartyBusinessRole::Donor]),
+                    self::party('12000000-0000-4000-8000-000000000003', PartyKind::Household, 'Synthetic Hart Household', programSlugs: ['housing-support'], roles: [PartyBusinessRole::Client], interests: ['Housing']),
+                    self::party('12000000-0000-4000-8000-000000000004', PartyKind::Organisation, 'Synthetic Brightwell Community Fund', 'contact@brightwell.example.test', '+1 202-555-0113', ['community-drop-in'], [PartyBusinessRole::Donor, PartyBusinessRole::PartnerContact]),
                 ],
             ],
             [
@@ -85,7 +86,7 @@ final class ScenarioCatalog
                     PartyKind::Person->value => 30,
                 ],
                 'programs' => [
-                    ['name' => 'Neighbour Support Network', 'slug' => 'neighbour-support'],
+                    self::program('Neighbour Support Network', 'neighbour-support', 'Neighbour request', 'Support case', ['received' => 'Received', 'connected' => 'Connected']),
                 ],
                 'members' => [
                     self::member('21000000-0000-4000-8000-000000000001', 'NeighbourLink Demo Administrator', 'admin@neighbourlink.example.test', '+1 202-555-0121', true, OrganisationRole::OrganisationAdministrator),
@@ -93,7 +94,7 @@ final class ScenarioCatalog
                     self::member('21000000-0000-4000-8000-000000000003', 'NeighbourLink Demo Governance Owner', 'owner@neighbourlink.example.test', '+1 202-555-0122', true),
                 ],
                 'parties' => [
-                    self::party('22000000-0000-4000-8000-000000000001', PartyKind::Person, 'Synthetic Resident Noor Example', 'noor.resident@neighbourlink.example.test', '+1 202-555-0123'),
+                    self::party('22000000-0000-4000-8000-000000000001', PartyKind::Person, 'Synthetic Resident Noor Example', 'noor.resident@neighbourlink.example.test', '+1 202-555-0123', ['neighbour-support'], [PartyBusinessRole::Client], ['Neighbour connection']),
                 ],
             ],
         ];
@@ -135,10 +136,37 @@ final class ScenarioCatalog
         ];
     }
 
-    /** @return array{uuid: string, kind: PartyKind, name: string, email?: string, telephone?: string} */
-    private static function party(string $uuid, PartyKind $kind, string $name, ?string $email = null, ?string $telephone = null): array
+    /**
+     * @param  list<string>  $programSlugs
+     * @param  list<PartyBusinessRole>  $roles
+     * @param  list<string>  $interests
+     * @return array{uuid: string, kind: PartyKind, name: string, email?: string, telephone?: string, program_slugs?: list<string>, roles?: list<PartyBusinessRole>, interests?: list<string>}
+     */
+    private static function party(string $uuid, PartyKind $kind, string $name, ?string $email = null, ?string $telephone = null, array $programSlugs = [], array $roles = [], array $interests = []): array
     {
-        return array_filter(compact('uuid', 'kind', 'name', 'email', 'telephone'), fn (mixed $value): bool => $value !== null);
+        return array_filter(compact('uuid', 'kind', 'name', 'email', 'telephone') + [
+            'program_slugs' => $programSlugs,
+            'roles' => $roles,
+            'interests' => $interests,
+        ], fn (mixed $value): bool => $value !== null && $value !== []);
+    }
+
+    /**
+     * @param  array<string, string>  $stages
+     * @return array{name: string, slug: string, configuration: array{labels: array{request: string, case: string}, stages: list<array{key: string, label: string}>, outcome_measures: list<array{key: string, label: string, unit: string}>, taxonomies: list<array{key: string, label: string, values: list<string>}>}}
+     */
+    private static function program(string $name, string $slug, string $requestLabel, string $caseLabel, array $stages): array
+    {
+        return [
+            'name' => $name,
+            'slug' => $slug,
+            'configuration' => [
+                'labels' => ['request' => $requestLabel, 'case' => $caseLabel],
+                'stages' => array_values(collect($stages)->map(fn (string $label, string $key): array => compact('key', 'label'))->all()),
+                'outcome_measures' => [['key' => 'progress', 'label' => 'Progress', 'unit' => 'score']],
+                'taxonomies' => [['key' => 'need', 'label' => 'Presenting need', 'values' => ['Housing', 'Food', 'Employment', 'Connection']]],
+            ],
+        ];
     }
 
     /** @return array{uuid: string, organisation_slug: string, synthetic: true} */

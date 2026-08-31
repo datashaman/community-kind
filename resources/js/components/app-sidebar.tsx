@@ -1,5 +1,11 @@
 import { Link, usePage } from '@inertiajs/react';
-import { FolderGit2, LayoutGrid, Scale } from 'lucide-react';
+import {
+    FolderGit2,
+    LayoutGrid,
+    Scale,
+    Settings2,
+    UsersRound,
+} from 'lucide-react';
 import AppLogo from '@/components/app-logo';
 import { NavFooter } from '@/components/nav-footer';
 import { NavMain } from '@/components/nav-main';
@@ -15,6 +21,8 @@ import {
     SidebarMenuItem,
 } from '@/components/ui/sidebar';
 import { dashboard } from '@/routes';
+import { index as partiesIndex } from '@/routes/parties';
+import { index as programsIndex } from '@/routes/programs';
 import type { NavItem } from '@/types';
 
 export function AppSidebar() {
@@ -29,6 +37,24 @@ export function AppSidebar() {
             href: dashboardUrl,
             icon: LayoutGrid,
         },
+        ...(page.props.canViewParties && page.props.currentOrganisation
+            ? [
+                  {
+                      title: 'Party profiles',
+                      href: partiesIndex(page.props.currentOrganisation.slug),
+                      icon: UsersRound,
+                  },
+              ]
+            : []),
+        ...(page.props.canViewPrograms && page.props.currentOrganisation
+            ? [
+                  {
+                      title: 'Program configuration',
+                      href: programsIndex(page.props.currentOrganisation.slug),
+                      icon: Settings2,
+                  },
+              ]
+            : []),
     ];
 
     const footerNavItems: NavItem[] = [
