@@ -68,6 +68,41 @@ php artisan key:generate
 php artisan migrate
 ```
 
+The deterministic demo scenarios contain encrypted synthetic contact details.
+Generate two independent 32-byte keys, then add them to `.env` under distinct
+local key versions:
+
+```bash
+php -r 'echo "base64:".base64_encode(random_bytes(32)).PHP_EOL;'
+php -r 'echo "base64:".base64_encode(random_bytes(32)).PHP_EOL;'
+```
+
+```dotenv
+CLASSIFIED_DATA_KEY_CURRENT=local-data-v1
+CLASSIFIED_DATA_KEYS='{"local-data-v1":"paste-the-first-generated-value-here"}'
+CONTACT_INDEX_KEY_CURRENT=local-index-v1
+CONTACT_INDEX_KEYS='{"local-index-v1":"paste-the-second-generated-value-here"}'
+```
+
+Clear cached configuration and seed the fictional HarbourKind and
+NeighbourLink organisations:
+
+```bash
+php artisan config:clear
+php artisan db:seed
+```
+
+Scenario catalog version `2026.1` uses the fixed reporting instant
+`2026-06-30 23:59:59` in each Organisation's local timezone: HarbourKind uses
+`Africa/Johannesburg` and ZAR, while NeighbourLink uses `Europe/London` and
+GBP. It can be seeded repeatedly without duplicating its records. All demo
+users use the password `password`; useful starting accounts are:
+
+- `admin@harbourkind.example.test` for HarbourKind administration
+- `admin@neighbourlink.example.test` for NeighbourLink administration
+- `switcher@community-kind.example.test` for an account belonging to both
+  organisations
+
 Link and secure the project with Valet. Valet routes the linked site's wildcard
 subdomains to the same Laravel application, so tenant hosts do not need separate
 local registrations:
