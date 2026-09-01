@@ -1,5 +1,5 @@
 import { Form, Head, useForm, usePage } from '@inertiajs/react';
-import { Search } from 'lucide-react';
+import { Check, Search } from 'lucide-react';
 import type { FormEvent } from 'react';
 import { useState } from 'react';
 import Heading from '@/components/heading';
@@ -7,6 +7,7 @@ import InputError from '@/components/input-error';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Checkbox } from '@/components/ui/checkbox';
 import { Input } from '@/components/ui/input';
 import { activate, index, store } from '@/routes/reporting-publication';
 
@@ -41,83 +42,126 @@ type ReportingVersion = {
     canActivate: boolean;
 };
 
-function MetricSelection({
-    title,
-    description,
-    metrics,
-    selected,
-    onToggle,
+const PUBLIC_LABEL = 'Public impact page';
+const PACK_LABEL = 'Approved reporting packs';
+
+/*
+ * One row per metric, one column per destination. Listing each destination
+ * separately meant every metric's label, badges, and description appeared
+ * twice, and divergence between the two selections could only be found by
+ * reading both lists side by side.
+ */
+function DestinationCell({
+    included,
+    metric,
+    destination,
 }: {
-    title: string;
-    description: string;
-    metrics: Metric[];
-    selected: string[];
-    onToggle: (id: string, checked: boolean) => void;
+    included: boolean;
+    metric: string;
+    destination: string;
 }) {
     return (
-        <fieldset className="space-y-3">
-            <legend className="font-semibold">{title}</legend>
-            <p className="text-muted-foreground text-sm">{description}</p>
-            <div className="grid gap-2">
-                {metrics.map((metric) => (
-                    <label
-                        key={metric.id}
-                        className="hover:bg-muted/40 flex items-start gap-3 rounded-lg border p-3"
-                    >
-                        <input
-                            type="checkbox"
-                            className="mt-1"
-                            checked={selected.includes(metric.id)}
-                            onChange={(event) =>
-                                onToggle(metric.id, event.target.checked)
-                            }
-                        />
-                        <span className="min-w-0 flex-1">
-                            <span className="flex flex-wrap items-center gap-2 font-medium">
-                                {metric.label}
-                                <Badge variant="outline">{metric.unit}</Badge>
-                                <Badge variant="outline">{metric.domain}</Badge>
-                            </span>
-                            <span className="text-muted-foreground block text-sm">
-                                {metric.description}
-                            </span>
-                        </span>
-                    </label>
-                ))}
-            </div>
-        </fieldset>
+        <td className="px-4 py-3 text-center align-top">
+            {included ? (
+                <Check className="mx-auto size-4" aria-hidden="true" />
+            ) : (
+                <span className="text-muted-foreground" aria-hidden="true">
+                    —
+                </span>
+            )}
+            <span className="sr-only">
+                {metric}
+                {included ? ' is published on ' : ' is not published on '}
+                {destination}
+            </span>
+        </td>
     );
 }
 
-function VersionMetricList({
-    title,
-    metrics,
-}: {
-    title: string;
-    metrics: SelectedMetric[];
-}) {
+function VersionMetricMatrix({ version }: { version: ReportingVersion }) {
+    const rows = new Map<
+        string,
+        { metric: SelectedMetric; inPublic: boolean; inPack: boolean }
+    >();
+
+    for (const metric of version.publicMetrics) {
+        rows.set(metric.id, { metric, inPublic: true, inPack: false });
+    }
+
+    for (const metric of version.packMetrics) {
+        const existing = rows.get(metric.id);
+
+        if (existing) {
+            existing.inPack = true;
+        } else {
+            rows.set(metric.id, { metric, inPublic: false, inPack: true });
+        }
+    }
+
+    if (rows.size === 0) {
+        return (
+            <p className="text-muted-foreground text-sm">
+                No metrics selected in this version.
+            </p>
+        );
+    }
+
     return (
-        <div>
-            <h3 className="text-sm font-semibold">{title}</h3>
-            {metrics.length === 0 ? (
-                <p className="text-muted-foreground text-sm">None selected</p>
-            ) : (
-                <ul className="mt-1 grid gap-1 text-sm">
-                    {metrics.map((metric) => (
-                        <li
-                            key={metric.id}
-                            className="flex flex-wrap items-center gap-2"
+        <div className="overflow-x-auto rounded-lg border">
+            <table className="w-full text-left text-sm">
+                <caption className="sr-only">
+                    Metrics published by reporting publication version{' '}
+                    {version.version}, and the destination of each
+                </caption>
+                <thead className="bg-muted/50">
+                    <tr>
+                        <th scope="col" className="px-4 py-2 font-medium">
+                            Metric
+                        </th>
+                        <th
+                            scope="col"
+                            className="w-28 px-4 py-2 text-center font-medium"
                         >
-                            {metric.label}
-                            {metric.available ? null : (
-                                <Badge variant="destructive">
-                                    Retired or unavailable
-                                </Badge>
-                            )}
-                        </li>
+                            Public page
+                        </th>
+                        <th
+                            scope="col"
+                            className="w-28 px-4 py-2 text-center font-medium"
+                        >
+                            Reporting pack
+                        </th>
+                    </tr>
+                </thead>
+                <tbody className="divide-y">
+                    {[...rows.values()].map(({ metric, inPublic, inPack }) => (
+                        <tr key={metric.id}>
+                            <th
+                                scope="row"
+                                className="px-4 py-3 text-left font-normal"
+                            >
+                                <span className="flex flex-wrap items-center gap-2">
+                                    {metric.label}
+                                    {metric.available ? null : (
+                                        <Badge variant="destructive">
+                                            Retired or unavailable
+                                        </Badge>
+                                    )}
+                                </span>
+                            </th>
+                            <DestinationCell
+                                included={inPublic}
+                                metric={metric.label}
+                                destination={PUBLIC_LABEL}
+                            />
+                            <DestinationCell
+                                included={inPack}
+                                metric={metric.label}
+                                destination={PACK_LABEL}
+                            />
+                        </tr>
                     ))}
-                </ul>
-            )}
+                </tbody>
+            </table>
         </div>
     );
 }
@@ -145,6 +189,15 @@ export default function ReportingPublicationIndex({
             metric.category,
         ].some((value) => value.toLowerCase().includes(normalizedQuery)),
     );
+
+    const visibleIds = new Set(filteredMetrics.map((metric) => metric.id));
+    const selectedIds = new Set([
+        ...editor.data.public_metric_ids,
+        ...editor.data.pack_metric_ids,
+    ]);
+    const hiddenSelectedCount = [...selectedIds].filter(
+        (id) => !visibleIds.has(id),
+    ).length;
 
     const toggle = (
         field: 'public_metric_ids' | 'pack_metric_ids',
@@ -176,9 +229,6 @@ export default function ReportingPublicationIndex({
         event.preventDefault();
         editor.post(store.url(organisation.slug), { preserveScroll: true });
     };
-
-    const selectedMetric = (id: string) =>
-        metrics.find((metric) => metric.id === id);
 
     return (
         <div className="space-y-6 p-4">
@@ -212,81 +262,153 @@ export default function ReportingPublicationIndex({
                                 No registered metrics match that search.
                             </p>
                         ) : (
-                            <div className="grid gap-8 xl:grid-cols-2">
-                                <MetricSelection
-                                    title="Public impact page"
-                                    description="Select at least one aggregated metric appropriate for unrestricted publication."
-                                    metrics={filteredMetrics}
-                                    selected={editor.data.public_metric_ids}
-                                    onToggle={(id, checked) =>
-                                        toggle('public_metric_ids', id, checked)
-                                    }
-                                />
-                                <MetricSelection
-                                    title="Approved reporting packs"
-                                    description="Select at least one metric for board, funder, or other approved exports."
-                                    metrics={filteredMetrics}
-                                    selected={editor.data.pack_metric_ids}
-                                    onToggle={(id, checked) =>
-                                        toggle('pack_metric_ids', id, checked)
-                                    }
-                                />
-                            </div>
-                        )}
-                        <InputError message={editor.errors.public_metric_ids} />
-                        <InputError message={editor.errors.pack_metric_ids} />
-
-                        <div className="bg-muted/40 grid gap-4 rounded-xl border p-5 lg:grid-cols-2">
-                            <div>
-                                <strong>Public preview</strong>
-                                <div className="mt-2 grid gap-2 sm:grid-cols-2">
-                                    {editor.data.public_metric_ids.map((id) => {
-                                        const metric = selectedMetric(id);
-                                        return (
-                                            <div
-                                                key={id}
-                                                className="bg-background rounded-lg border p-3"
-                                            >
-                                                <div className="text-muted-foreground text-xs uppercase">
-                                                    {metric?.domain}
-                                                </div>
-                                                <div className="font-semibold">
-                                                    {metric?.label}
-                                                </div>
-                                                <div className="text-muted-foreground text-sm">
-                                                    — {metric?.unit}
-                                                </div>
-                                            </div>
-                                        );
-                                    })}
-                                    {editor.data.public_metric_ids.length ===
-                                    0 ? (
-                                        <p className="text-muted-foreground text-sm">
-                                            Select at least one public metric.
-                                        </p>
-                                    ) : null}
+                            <fieldset
+                                aria-describedby="destination-help destination-errors"
+                                className="space-y-3"
+                            >
+                                <legend className="font-semibold">
+                                    Choose where each metric is published
+                                </legend>
+                                <p
+                                    id="destination-help"
+                                    className="text-muted-foreground text-sm"
+                                >
+                                    The public impact page carries aggregated
+                                    metrics appropriate for unrestricted
+                                    publication. Reporting packs carry metrics
+                                    for board, funder, or other approved
+                                    exports. A metric may go to both, one, or
+                                    neither.
+                                </p>
+                                <div className="overflow-x-auto rounded-lg border">
+                                    <table className="w-full text-left text-sm">
+                                        <caption className="sr-only">
+                                            Registered metrics, with a checkbox
+                                            per publication destination
+                                        </caption>
+                                        <thead className="bg-muted/50">
+                                            <tr>
+                                                <th
+                                                    scope="col"
+                                                    className="px-4 py-2 font-medium"
+                                                >
+                                                    Metric
+                                                </th>
+                                                <th
+                                                    scope="col"
+                                                    className="w-28 px-4 py-2 text-center font-medium"
+                                                >
+                                                    Public page
+                                                </th>
+                                                <th
+                                                    scope="col"
+                                                    className="w-28 px-4 py-2 text-center font-medium"
+                                                >
+                                                    Reporting pack
+                                                </th>
+                                            </tr>
+                                        </thead>
+                                        <tbody className="divide-y">
+                                            {filteredMetrics.map((metric) => (
+                                                <tr
+                                                    key={metric.id}
+                                                    className="hover:bg-muted/40"
+                                                >
+                                                    <th
+                                                        scope="row"
+                                                        className="px-4 py-3 text-left align-top font-normal"
+                                                    >
+                                                        <span className="flex flex-wrap items-center gap-2 font-medium">
+                                                            {metric.label}
+                                                            <Badge variant="outline">
+                                                                {metric.unit}
+                                                            </Badge>
+                                                            <Badge variant="outline">
+                                                                {metric.domain}
+                                                            </Badge>
+                                                        </span>
+                                                        <span className="text-muted-foreground mt-1 block max-w-prose text-sm">
+                                                            {metric.description}
+                                                        </span>
+                                                    </th>
+                                                    <td className="px-4 py-3 text-center align-top">
+                                                        <Checkbox
+                                                            className="mx-auto"
+                                                            checked={editor.data.public_metric_ids.includes(
+                                                                metric.id,
+                                                            )}
+                                                            onCheckedChange={(
+                                                                checked,
+                                                            ) =>
+                                                                toggle(
+                                                                    'public_metric_ids',
+                                                                    metric.id,
+                                                                    checked ===
+                                                                        true,
+                                                                )
+                                                            }
+                                                            aria-label={`Publish ${metric.label} on the ${PUBLIC_LABEL}`}
+                                                        />
+                                                    </td>
+                                                    <td className="px-4 py-3 text-center align-top">
+                                                        <Checkbox
+                                                            className="mx-auto"
+                                                            checked={editor.data.pack_metric_ids.includes(
+                                                                metric.id,
+                                                            )}
+                                                            onCheckedChange={(
+                                                                checked,
+                                                            ) =>
+                                                                toggle(
+                                                                    'pack_metric_ids',
+                                                                    metric.id,
+                                                                    checked ===
+                                                                        true,
+                                                                )
+                                                            }
+                                                            aria-label={`Include ${metric.label} in ${PACK_LABEL}`}
+                                                        />
+                                                    </td>
+                                                </tr>
+                                            ))}
+                                        </tbody>
+                                    </table>
                                 </div>
-                            </div>
-                            <div>
-                                <strong>Reporting pack preview</strong>
-                                <ol className="mt-2 grid gap-1 text-sm">
-                                    {editor.data.pack_metric_ids.map(
-                                        (id, metricIndex) => (
-                                            <li key={id}>
-                                                {metricIndex + 1}.{' '}
-                                                {selectedMetric(id)?.label}
-                                            </li>
-                                        ),
-                                    )}
-                                </ol>
-                            </div>
+                            </fieldset>
+                        )}
+
+                        <div id="destination-errors">
+                            <InputError
+                                message={editor.errors.public_metric_ids}
+                            />
+                            <InputError
+                                message={editor.errors.pack_metric_ids}
+                            />
                         </div>
 
-                        <Button disabled={editor.processing}>
-                            {editor.processing
-                                ? 'Creating draft…'
-                                : 'Create reporting draft'}
-                        </Button>
+                        <div className="flex flex-wrap items-center justify-between gap-4 border-t pt-5">
+                            <p
+                                aria-live="polite"
+                                className="text-muted-foreground text-sm"
+                            >
+                                <span className="text-foreground font-medium">
+                                    {editor.data.public_metric_ids.length}
+                                </span>{' '}
+                                on the public page ·{' '}
+                                <span className="text-foreground font-medium">
+                                    {editor.data.pack_metric_ids.length}
+                                </span>{' '}
+                                in reporting packs
+                                {hiddenSelectedCount > 0
+                                    ? ` · ${hiddenSelectedCount} selected metric${hiddenSelectedCount === 1 ? '' : 's'} hidden by the current search`
+                                    : ''}
+                            </p>
+                            <Button disabled={editor.processing}>
+                                {editor.processing
+                                    ? 'Creating draft…'
+                                    : 'Create reporting draft'}
+                            </Button>
+                        </div>
                     </form>
                 </CardContent>
             </Card>
@@ -309,16 +431,7 @@ export default function ReportingPublicationIndex({
                                     </strong>
                                     <Badge>{version.status}</Badge>
                                 </div>
-                                <div className="grid gap-4 md:grid-cols-2">
-                                    <VersionMetricList
-                                        title="Public impact page"
-                                        metrics={version.publicMetrics}
-                                    />
-                                    <VersionMetricList
-                                        title="Approved reporting packs"
-                                        metrics={version.packMetrics}
-                                    />
-                                </div>
+                                <VersionMetricMatrix version={version} />
                                 {version.hasUnavailableMetrics ? (
                                     <p className="text-muted-foreground text-sm">
                                         Create a new version to replace retired
