@@ -53,6 +53,16 @@ final class ValidateConfigurationDefinition
             if ($area === OrganisationConfigurationArea::MessageTemplate && ($definition['channel'] ?? null) === 'email' && blank($definition['subject'] ?? null)) {
                 $validator->errors()->add('subject', 'Email templates require a subject.');
             }
+            if ($area === OrganisationConfigurationArea::MessageTemplate) {
+                foreach (['subject', 'body'] as $field) {
+                    $template = (string) ($definition[$field] ?? '');
+                    $remainder = str_replace(['{{ supporter_name }}', '{{ donation_count }}', '{{ activity_frequency }}', '{{ activity_value }}'], '', $template);
+
+                    if (str_contains($remainder, '{{') || str_contains($remainder, '}}')) {
+                        $validator->errors()->add($field, 'The template contains an unsupported variable.');
+                    }
+                }
+            }
             if ($area === OrganisationConfigurationArea::IntakeRules && ! collect($requiredFields)->contains('presenting_needs')) {
                 $validator->errors()->add('required_fields', 'Intake rules must keep presenting needs required.');
             }

@@ -18,6 +18,7 @@ use App\Http\Controllers\Organisations\ImpactChartExportController;
 use App\Http\Controllers\Organisations\ImpactReportExportController;
 use App\Http\Controllers\Organisations\IntakeRequestController;
 use App\Http\Controllers\Organisations\IntakeTransitionController;
+use App\Http\Controllers\Organisations\MessageTemplateController;
 use App\Http\Controllers\Organisations\OrganisationConfigurationController;
 use App\Http\Controllers\Organisations\OrganisationInvitationController;
 use App\Http\Controllers\Organisations\PartyAddressController;
@@ -162,6 +163,9 @@ Route::prefix('{current_organisation}')
         Route::get('organisation-configurations', [OrganisationConfigurationController::class, 'index'])->name('organisation-configurations.index');
         Route::post('organisation-configurations', [OrganisationConfigurationController::class, 'store'])->name('organisation-configurations.store');
         Route::post('organisation-configurations/{configuration}/activate', [OrganisationConfigurationController::class, 'activate'])->name('organisation-configurations.activate');
+        Route::get('message-templates', [MessageTemplateController::class, 'index'])->name('message-templates.index');
+        Route::post('message-templates', [MessageTemplateController::class, 'store'])->name('message-templates.store');
+        Route::post('message-templates/{messageTemplate}/activate', [MessageTemplateController::class, 'activate'])->name('message-templates.activate');
         Route::get('impact-snapshots', [PublishedImpactSnapshotController::class, 'index'])->name('impact-snapshots.index');
         Route::post('impact-snapshots', [PublishedImpactSnapshotController::class, 'store'])->name('impact-snapshots.store');
         Route::get('impact-snapshots/{snapshot}/download', [PublishedImpactSnapshotController::class, 'download'])->name('impact-snapshots.download');

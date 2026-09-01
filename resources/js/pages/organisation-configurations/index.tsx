@@ -23,16 +23,6 @@ const examples: Record<string, string> = {
         null,
         2,
     ),
-    message_template: JSON.stringify(
-        {
-            channel: 'sms',
-            subject: null,
-            body: 'Thanks {{ supporter_name }}',
-            journey_kind: 're_engagement',
-        },
-        null,
-        2,
-    ),
     supporter_journey: JSON.stringify(
         {
             default_kind: 're_engagement',
@@ -126,8 +116,7 @@ export default function OrganisationConfigurationsIndex({
                                         journey or intake defaults, and the form
                                         name (for example
                                         volunteer_registration) for public
-                                        forms. Message-template keys are your
-                                        choice.
+                                        forms.
                                     </small>
                                 </label>
                                 <label className="grid gap-1">
