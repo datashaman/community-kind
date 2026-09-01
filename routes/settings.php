@@ -1,6 +1,10 @@
 <?php
 
 use App\Http\Controllers\Auth\MfaChallengeController;
+use App\Http\Controllers\Billing\BillingAccountController;
+use App\Http\Controllers\Billing\BillingContactController;
+use App\Http\Controllers\Billing\BillingInvitationController;
+use App\Http\Controllers\Billing\BillingMembershipController;
 use App\Http\Controllers\Organisations\MembershipHoldController;
 use App\Http\Controllers\Organisations\OrganisationController;
 use App\Http\Controllers\Organisations\OrganisationInvitationController;
@@ -56,6 +60,18 @@ Route::middleware(['auth', 'verified'])->group(function () {
     Route::inertia('settings/appearance', 'settings/appearance')->name('appearance.edit');
 
     Route::middleware(EnsureStaffSecurityRequirements::class)->group(function () {
+        Route::get('settings/billing-accounts', [BillingAccountController::class, 'index'])->name('billing-accounts.index');
+        Route::post('settings/billing-accounts', [BillingAccountController::class, 'store'])->name('billing-accounts.store');
+        Route::get('settings/billing-accounts/{billing_account}', [BillingAccountController::class, 'show'])->name('billing-accounts.show');
+        Route::delete('settings/billing-accounts/{billing_account}', [BillingAccountController::class, 'destroy'])->name('billing-accounts.destroy');
+        Route::post('settings/billing-accounts/{billing_account}/invitations', [BillingInvitationController::class, 'store'])->name('billing-accounts.invitations.store');
+        Route::post('settings/billing-accounts/{billing_account}/contacts', [BillingContactController::class, 'store'])->name('billing-accounts.contacts.store');
+        Route::delete('settings/billing-accounts/{billing_account}/contacts/{billing_contact}', [BillingContactController::class, 'destroy'])->name('billing-accounts.contacts.destroy');
+        Route::patch('settings/billing-accounts/{billing_account}/memberships/{billing_membership}', [BillingMembershipController::class, 'update'])->name('billing-accounts.memberships.update');
+        Route::delete('settings/billing-accounts/{billing_account}/memberships/{billing_membership}', [BillingMembershipController::class, 'destroy'])->name('billing-accounts.memberships.destroy');
+        Route::get('billing-invitations/{token}', [BillingInvitationController::class, 'show'])->name('billing-invitations.show');
+        Route::post('billing-invitations/{token}/accept', [BillingInvitationController::class, 'accept'])->name('billing-invitations.accept');
+
         Route::get('settings/organisations', [OrganisationController::class, 'index'])->name('organisations.index');
         Route::post('settings/organisations', [OrganisationController::class, 'store'])->name('organisations.store');
 

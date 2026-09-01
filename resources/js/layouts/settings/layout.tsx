@@ -9,6 +9,7 @@ import { edit as editAppearance } from '@/routes/appearance';
 import { edit } from '@/routes/profile';
 import { edit as editSecurity } from '@/routes/security';
 import { index as organisations } from '@/routes/organisations';
+import { index as billingAccounts } from '@/routes/billing-accounts';
 import type { NavItem } from '@/types';
 
 const sidebarNavItems: NavItem[] = [
@@ -25,6 +26,11 @@ const sidebarNavItems: NavItem[] = [
     {
         title: 'Organisations',
         href: organisations(),
+        icon: null,
+    },
+    {
+        title: 'Billing accounts',
+        href: billingAccounts(),
         icon: null,
     },
     {
