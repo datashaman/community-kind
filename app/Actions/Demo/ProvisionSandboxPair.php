@@ -9,7 +9,7 @@ use App\Models\SandboxPair;
 use Illuminate\Support\Facades\DB;
 use Throwable;
 
-/** @phpstan-import-type ScenarioDefinition from BuildOrganisationScenario */
+/** @phpstan-import-type ScenarioDefinition from ScenarioCatalog */
 final class ProvisionSandboxPair
 {
     public function __construct(

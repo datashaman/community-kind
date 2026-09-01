@@ -25,6 +25,29 @@ type ProgramStage = {
     retired: boolean;
 };
 
+type OutcomeMeasure = {
+    id: number | null;
+    key: string | null;
+    label: string;
+    unit: string;
+    retired: boolean;
+};
+
+type TaxonomyValue = {
+    id: number | null;
+    key: string | null;
+    label: string;
+    retired: boolean;
+};
+
+type ProgramTaxonomy = {
+    id: number | null;
+    key: string | null;
+    label: string;
+    retired: boolean;
+    values: TaxonomyValue[];
+};
+
 type Program = {
     id: number;
     name: string;
@@ -32,6 +55,8 @@ type Program = {
     request_label: string;
     case_label: string;
     stages: ProgramStage[];
+    outcome_measures: OutcomeMeasure[];
+    taxonomies: ProgramTaxonomy[];
     canUpdate: boolean;
 };
 
@@ -48,6 +73,11 @@ function ProgramEditor({
         request_label: program.request_label,
         case_label: program.case_label,
         stages: program.stages,
+        outcome_measures: program.outcome_measures.map((measure) => ({
+            ...measure,
+            unit: measure.unit ?? '',
+        })),
+        taxonomies: program.taxonomies,
     });
     const errors = form.errors as Record<string, string>;
 
@@ -81,6 +111,117 @@ function ProgramEditor({
             ...form.data.stages,
             { id: null, key: null, label: '', retired: false },
         ]);
+    };
+
+    const updateMeasure = (
+        measureIndex: number,
+        attributes: Partial<OutcomeMeasure>,
+    ) => {
+        form.setData(
+            'outcome_measures',
+            form.data.outcome_measures.map((measure, index) =>
+                index === measureIndex
+                    ? { ...measure, ...attributes }
+                    : measure,
+            ),
+        );
+    };
+
+    const moveMeasure = (measureIndex: number, direction: -1 | 1) => {
+        const targetIndex = measureIndex + direction;
+
+        if (targetIndex < 0 || targetIndex >= form.data.outcome_measures.length)
+            return;
+
+        const measures = [...form.data.outcome_measures];
+        [measures[measureIndex], measures[targetIndex]] = [
+            measures[targetIndex],
+            measures[measureIndex],
+        ];
+        form.setData('outcome_measures', measures);
+    };
+
+    const addMeasure = () => {
+        form.setData('outcome_measures', [
+            ...form.data.outcome_measures,
+            { id: null, key: null, label: '', unit: '', retired: false },
+        ]);
+    };
+
+    const updateTaxonomy = (
+        taxonomyIndex: number,
+        attributes: Partial<ProgramTaxonomy>,
+    ) => {
+        form.setData(
+            'taxonomies',
+            form.data.taxonomies.map((taxonomy, index) =>
+                index === taxonomyIndex
+                    ? { ...taxonomy, ...attributes }
+                    : taxonomy,
+            ),
+        );
+    };
+
+    const moveTaxonomy = (taxonomyIndex: number, direction: -1 | 1) => {
+        const targetIndex = taxonomyIndex + direction;
+
+        if (targetIndex < 0 || targetIndex >= form.data.taxonomies.length)
+            return;
+
+        const taxonomies = [...form.data.taxonomies];
+        [taxonomies[taxonomyIndex], taxonomies[targetIndex]] = [
+            taxonomies[targetIndex],
+            taxonomies[taxonomyIndex],
+        ];
+        form.setData('taxonomies', taxonomies);
+    };
+
+    const addTaxonomy = () => {
+        form.setData('taxonomies', [
+            ...form.data.taxonomies,
+            { id: null, key: null, label: '', retired: false, values: [] },
+        ]);
+    };
+
+    const updateTaxonomyValue = (
+        taxonomyIndex: number,
+        valueIndex: number,
+        attributes: Partial<TaxonomyValue>,
+    ) => {
+        const taxonomy = form.data.taxonomies[taxonomyIndex];
+        updateTaxonomy(taxonomyIndex, {
+            values: taxonomy.values.map((value, index) =>
+                index === valueIndex ? { ...value, ...attributes } : value,
+            ),
+        });
+    };
+
+    const addTaxonomyValue = (taxonomyIndex: number) => {
+        const taxonomy = form.data.taxonomies[taxonomyIndex];
+        updateTaxonomy(taxonomyIndex, {
+            values: [
+                ...taxonomy.values,
+                { id: null, key: null, label: '', retired: false },
+            ],
+        });
+    };
+
+    const moveTaxonomyValue = (
+        taxonomyIndex: number,
+        valueIndex: number,
+        direction: -1 | 1,
+    ) => {
+        const taxonomy = form.data.taxonomies[taxonomyIndex];
+        const targetIndex = valueIndex + direction;
+
+        if (targetIndex < 0 || targetIndex >= taxonomy.values.length) return;
+
+        const values = [...taxonomy.values];
+        [values[valueIndex], values[targetIndex]] = [
+            values[targetIndex],
+            values[valueIndex],
+        ];
+        updateTaxonomy(taxonomyIndex, { values });
     };
 
     const save = (event: FormEvent<HTMLFormElement>) => {
@@ -330,6 +471,463 @@ function ProgramEditor({
                             ))}
                         </div>
                         <InputError message={errors.stages} />
+                    </section>
+
+                    <section className="space-y-4">
+                        <div className="flex flex-wrap items-start justify-between gap-3">
+                            <div>
+                                <h3 className="font-semibold">
+                                    Outcome measures
+                                </h3>
+                                <p className="text-muted-foreground text-sm">
+                                    Define the numeric results staff record when
+                                    closing work. Stable references keep earlier
+                                    outcomes meaningful.
+                                </p>
+                            </div>
+                            {program.canUpdate ? (
+                                <Button
+                                    type="button"
+                                    variant="outline"
+                                    size="sm"
+                                    onClick={addMeasure}
+                                >
+                                    <Plus /> Add measure
+                                </Button>
+                            ) : null}
+                        </div>
+                        <div className="space-y-2">
+                            {form.data.outcome_measures.map(
+                                (measure, measureIndex) => (
+                                    <div
+                                        key={
+                                            measure.id ??
+                                            `new-measure-${measureIndex}`
+                                        }
+                                        className={`grid gap-3 rounded-xl border p-3 md:grid-cols-[1fr_10rem_auto] md:items-start ${
+                                            measure.retired
+                                                ? 'bg-muted/35 border-border/50'
+                                                : 'bg-card'
+                                        }`}
+                                    >
+                                        <div className="grid gap-1">
+                                            <Input
+                                                aria-label={`Outcome measure ${measureIndex + 1} label`}
+                                                value={measure.label}
+                                                onChange={(event) =>
+                                                    updateMeasure(
+                                                        measureIndex,
+                                                        {
+                                                            label: event.target
+                                                                .value,
+                                                        },
+                                                    )
+                                                }
+                                                placeholder="Housing stability"
+                                                disabled={
+                                                    !program.canUpdate ||
+                                                    measure.retired
+                                                }
+                                            />
+                                            <span className="text-muted-foreground font-mono text-xs">
+                                                {measure.key ??
+                                                    'Stable reference created on save'}
+                                            </span>
+                                            <InputError
+                                                message={
+                                                    errors[
+                                                        `outcome_measures.${measureIndex}.label`
+                                                    ]
+                                                }
+                                            />
+                                        </div>
+                                        <div className="grid gap-1">
+                                            <Input
+                                                aria-label={`Outcome measure ${measureIndex + 1} unit`}
+                                                value={measure.unit}
+                                                onChange={(event) =>
+                                                    updateMeasure(
+                                                        measureIndex,
+                                                        {
+                                                            unit: event.target
+                                                                .value,
+                                                        },
+                                                    )
+                                                }
+                                                placeholder="score"
+                                                disabled={
+                                                    !program.canUpdate ||
+                                                    measure.retired
+                                                }
+                                            />
+                                            <span className="text-muted-foreground text-xs">
+                                                Unit
+                                            </span>
+                                        </div>
+                                        {program.canUpdate ? (
+                                            <div className="flex items-center gap-1">
+                                                <Button
+                                                    type="button"
+                                                    variant="ghost"
+                                                    size="icon"
+                                                    aria-label={`Move ${measure.label || 'measure'} up`}
+                                                    disabled={
+                                                        measureIndex === 0
+                                                    }
+                                                    onClick={() =>
+                                                        moveMeasure(
+                                                            measureIndex,
+                                                            -1,
+                                                        )
+                                                    }
+                                                >
+                                                    <ArrowUp />
+                                                </Button>
+                                                <Button
+                                                    type="button"
+                                                    variant="ghost"
+                                                    size="icon"
+                                                    aria-label={`Move ${measure.label || 'measure'} down`}
+                                                    disabled={
+                                                        measureIndex ===
+                                                        form.data
+                                                            .outcome_measures
+                                                            .length -
+                                                            1
+                                                    }
+                                                    onClick={() =>
+                                                        moveMeasure(
+                                                            measureIndex,
+                                                            1,
+                                                        )
+                                                    }
+                                                >
+                                                    <ArrowDown />
+                                                </Button>
+                                                <Button
+                                                    type="button"
+                                                    variant="ghost"
+                                                    size="icon"
+                                                    aria-label={
+                                                        measure.retired
+                                                            ? `Restore ${measure.label}`
+                                                            : `Retire ${measure.label || 'measure'}`
+                                                    }
+                                                    onClick={() =>
+                                                        updateMeasure(
+                                                            measureIndex,
+                                                            {
+                                                                retired:
+                                                                    !measure.retired,
+                                                            },
+                                                        )
+                                                    }
+                                                >
+                                                    {measure.retired ? (
+                                                        <RotateCcw />
+                                                    ) : (
+                                                        <Archive />
+                                                    )}
+                                                </Button>
+                                            </div>
+                                        ) : null}
+                                    </div>
+                                ),
+                            )}
+                        </div>
+                        <InputError message={errors.outcome_measures} />
+                    </section>
+
+                    <section className="space-y-4">
+                        <div className="flex flex-wrap items-start justify-between gap-3">
+                            <div>
+                                <h3 className="font-semibold">Taxonomies</h3>
+                                <p className="text-muted-foreground text-sm">
+                                    Maintain the shared classifications staff
+                                    use, with clear allowed values instead of
+                                    free-form JSON.
+                                </p>
+                            </div>
+                            {program.canUpdate ? (
+                                <Button
+                                    type="button"
+                                    variant="outline"
+                                    size="sm"
+                                    onClick={addTaxonomy}
+                                >
+                                    <Plus /> Add taxonomy
+                                </Button>
+                            ) : null}
+                        </div>
+                        <div className="space-y-3">
+                            {form.data.taxonomies.map(
+                                (taxonomy, taxonomyIndex) => (
+                                    <div
+                                        key={
+                                            taxonomy.id ??
+                                            `new-taxonomy-${taxonomyIndex}`
+                                        }
+                                        className={`space-y-3 rounded-xl border p-4 ${
+                                            taxonomy.retired
+                                                ? 'bg-muted/35 border-border/50'
+                                                : 'bg-card'
+                                        }`}
+                                    >
+                                        <div className="flex flex-wrap items-start gap-2">
+                                            <div className="min-w-56 flex-1">
+                                                <Input
+                                                    aria-label={`Taxonomy ${taxonomyIndex + 1} label`}
+                                                    value={taxonomy.label}
+                                                    onChange={(event) =>
+                                                        updateTaxonomy(
+                                                            taxonomyIndex,
+                                                            {
+                                                                label: event
+                                                                    .target
+                                                                    .value,
+                                                            },
+                                                        )
+                                                    }
+                                                    placeholder="Presenting need"
+                                                    disabled={
+                                                        !program.canUpdate ||
+                                                        taxonomy.retired
+                                                    }
+                                                />
+                                                <span className="text-muted-foreground font-mono text-xs">
+                                                    {taxonomy.key ??
+                                                        'Stable reference created on save'}
+                                                </span>
+                                                <InputError
+                                                    message={
+                                                        errors[
+                                                            `taxonomies.${taxonomyIndex}.label`
+                                                        ]
+                                                    }
+                                                />
+                                            </div>
+                                            {program.canUpdate ? (
+                                                <div className="flex items-center gap-1">
+                                                    <Button
+                                                        type="button"
+                                                        variant="ghost"
+                                                        size="icon"
+                                                        aria-label={`Move ${taxonomy.label || 'taxonomy'} up`}
+                                                        disabled={
+                                                            taxonomyIndex === 0
+                                                        }
+                                                        onClick={() =>
+                                                            moveTaxonomy(
+                                                                taxonomyIndex,
+                                                                -1,
+                                                            )
+                                                        }
+                                                    >
+                                                        <ArrowUp />
+                                                    </Button>
+                                                    <Button
+                                                        type="button"
+                                                        variant="ghost"
+                                                        size="icon"
+                                                        aria-label={`Move ${taxonomy.label || 'taxonomy'} down`}
+                                                        disabled={
+                                                            taxonomyIndex ===
+                                                            form.data.taxonomies
+                                                                .length -
+                                                                1
+                                                        }
+                                                        onClick={() =>
+                                                            moveTaxonomy(
+                                                                taxonomyIndex,
+                                                                1,
+                                                            )
+                                                        }
+                                                    >
+                                                        <ArrowDown />
+                                                    </Button>
+                                                    <Button
+                                                        type="button"
+                                                        variant="ghost"
+                                                        size="icon"
+                                                        aria-label={
+                                                            taxonomy.retired
+                                                                ? `Restore ${taxonomy.label}`
+                                                                : `Retire ${taxonomy.label || 'taxonomy'}`
+                                                        }
+                                                        onClick={() =>
+                                                            updateTaxonomy(
+                                                                taxonomyIndex,
+                                                                {
+                                                                    retired:
+                                                                        !taxonomy.retired,
+                                                                },
+                                                            )
+                                                        }
+                                                    >
+                                                        {taxonomy.retired ? (
+                                                            <RotateCcw />
+                                                        ) : (
+                                                            <Archive />
+                                                        )}
+                                                    </Button>
+                                                </div>
+                                            ) : null}
+                                        </div>
+                                        <div className="space-y-2 border-l pl-4">
+                                            <div className="flex items-center justify-between gap-2">
+                                                <span className="text-sm font-medium">
+                                                    Allowed values
+                                                </span>
+                                                {program.canUpdate &&
+                                                !taxonomy.retired ? (
+                                                    <Button
+                                                        type="button"
+                                                        variant="ghost"
+                                                        size="sm"
+                                                        onClick={() =>
+                                                            addTaxonomyValue(
+                                                                taxonomyIndex,
+                                                            )
+                                                        }
+                                                    >
+                                                        <Plus /> Add value
+                                                    </Button>
+                                                ) : null}
+                                            </div>
+                                            {taxonomy.values.map(
+                                                (value, valueIndex) => (
+                                                    <div
+                                                        key={
+                                                            value.id ??
+                                                            `new-value-${valueIndex}`
+                                                        }
+                                                        className="flex items-start gap-2"
+                                                    >
+                                                        <div className="min-w-40 flex-1">
+                                                            <Input
+                                                                aria-label={`${taxonomy.label || 'Taxonomy'} value ${valueIndex + 1}`}
+                                                                value={
+                                                                    value.label
+                                                                }
+                                                                onChange={(
+                                                                    event,
+                                                                ) =>
+                                                                    updateTaxonomyValue(
+                                                                        taxonomyIndex,
+                                                                        valueIndex,
+                                                                        {
+                                                                            label: event
+                                                                                .target
+                                                                                .value,
+                                                                        },
+                                                                    )
+                                                                }
+                                                                placeholder="Housing"
+                                                                disabled={
+                                                                    !program.canUpdate ||
+                                                                    taxonomy.retired ||
+                                                                    value.retired
+                                                                }
+                                                            />
+                                                            <span className="text-muted-foreground font-mono text-xs">
+                                                                {value.key ??
+                                                                    'Reference created on save'}
+                                                            </span>
+                                                            <InputError
+                                                                message={
+                                                                    errors[
+                                                                        `taxonomies.${taxonomyIndex}.values.${valueIndex}.label`
+                                                                    ]
+                                                                }
+                                                            />
+                                                        </div>
+                                                        {program.canUpdate ? (
+                                                            <div className="flex items-center gap-1">
+                                                                <Button
+                                                                    type="button"
+                                                                    variant="ghost"
+                                                                    size="icon"
+                                                                    aria-label={`Move ${value.label || 'value'} up`}
+                                                                    disabled={
+                                                                        valueIndex ===
+                                                                        0
+                                                                    }
+                                                                    onClick={() =>
+                                                                        moveTaxonomyValue(
+                                                                            taxonomyIndex,
+                                                                            valueIndex,
+                                                                            -1,
+                                                                        )
+                                                                    }
+                                                                >
+                                                                    <ArrowUp />
+                                                                </Button>
+                                                                <Button
+                                                                    type="button"
+                                                                    variant="ghost"
+                                                                    size="icon"
+                                                                    aria-label={`Move ${value.label || 'value'} down`}
+                                                                    disabled={
+                                                                        valueIndex ===
+                                                                        taxonomy
+                                                                            .values
+                                                                            .length -
+                                                                            1
+                                                                    }
+                                                                    onClick={() =>
+                                                                        moveTaxonomyValue(
+                                                                            taxonomyIndex,
+                                                                            valueIndex,
+                                                                            1,
+                                                                        )
+                                                                    }
+                                                                >
+                                                                    <ArrowDown />
+                                                                </Button>
+                                                                <Button
+                                                                    type="button"
+                                                                    variant="ghost"
+                                                                    size="icon"
+                                                                    aria-label={
+                                                                        value.retired
+                                                                            ? `Restore ${value.label}`
+                                                                            : `Retire ${value.label || 'value'}`
+                                                                    }
+                                                                    onClick={() =>
+                                                                        updateTaxonomyValue(
+                                                                            taxonomyIndex,
+                                                                            valueIndex,
+                                                                            {
+                                                                                retired:
+                                                                                    !value.retired,
+                                                                            },
+                                                                        )
+                                                                    }
+                                                                >
+                                                                    {value.retired ? (
+                                                                        <RotateCcw />
+                                                                    ) : (
+                                                                        <Archive />
+                                                                    )}
+                                                                </Button>
+                                                            </div>
+                                                        ) : null}
+                                                    </div>
+                                                ),
+                                            )}
+                                            <InputError
+                                                message={
+                                                    errors[
+                                                        `taxonomies.${taxonomyIndex}.values`
+                                                    ]
+                                                }
+                                            />
+                                        </div>
+                                    </div>
+                                ),
+                            )}
+                        </div>
+                        <InputError message={errors.taxonomies} />
                     </section>
 
                     {program.canUpdate ? (

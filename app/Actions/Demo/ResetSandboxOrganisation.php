@@ -15,7 +15,7 @@ use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Str;
 use LogicException;
 
-/** @phpstan-import-type ScenarioDefinition from BuildOrganisationScenario */
+/** @phpstan-import-type ScenarioDefinition from ScenarioCatalog */
 final class ResetSandboxOrganisation
 {
     public function __construct(

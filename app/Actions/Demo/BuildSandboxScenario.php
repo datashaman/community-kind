@@ -2,9 +2,10 @@
 
 namespace App\Actions\Demo;
 
+use App\Data\Demo\ScenarioCatalog;
 use Ramsey\Uuid\Uuid;
 
-/** @phpstan-import-type ScenarioDefinition from BuildOrganisationScenario */
+/** @phpstan-import-type ScenarioDefinition from ScenarioCatalog */
 final class BuildSandboxScenario
 {
     /**

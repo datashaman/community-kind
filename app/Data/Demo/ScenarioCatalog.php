@@ -7,6 +7,12 @@ use App\Enums\PartyBusinessRole;
 use App\Enums\PartyKind;
 use InvalidArgumentException;
 
+/**
+ * @phpstan-type ProgramDefinition array{name: string, slug: string, configuration: array{labels: array{request: string, case: string}, stages: list<array{key: string, label: string}>, outcome_measures: list<array{key: string, label: string, unit?: string|null}>, taxonomies: list<array{key: string, label: string, values: list<string>}>, intake_fields: list<array<string, mixed>>, eligibility_fields: list<array<string, mixed>>, risk_flags: list<array<string, mixed>>}}
+ * @phpstan-type MemberDefinition array{party_uuid: string, name: string, email: string, telephone: string, owner: bool, role: OrganisationRole|null, program_slugs: list<string>}
+ * @phpstan-type PartyDefinition array{uuid: string, kind: PartyKind, name: string, email?: string, telephone?: string, program_slugs?: list<string>, roles?: list<PartyBusinessRole>, interests?: list<string>}
+ * @phpstan-type ScenarioDefinition array{uuid: string, name: string, slug: string, timezone: string, currency: string, reporting_at: string, synthetic: true, template_slug?: string, sandbox_pair_id?: string, demo_generation?: int, party_population: array<string, int>, programs: list<ProgramDefinition>, members: list<MemberDefinition>, parties: list<PartyDefinition>}
+ */
 final class ScenarioCatalog
 {
     public const VERSION = '2026.4';
@@ -26,15 +32,7 @@ final class ScenarioCatalog
         ];
     }
 
-    /**
-     * @return list<array{
-     *     uuid: string, name: string, slug: string, timezone: string, currency: string, reporting_at: string, synthetic: true,
-     *     party_population: array<string, int>,
-     *     programs: list<array{name: string, slug: string, configuration: array<string, mixed>}>,
-     *     members: list<array{party_uuid: string, name: string, email: string, telephone: string, owner: bool, role: OrganisationRole|null, program_slugs: list<string>}>,
-     *     parties: list<array{uuid: string, kind: PartyKind, name: string, email?: string, telephone?: string, program_slugs?: list<string>, roles?: list<PartyBusinessRole>, interests?: list<string>}>
-     * }>
-     */
+    /** @return list<ScenarioDefinition> */
     public static function organisations(): array
     {
         $organisations = [

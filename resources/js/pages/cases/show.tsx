@@ -869,7 +869,7 @@ export default function CaseShow({
                                                         required
                                                     />
                                                 </div>
-                                                {caseRecord.program.configuration.outcome_measures.map(
+                                                {caseRecord.program.outcomeMeasures.map(
                                                     (measure: any) => (
                                                         <div
                                                             key={measure.key}

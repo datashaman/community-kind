@@ -27,7 +27,7 @@ class ProgramController extends Controller
 
         return Inertia::render('programs/index', [
             'programs' => Program::query()
-                ->with('stages')
+                ->with(['stages', 'outcomeMeasures', 'taxonomies.values'])
                 ->orderBy('name')
                 ->get(['id', 'organisation_id', 'name', 'slug', 'request_label', 'case_label', 'configuration'])
                 ->map(fn (Program $program): array => $this->serializeProgram($program) + [
@@ -41,7 +41,7 @@ class ProgramController extends Controller
         $program = $this->findProgram($program);
         Gate::authorize('view', $program);
 
-        return response()->json($this->serializeProgram($program->load('stages')));
+        return response()->json($this->serializeProgram($program->load(['stages', 'outcomeMeasures', 'taxonomies.values'])));
     }
 
     public function update(UpdateProgramRequest $request, Organisation $organisation, string $program, UpdateProgram $updateProgram): JsonResponse|RedirectResponse
@@ -93,6 +93,8 @@ class ProgramController extends Controller
      *     request_label?: string,
      *     case_label?: string,
      *     stages?: list<array{id: int|null, label: string, retired: bool}>,
+     *     outcome_measures?: list<array{id: int|null, label: string, unit: string|null, retired: bool}>,
+     *     taxonomies?: list<array{id: int|null, label: string, retired: bool, values: list<array{id: int|null, label: string, retired: bool}>}>,
      *     configuration?: array<string, mixed>
      * }
      */
@@ -122,6 +124,32 @@ class ProgramController extends Controller
             ], $stages);
         }
 
+        if ($request->has('outcome_measures')) {
+            /** @var list<array{id?: int|null, label: string, unit?: string|null, retired: bool}> $outcomeMeasures */
+            $outcomeMeasures = $request->validated('outcome_measures');
+            $attributes['outcome_measures'] = array_map(fn (array $measure): array => [
+                'id' => isset($measure['id']) ? (int) $measure['id'] : null,
+                'label' => $measure['label'],
+                'unit' => $measure['unit'] ?? null,
+                'retired' => $measure['retired'],
+            ], $outcomeMeasures);
+        }
+
+        if ($request->has('taxonomies')) {
+            /** @var list<array{id?: int|null, label: string, retired: bool, values: list<array{id?: int|null, label: string, retired: bool}>}> $taxonomies */
+            $taxonomies = $request->validated('taxonomies');
+            $attributes['taxonomies'] = array_map(fn (array $taxonomy): array => [
+                'id' => isset($taxonomy['id']) ? (int) $taxonomy['id'] : null,
+                'label' => $taxonomy['label'],
+                'retired' => $taxonomy['retired'],
+                'values' => array_map(fn (array $value): array => [
+                    'id' => isset($value['id']) ? (int) $value['id'] : null,
+                    'label' => $value['label'],
+                    'retired' => $value['retired'],
+                ], $taxonomy['values']),
+            ], $taxonomies);
+        }
+
         if ($request->has('configuration') && is_array($configuration)) {
             /** @var array<string, mixed> $configuration */
             $attributes['configuration'] = $configuration;
@@ -140,6 +168,25 @@ class ProgramController extends Controller
                 'key' => $stage->key,
                 'label' => $stage->label,
                 'retired' => $stage->retired_at !== null,
+            ])->values(),
+            'outcome_measures' => $program->outcomeMeasures->map(fn ($measure): array => [
+                'id' => $measure->id,
+                'key' => $measure->key,
+                'label' => $measure->label,
+                'unit' => $measure->unit,
+                'retired' => $measure->retired_at !== null,
+            ])->values(),
+            'taxonomies' => $program->taxonomies->map(fn ($taxonomy): array => [
+                'id' => $taxonomy->id,
+                'key' => $taxonomy->key,
+                'label' => $taxonomy->label,
+                'retired' => $taxonomy->retired_at !== null,
+                'values' => $taxonomy->values->map(fn ($value): array => [
+                    'id' => $value->id,
+                    'key' => $value->key,
+                    'label' => $value->label,
+                    'retired' => $value->retired_at !== null,
+                ])->values(),
             ])->values(),
         ];
     }

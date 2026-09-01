@@ -25,6 +25,8 @@ use Laravel\Scout\Searchable;
  * @property array<string, mixed> $configuration
  * @property-read Organisation $organisation
  * @property-read Collection<int, ProgramStage> $stages
+ * @property-read Collection<int, ProgramOutcomeMeasure> $outcomeMeasures
+ * @property-read Collection<int, ProgramTaxonomy> $taxonomies
  */
 #[Fillable(['organisation_id', 'name', 'slug', 'request_label', 'case_label', 'configuration'])]
 class Program extends Model
@@ -65,6 +67,18 @@ class Program extends Model
     public function stages(): HasMany
     {
         return $this->hasMany(ProgramStage::class)->orderBy('position')->orderBy('id');
+    }
+
+    /** @return HasMany<ProgramOutcomeMeasure, $this> */
+    public function outcomeMeasures(): HasMany
+    {
+        return $this->hasMany(ProgramOutcomeMeasure::class)->orderBy('position')->orderBy('id');
+    }
+
+    /** @return HasMany<ProgramTaxonomy, $this> */
+    public function taxonomies(): HasMany
+    {
+        return $this->hasMany(ProgramTaxonomy::class)->orderBy('position')->orderBy('id');
     }
 
     /** @return array<string, int|string> */

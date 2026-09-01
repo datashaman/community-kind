@@ -34,10 +34,6 @@ function intakeWorkflowFixture(): array
     $workerMembership = $organisation->memberships()->create(['user_id' => $worker->id, 'role' => OrganisationRole::CaseWorker]);
     [$program, $party] = app(OrganisationContext::class)->run($organisation, function () use ($organisation, $managerMembership, $workerMembership): array {
         $program = Program::factory()->for($organisation)->create(['configuration' => [
-            'labels' => ['request' => 'Housing request', 'case' => 'Housing journey'],
-            'stages' => [['key' => 'received', 'label' => 'Received']],
-            'outcome_measures' => [['key' => 'housing_stability', 'label' => 'Housing stability', 'unit' => 'score']],
-            'taxonomies' => [['key' => 'need', 'label' => 'Need', 'values' => ['Housing']]],
             'intake_fields' => [['key' => 'current_situation', 'label' => 'Current situation', 'type' => 'textarea', 'required' => true]],
             'eligibility_fields' => [['key' => 'service_area', 'label' => 'Lives in service area']],
             'risk_flags' => [['key' => 'housing_loss', 'label' => 'At risk of losing housing']],
