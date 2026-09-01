@@ -32,6 +32,12 @@ class SupporterJourneyController extends Controller
     public function index(Organisation $currentOrganisation): Response
     {
         Gate::authorize('viewAny', [SupporterJourney::class, $currentOrganisation]);
+        $activePolicy = OrganisationConfiguration::query()
+            ->where('area', OrganisationConfigurationArea::SupporterJourney)
+            ->where('configuration_key', 'default')
+            ->where('status', OrganisationConfigurationStatus::Active)
+            ->latest('version')
+            ->first();
 
         return Inertia::render('supporter-journeys/index', [
             'journeys' => SupporterJourney::query()->withCount('recipients')->latest()->get()->map(fn (SupporterJourney $journey): array => [
@@ -41,7 +47,20 @@ class SupporterJourneyController extends Controller
                 'recipientCount' => $journey->recipients_count,
             ]),
             'segments' => AudienceSegment::query()->orderBy('name')->get(['id', 'name']),
-            'templates' => OrganisationConfiguration::query()->where('area', OrganisationConfigurationArea::MessageTemplate)->where('status', OrganisationConfigurationStatus::Active)->orderBy('configuration_key')->get()->map(fn (OrganisationConfiguration $configuration): array => ['key' => $configuration->configuration_key, 'channel' => $configuration->definition['channel'], 'journeyKind' => $configuration->definition['journey_kind']]),
+            'policyDefaults' => $activePolicy instanceof OrganisationConfiguration ? [
+                'templateId' => $activePolicy->definition['default_message_template_id'] ?? null,
+                'journeyKind' => $activePolicy->definition['default_kind'],
+                'channel' => $activePolicy->definition['default_channel'],
+            ] : null,
+            'templates' => OrganisationConfiguration::query()->where('area', OrganisationConfigurationArea::MessageTemplate)->whereIn('status', [OrganisationConfigurationStatus::Active->value, OrganisationConfigurationStatus::Superseded->value])->orderBy('configuration_key')->orderByDesc('version')->get()->map(fn (OrganisationConfiguration $configuration): array => [
+                'key' => $configuration->configuration_key,
+                'id' => $configuration->id,
+                'name' => Str::of($configuration->configuration_key)->replace(['-', '_'], ' ')->title()->toString(),
+                'version' => $configuration->version,
+                'status' => $configuration->status->value,
+                'channel' => $configuration->definition['channel'],
+                'journeyKind' => $configuration->definition['journey_kind'],
+            ]),
         ]);
     }
 

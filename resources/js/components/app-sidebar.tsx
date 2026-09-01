@@ -41,6 +41,7 @@ import { index as impactSnapshotsIndex } from '@/routes/impact-snapshots';
 import { index as partiesIndex } from '@/routes/parties';
 import { index as programsIndex } from '@/routes/programs';
 import { index as supporterJourneysIndex } from '@/routes/supporter-journeys';
+import { index as supporterJourneyPolicyIndex } from '@/routes/supporter-journey-policy';
 import { index as volunteersIndex } from '@/routes/volunteers';
 import type { NavItem } from '@/types';
 
@@ -146,6 +147,13 @@ export function AppSidebar() {
                           page.props.currentOrganisation.slug,
                       ),
                       icon: MessagesSquare,
+                  },
+                  {
+                      title: 'Journey policy',
+                      href: supporterJourneyPolicyIndex(
+                          page.props.currentOrganisation.slug,
+                      ),
+                      icon: SlidersHorizontal,
                   },
                   {
                       title: 'Organisation configuration',

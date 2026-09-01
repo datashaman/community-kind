@@ -23,17 +23,6 @@ const examples: Record<string, string> = {
         null,
         2,
     ),
-    supporter_journey: JSON.stringify(
-        {
-            default_kind: 're_engagement',
-            default_channel: 'email',
-            require_approval: true,
-            dispatch_rechecks_consent: true,
-            frequency_cap_days: 7,
-        },
-        null,
-        2,
-    ),
     intake_rules: JSON.stringify(
         {
             required_fields: ['party_uuid', 'email', 'presenting_needs'],
@@ -113,10 +102,9 @@ export default function OrganisationConfigurationsIndex({
                                     />
                                     <small className="text-muted-foreground">
                                         Use impact for reporting, default for
-                                        journey or intake defaults, and the form
-                                        name (for example
-                                        volunteer_registration) for public
-                                        forms.
+                                        intake defaults, and the form name (for
+                                        example volunteer_registration) for
+                                        public forms.
                                     </small>
                                 </label>
                                 <label className="grid gap-1">

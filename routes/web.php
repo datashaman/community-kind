@@ -33,6 +33,7 @@ use App\Http\Controllers\Organisations\PublishedImpactSnapshotController;
 use App\Http\Controllers\Organisations\ServiceCaseController;
 use App\Http\Controllers\Organisations\ServiceOperationsExportController;
 use App\Http\Controllers\Organisations\SupporterJourneyController;
+use App\Http\Controllers\Organisations\SupporterJourneyPolicyController;
 use App\Http\Controllers\Organisations\TenantAuditEventController;
 use App\Http\Controllers\Organisations\VolunteerOpportunityController;
 use App\Http\Controllers\Portal\PortalAccessController;
@@ -166,6 +167,9 @@ Route::prefix('{current_organisation}')
         Route::get('message-templates', [MessageTemplateController::class, 'index'])->name('message-templates.index');
         Route::post('message-templates', [MessageTemplateController::class, 'store'])->name('message-templates.store');
         Route::post('message-templates/{messageTemplate}/activate', [MessageTemplateController::class, 'activate'])->name('message-templates.activate');
+        Route::get('supporter-journey-policy', [SupporterJourneyPolicyController::class, 'index'])->name('supporter-journey-policy.index');
+        Route::post('supporter-journey-policy', [SupporterJourneyPolicyController::class, 'store'])->name('supporter-journey-policy.store');
+        Route::post('supporter-journey-policy/{supporterJourneyPolicy}/activate', [SupporterJourneyPolicyController::class, 'activate'])->name('supporter-journey-policy.activate');
         Route::get('impact-snapshots', [PublishedImpactSnapshotController::class, 'index'])->name('impact-snapshots.index');
         Route::post('impact-snapshots', [PublishedImpactSnapshotController::class, 'store'])->name('impact-snapshots.store');
         Route::get('impact-snapshots/{snapshot}/download', [PublishedImpactSnapshotController::class, 'download'])->name('impact-snapshots.download');
