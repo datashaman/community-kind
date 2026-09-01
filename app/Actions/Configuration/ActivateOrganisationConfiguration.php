@@ -29,11 +29,23 @@ final class ActivateOrganisationConfiguration
                 throw new LogicException('Only the latest configuration version can be activated. Create a new version to roll back.');
             }
             $this->validate->handle($locked->area, $locked->definition);
-            OrganisationConfiguration::query()
+            /*
+             * Superseded one row at a time rather than as a query-builder
+             * update. A mass update fires no model events, so the status
+             * transition guard on the model never ran for this path: it looked
+             * protected but was not. Only versions that are actually active are
+             * touched; every other status is left as it is.
+             */
+            $superseding = OrganisationConfiguration::query()
                 ->where('area', $locked->area)
                 ->where('configuration_key', $locked->configuration_key)
                 ->where('status', OrganisationConfigurationStatus::Active)
-                ->update(['status' => OrganisationConfigurationStatus::Superseded]);
+                ->lockForUpdate()
+                ->get();
+
+            foreach ($superseding as $active) {
+                $active->update(['status' => OrganisationConfigurationStatus::Superseded]);
+            }
             $locked->update(['status' => OrganisationConfigurationStatus::Active, 'activated_by_user_id' => $actor->id, 'activated_at' => now()]);
             $this->recordAudit->handle($locked->organisation, TenantAuditEventType::OrganisationConfigurationActivated, 'organisation_configuration', $locked->id, ['configuration_id' => $locked->id, 'area' => $locked->area->value, 'configuration_key' => $locked->configuration_key, 'version' => $locked->version], $actor);
 
