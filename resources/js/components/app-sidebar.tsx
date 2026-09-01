@@ -39,7 +39,6 @@ import { index as donationsIndex } from '@/routes/donations';
 import { index as intakesIndex } from '@/routes/intakes';
 import { index as intakeRulesIndex } from '@/routes/intake-rules';
 import { index as messageTemplatesIndex } from '@/routes/message-templates';
-import { index as configurationsIndex } from '@/routes/organisation-configurations';
 import { index as impactSnapshotsIndex } from '@/routes/impact-snapshots';
 import { index as partiesIndex } from '@/routes/parties';
 import { index as programsIndex } from '@/routes/programs';
@@ -180,13 +179,6 @@ export function AppSidebar() {
                           page.props.currentOrganisation.slug,
                       ),
                       icon: BarChart3,
-                  },
-                  {
-                      title: 'Organisation configuration',
-                      href: configurationsIndex(
-                          page.props.currentOrganisation.slug,
-                      ),
-                      icon: SlidersHorizontal,
                   },
               ]
             : []),

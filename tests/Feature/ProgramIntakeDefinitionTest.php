@@ -24,7 +24,7 @@ function programIntakeDefinitionFixture(): array
     $managerMembership = $organisation->memberships()->create(['user_id' => $manager->id, 'role' => OrganisationRole::ProgramManager]);
 
     return app(OrganisationContext::class)->run($organisation, function () use ($administrator, $manager, $managerMembership, $organisation): array {
-        $program = Program::factory()->for($organisation)->create(['configuration' => []]);
+        $program = Program::factory()->for($organisation)->create();
         $managerMembership->programs()->attach($program);
         $party = Party::factory()->for($organisation)->create();
         $party->programs()->attach($program);
@@ -79,8 +79,7 @@ it('manages ordered intake eligibility and risk definitions without JSON', funct
         ->assertJsonPath('risk_flags.1.key', 'immediate_safety_concern');
 
     app(OrganisationContext::class)->run($organisation, function () use ($program): void {
-        expect($program->refresh()->configuration)->toBe([])
-            ->and($program->intakeFields()->pluck('key')->all())->toBe(['preferred_contact_date', 'current_situation'])
+        expect($program->intakeFields()->pluck('key')->all())->toBe(['preferred_contact_date', 'current_situation'])
             ->and($program->eligibilityQuestions()->pluck('key')->all())->toBe(['service_area', 'program_is_a_good_fit'])
             ->and($program->riskFlags()->pluck('key')->all())->toBe(['housing_loss', 'immediate_safety_concern']);
     });

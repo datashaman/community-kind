@@ -233,19 +233,17 @@ it('validates safeguards and removes journey policy from the generic JSON workfl
         ])
         ->assertSessionHasErrors('default_message_template_id');
     $this->actingAs($administrator)
-        ->get(route('organisation-configurations.index', $organisation))
-        ->assertInertia(fn (Assert $page) => $page
-            ->where('areas', fn ($areas) => collect($areas)->doesntContain('value', 'supporter_journey'))
-            ->where('configurations', fn ($configurations) => collect($configurations)->doesntContain('area', 'supporter_journey')));
+        ->get("/{$organisation->slug}/organisation-configurations")
+        ->assertNotFound();
     $this->actingAs($administrator)
-        ->post(route('organisation-configurations.store', $organisation), [
+        ->post("/{$organisation->slug}/organisation-configurations", [
             'area' => 'supporter_journey',
             'configuration_key' => 'default',
             'definition_json' => '{}',
         ])
-        ->assertSessionHasErrors('area');
+        ->assertNotFound();
     $this->actingAs($administrator)
-        ->post(route('organisation-configurations.activate', [$organisation, $draftPolicy]))
+        ->post("/{$organisation->slug}/organisation-configurations/{$draftPolicy->id}/activate")
         ->assertNotFound();
     $this->actingAs($officer)
         ->get(route('supporter-journey-policy.index', $organisation))

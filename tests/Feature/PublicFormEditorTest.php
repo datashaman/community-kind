@@ -103,17 +103,15 @@ it('rejects malformed form definitions and the generic JSON workflow', function 
         ])
         ->assertSessionHasErrors(['ordered_fields.1', 'ordered_fields', 'required_fields']);
     $this->actingAs($administrator)
-        ->get(route('organisation-configurations.index', $organisation))
-        ->assertInertia(fn (Assert $page) => $page
-            ->where('areas', fn ($areas) => collect($areas)->doesntContain('value', 'public_form'))
-            ->where('configurations', fn ($configurations) => collect($configurations)->doesntContain('area', 'public_form')));
+        ->get("/{$organisation->slug}/organisation-configurations")
+        ->assertNotFound();
     $this->actingAs($administrator)
-        ->post(route('organisation-configurations.store', $organisation), [
+        ->post("/{$organisation->slug}/organisation-configurations", [
             'area' => 'public_form',
             'configuration_key' => 'event_registration',
             'definition_json' => '{"form":"event_registration","required_fields":["name","email"]}',
         ])
-        ->assertSessionHasErrors('area');
+        ->assertNotFound();
     $this->actingAs($officer)
         ->get(route('public-forms.index', $organisation))
         ->assertForbidden();
@@ -138,7 +136,7 @@ it('only permits activation of the latest draft for each public form purpose', f
         ->get());
 
     $this->actingAs($administrator)
-        ->post(route('organisation-configurations.activate', [$organisation, $drafts->last()]))
+        ->post("/{$organisation->slug}/organisation-configurations/{$drafts->last()->id}/activate")
         ->assertNotFound();
     $this->actingAs($administrator)
         ->post(route('public-forms.activate', [$organisation, $drafts->first()]))

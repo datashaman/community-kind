@@ -33,7 +33,7 @@ use Mockery\MockInterface;
 function caseConfidentialityFixture(): array
 {
     $organisation = Organisation::factory()->active()->create();
-    $program = app(OrganisationContext::class)->run($organisation, fn (): Program => Program::factory()->for($organisation)->create(['configuration' => ['case_default_classification' => 'highly_restricted']]));
+    $program = app(OrganisationContext::class)->run($organisation, fn (): Program => Program::factory()->for($organisation)->create(['case_default_classification' => CaseClassification::HighlyRestricted]));
     $users = collect(['manager', 'worker', 'engagement', 'administrator', 'owner', 'executive'])
         ->mapWithKeys(fn (string $key): array => [$key => User::factory()->create()]);
     $managerMembership = $organisation->memberships()->create(['user_id' => $users['manager']->id, 'role' => OrganisationRole::ProgramManager]);

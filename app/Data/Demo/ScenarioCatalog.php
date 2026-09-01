@@ -8,7 +8,7 @@ use App\Enums\PartyKind;
 use InvalidArgumentException;
 
 /**
- * @phpstan-type ProgramDefinition array{name: string, slug: string, configuration: array{labels: array{request: string, case: string}, stages: list<array{key: string, label: string}>, outcome_measures: list<array{key: string, label: string, unit?: string|null}>, taxonomies: list<array{key: string, label: string, values: list<string>}>, intake_fields: list<array{key: string, label: string, type: string, required: bool}>, eligibility_fields: list<array{key: string, label: string, required?: bool}>, risk_flags: list<array{key: string, label: string}>}}
+ * @phpstan-type ProgramDefinition array{name: string, slug: string, request_label: string, case_label: string, stages: list<array{key: string, label: string}>, outcome_measures: list<array{key: string, label: string, unit?: string|null}>, taxonomies: list<array{key: string, label: string, values: list<string>}>, intake_fields: list<array{key: string, label: string, type: string, required: bool}>, eligibility_questions: list<array{key: string, label: string, required?: bool}>, risk_flags: list<array{key: string, label: string}>}
  * @phpstan-type MemberDefinition array{party_uuid: string, name: string, email: string, telephone: string, owner: bool, role: OrganisationRole|null, program_slugs: list<string>}
  * @phpstan-type PartyDefinition array{uuid: string, kind: PartyKind, name: string, email?: string, telephone?: string, program_slugs?: list<string>, roles?: list<PartyBusinessRole>, interests?: list<string>}
  * @phpstan-type ScenarioDefinition array{uuid: string, name: string, slug: string, timezone: string, currency: string, reporting_at: string, synthetic: true, template_slug?: string, sandbox_pair_id?: string, demo_generation?: int, party_population: array<string, int>, programs: list<ProgramDefinition>, members: list<MemberDefinition>, parties: list<PartyDefinition>}
@@ -151,30 +151,29 @@ final class ScenarioCatalog
 
     /**
      * @param  array<string, string>  $stages
-     * @return array{name: string, slug: string, configuration: array{labels: array{request: string, case: string}, stages: list<array{key: string, label: string}>, outcome_measures: list<array{key: string, label: string, unit: string}>, taxonomies: list<array{key: string, label: string, values: list<string>}>, intake_fields: list<array{key: string, label: string, type: string, required: bool}>, eligibility_fields: list<array{key: string, label: string}>, risk_flags: list<array{key: string, label: string}>}}
+     * @return ProgramDefinition
      */
     private static function program(string $name, string $slug, string $requestLabel, string $caseLabel, array $stages): array
     {
         return [
             'name' => $name,
             'slug' => $slug,
-            'configuration' => [
-                'labels' => ['request' => $requestLabel, 'case' => $caseLabel],
-                'stages' => array_values(collect($stages)->map(fn (string $label, string $key): array => compact('key', 'label'))->all()),
-                'outcome_measures' => [['key' => 'progress', 'label' => 'Progress', 'unit' => 'score']],
-                'taxonomies' => [['key' => 'need', 'label' => 'Presenting need', 'values' => ['Housing', 'Food', 'Employment', 'Connection']]],
-                'intake_fields' => [
-                    ['key' => 'preferred_contact_time', 'label' => 'Preferred contact time', 'type' => 'text', 'required' => false],
-                    ['key' => 'current_situation', 'label' => 'Current situation', 'type' => 'textarea', 'required' => true],
-                ],
-                'eligibility_fields' => [
-                    ['key' => 'service_area', 'label' => 'Lives in the service area'],
-                    ['key' => 'program_fit', 'label' => 'Request fits the Program remit'],
-                ],
-                'risk_flags' => [
-                    ['key' => 'immediate_safety', 'label' => 'Immediate safety concern'],
-                    ['key' => 'housing_loss', 'label' => 'At risk of losing housing'],
-                ],
+            'request_label' => $requestLabel,
+            'case_label' => $caseLabel,
+            'stages' => array_values(collect($stages)->map(fn (string $label, string $key): array => compact('key', 'label'))->all()),
+            'outcome_measures' => [['key' => 'progress', 'label' => 'Progress', 'unit' => 'score']],
+            'taxonomies' => [['key' => 'need', 'label' => 'Presenting need', 'values' => ['Housing', 'Food', 'Employment', 'Connection']]],
+            'intake_fields' => [
+                ['key' => 'preferred_contact_time', 'label' => 'Preferred contact time', 'type' => 'text', 'required' => false],
+                ['key' => 'current_situation', 'label' => 'Current situation', 'type' => 'textarea', 'required' => true],
+            ],
+            'eligibility_questions' => [
+                ['key' => 'service_area', 'label' => 'Lives in the service area'],
+                ['key' => 'program_fit', 'label' => 'Request fits the Program remit'],
+            ],
+            'risk_flags' => [
+                ['key' => 'immediate_safety', 'label' => 'Immediate safety concern'],
+                ['key' => 'housing_loss', 'label' => 'At risk of losing housing'],
             ],
         ];
     }

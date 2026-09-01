@@ -109,17 +109,15 @@ it('validates safeguards and removes intake rules from the generic JSON workflow
         ])
         ->assertSessionHasErrors(['required_contact_fields.0', 'default_urgency', 'allow_restricted_access_bypass']);
     $this->actingAs($administrator)
-        ->get(route('organisation-configurations.index', $organisation))
-        ->assertInertia(fn (Assert $page) => $page
-            ->where('areas', fn ($areas) => collect($areas)->doesntContain('value', 'intake_rules'))
-            ->where('configurations', fn ($configurations) => collect($configurations)->doesntContain('area', 'intake_rules')));
+        ->get("/{$organisation->slug}/organisation-configurations")
+        ->assertNotFound();
     $this->actingAs($administrator)
-        ->post(route('organisation-configurations.store', $organisation), [
+        ->post("/{$organisation->slug}/organisation-configurations", [
             'area' => 'intake_rules',
             'configuration_key' => 'default',
             'definition_json' => '{}',
         ])
-        ->assertSessionHasErrors('area');
+        ->assertNotFound();
     $this->actingAs($officer)
         ->get(route('intake-rules.index', $organisation))
         ->assertForbidden();
@@ -148,7 +146,7 @@ it('only permits activation of the latest intake rules draft', function () {
             ->where('rules.0.canActivate', true)
             ->where('rules.1.canActivate', false));
     $this->actingAs($administrator)
-        ->post(route('organisation-configurations.activate', [$organisation, $drafts->last()]))
+        ->post("/{$organisation->slug}/organisation-configurations/{$drafts->last()->id}/activate")
         ->assertNotFound();
     $this->actingAs($administrator)
         ->post(route('intake-rules.activate', [$organisation, $drafts->first()]))

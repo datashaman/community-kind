@@ -3,6 +3,7 @@
 namespace App\Models;
 
 use App\Concerns\BelongsToOrganisation;
+use App\Enums\CaseClassification;
 use App\OrganisationContext;
 use Database\Factories\ProgramFactory;
 use Illuminate\Database\Eloquent\Attributes\Fillable;
@@ -22,7 +23,7 @@ use Laravel\Scout\Searchable;
  * @property string $slug
  * @property string $request_label
  * @property string $case_label
- * @property array<string, mixed> $configuration
+ * @property CaseClassification $case_default_classification
  * @property-read Organisation $organisation
  * @property-read Collection<int, ProgramStage> $stages
  * @property-read Collection<int, ProgramOutcomeMeasure> $outcomeMeasures
@@ -31,7 +32,7 @@ use Laravel\Scout\Searchable;
  * @property-read Collection<int, ProgramEligibilityQuestion> $eligibilityQuestions
  * @property-read Collection<int, ProgramRiskFlag> $riskFlags
  */
-#[Fillable(['organisation_id', 'name', 'slug', 'request_label', 'case_label', 'configuration'])]
+#[Fillable(['organisation_id', 'name', 'slug', 'request_label', 'case_label', 'case_default_classification'])]
 class Program extends Model
 {
     /** @use HasFactory<ProgramFactory> */
@@ -113,9 +114,9 @@ class Program extends Model
         ];
     }
 
-    /** @return array<string, string> */
+    /** @return array<string, class-string> */
     protected function casts(): array
     {
-        return ['configuration' => 'array'];
+        return ['case_default_classification' => CaseClassification::class];
     }
 }

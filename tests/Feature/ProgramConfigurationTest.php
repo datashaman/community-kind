@@ -1,5 +1,6 @@
 <?php
 
+use App\Enums\CaseClassification;
 use App\Enums\OrganisationRole;
 use App\Models\Organisation;
 use App\Models\Program;
@@ -22,7 +23,6 @@ function createProgramConfigurationFixture(): array
         $program = Program::factory()->for($organisation)->create([
             'request_label' => 'Request',
             'case_label' => 'Case',
-            'configuration' => [],
         ]);
         $received = $program->stages()->create(['key' => 'received', 'label' => 'Received', 'position' => 0]);
         $active = $program->stages()->create(['key' => 'active', 'label' => 'Active', 'position' => 1]);
@@ -40,6 +40,7 @@ it('lets an administrator manage Program terminology and an ordered service path
             'slug' => $program->slug,
             'request_label' => 'Support request',
             'case_label' => 'Support journey',
+            'case_default_classification' => 'highly_restricted',
             'stages' => [
                 ['id' => $active->id, 'key' => $active->key, 'label' => 'Working together', 'retired' => false],
                 ['id' => $received->id, 'key' => $received->key, 'label' => 'Received', 'retired' => true],
@@ -49,6 +50,7 @@ it('lets an administrator manage Program terminology and an ordered service path
         ->assertOk()
         ->assertJsonPath('request_label', 'Support request')
         ->assertJsonPath('case_label', 'Support journey')
+        ->assertJsonPath('case_default_classification', 'highly_restricted')
         ->assertJsonPath('stages.0.key', 'active')
         ->assertJsonPath('stages.0.label', 'Working together')
         ->assertJsonPath('stages.1.retired', true)
@@ -59,7 +61,7 @@ it('lets an administrator manage Program terminology and an ordered service path
 
         expect($program->request_label)->toBe('Support request')
             ->and($program->case_label)->toBe('Support journey')
-            ->and($program->configuration)->toBe([])
+            ->and($program->case_default_classification)->toBe(CaseClassification::HighlyRestricted)
             ->and($program->stages()->pluck('key')->all())->toBe(['active', 'received', 'review_progress'])
             ->and($received->refresh()->retired_at)->not->toBeNull();
     });
