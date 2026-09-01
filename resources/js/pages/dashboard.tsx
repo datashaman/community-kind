@@ -74,11 +74,11 @@ type ServiceOperations = {
 };
 
 const queueDefinitions = [
-    { key: 'caseload', label: 'Active caseload' },
-    { key: 'waitlist', label: 'Waitlist' },
-    { key: 'overdue', label: 'Overdue actions' },
-    { key: 'risks', label: 'Unresolved risks' },
-    { key: 'referrals', label: 'External referrals' },
+    { key: 'caseload', label: 'Active caseload', accent: 'border-t-service' },
+    { key: 'waitlist', label: 'Waitlist', accent: 'border-t-saffron' },
+    { key: 'overdue', label: 'Overdue actions', accent: 'border-t-coral' },
+    { key: 'risks', label: 'Unresolved risks', accent: 'border-t-coral' },
+    { key: 'referrals', label: 'External referrals', accent: 'border-t-leaf' },
 ] as const;
 
 type QueueKey = (typeof queueDefinitions)[number]['key'];
@@ -101,22 +101,22 @@ export default function Dashboard({
                 open={pendingInvitations.length > 0 && showInvitations}
                 onOpenChange={setShowInvitations}
             />
-            <main className="flex h-full flex-1 flex-col gap-6 overflow-x-auto rounded-xl p-4">
+            <main className="flex h-full flex-1 flex-col gap-6 overflow-x-auto rounded-xl p-4 sm:p-6">
                 {impact ? <ImpactMetrics impact={impact} /> : null}
                 <div className="flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
                     <div>
-                        <h1 className="text-2xl font-semibold">
+                        <h1 className="text-3xl font-semibold tracking-tight">
                             Service operations
                         </h1>
                         <p className="text-muted-foreground mt-1 text-sm">
                             Work requiring attention within your current scope.
                         </p>
                     </div>
-                    <div className="flex flex-wrap gap-2">
+                    <div className="flex w-full flex-col gap-2 sm:w-auto sm:flex-row sm:flex-wrap">
                         <Form
                             action={dashboard.url(organisation.slug)}
                             method="get"
-                            className="flex gap-2"
+                            className="flex w-full flex-col gap-2 sm:w-auto sm:flex-row"
                         >
                             <label className="sr-only" htmlFor="program-filter">
                                 Filter by program
@@ -127,7 +127,7 @@ export default function Dashboard({
                                 defaultValue={
                                     serviceOperations.selectedProgramId ?? ''
                                 }
-                                className="h-9 rounded-md border bg-transparent px-3"
+                                className="bg-card h-9 w-full rounded-md border px-3 sm:w-auto"
                             >
                                 <option value="">
                                     All authorised programs
@@ -164,8 +164,8 @@ export default function Dashboard({
                     aria-label="Work queue counts"
                     className="grid gap-3 sm:grid-cols-2 xl:grid-cols-5"
                 >
-                    {queueDefinitions.map(({ key, label }) => (
-                        <Card key={key}>
+                    {queueDefinitions.map(({ key, label, accent }) => (
+                        <Card key={key} className={`border-t-4 ${accent}`}>
                             <CardHeader className="pb-2">
                                 <CardTitle className="text-sm font-medium">
                                     {label}
@@ -194,9 +194,15 @@ export default function Dashboard({
                                 </CardHeader>
                                 <CardContent>
                                     {rows.length === 0 ? (
-                                        <p className="text-muted-foreground text-sm">
-                                            No accessible work in this queue.
-                                        </p>
+                                        <div className="bg-muted/40 rounded-lg border border-dashed p-4">
+                                            <p className="font-medium">
+                                                Queue clear
+                                            </p>
+                                            <p className="text-muted-foreground mt-1 text-sm">
+                                                No accessible work in this
+                                                queue.
+                                            </p>
+                                        </div>
                                     ) : (
                                         <ul
                                             className="divide-y"

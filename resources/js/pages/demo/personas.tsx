@@ -24,7 +24,7 @@ type Persona = {
 
 export default function DemoPersonas({ personas }: { personas: Persona[] }) {
     return (
-        <main className="bg-muted/30 min-h-screen px-4 py-12">
+        <main className="bg-background min-h-screen px-4 py-12">
             <Head title="Choose a demo persona" />
             <div className="mx-auto max-w-6xl space-y-8">
                 <div className="space-y-3 text-center">
@@ -45,7 +45,7 @@ export default function DemoPersonas({ personas }: { personas: Persona[] }) {
                     {personas.map((persona) => (
                         <Card
                             key={persona.membershipId}
-                            className="border-slate-900/10 bg-white/80 shadow-sm dark:border-white/10 dark:bg-slate-900/80"
+                            className="border-border/80 bg-card/95"
                         >
                             <CardHeader>
                                 <CardTitle className="text-lg">
@@ -59,7 +59,7 @@ export default function DemoPersonas({ personas }: { personas: Persona[] }) {
                                 </p>
                             </CardHeader>
                             <CardContent className="space-y-5">
-                                <div className="rounded-lg bg-amber-50 p-3 text-sm leading-6 text-amber-950 dark:bg-amber-950 dark:text-amber-100">
+                                <div className="border-saffron bg-saffron/10 rounded-lg border-l-4 p-3 text-sm leading-6">
                                     <div className="mb-1 flex items-center gap-2 font-semibold">
                                         <ShieldCheck
                                             className="size-4"
@@ -80,7 +80,7 @@ export default function DemoPersonas({ personas }: { personas: Persona[] }) {
                                                 className="flex gap-2"
                                             >
                                                 <ArrowRight
-                                                    className="mt-0.5 size-4 shrink-0 text-teal-700"
+                                                    className="text-service dark:text-service-bright mt-0.5 size-4 shrink-0"
                                                     aria-hidden="true"
                                                 />
                                                 <span>

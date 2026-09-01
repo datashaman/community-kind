@@ -56,6 +56,7 @@ describe('Service operations dashboard', () => {
         expect(
             screen.getByRole('region', { name: 'Work queue counts' }),
         ).toBeVisible();
+        expect(screen.getAllByText('Queue clear')).toHaveLength(4);
 
         const interactiveElements = [
             ...screen.getAllByRole('button'),
