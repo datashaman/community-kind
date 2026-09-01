@@ -3,6 +3,7 @@
 namespace App\Http\Controllers\Demo;
 
 use App\Actions\Auditing\RecordTenantAuditEvent;
+use App\Data\Demo\PersonaGuide;
 use App\Enums\OrganisationRole;
 use App\Enums\TenantAuditEventType;
 use App\Http\Controllers\Controller;
@@ -45,6 +46,8 @@ class SandboxPersonaController extends Controller
                     'name' => $membership->user->name,
                     'organisation' => $membership->organisation->name,
                     'role' => $role->label(),
+                    'roleKey' => $role->value,
+                    ...PersonaGuide::for($role, $membership->organisation),
                 ];
             })
             ->filter()

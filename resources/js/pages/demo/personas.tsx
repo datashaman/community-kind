@@ -1,5 +1,5 @@
 import { Form, Head } from '@inertiajs/react';
-import { FlaskConical } from 'lucide-react';
+import { ArrowRight, FlaskConical, ShieldCheck } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import {
     Card,
@@ -16,13 +16,17 @@ type Persona = {
     name: string;
     organisation: string;
     role: string;
+    roleKey: string;
+    responsibility: string;
+    boundary: string;
+    tasks: { label: string; description: string; href: string }[];
 };
 
 export default function DemoPersonas({ personas }: { personas: Persona[] }) {
     return (
         <main className="bg-muted/30 min-h-screen px-4 py-12">
             <Head title="Choose a demo persona" />
-            <div className="mx-auto max-w-5xl space-y-8">
+            <div className="mx-auto max-w-6xl space-y-8">
                 <div className="space-y-3 text-center">
                     <FlaskConical
                         className="mx-auto size-10 text-amber-600"
@@ -37,9 +41,12 @@ export default function DemoPersonas({ personas }: { personas: Persona[] }) {
                         external messaging, payments, or domains.
                     </p>
                 </div>
-                <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
+                <div className="grid gap-5 lg:grid-cols-2">
                     {personas.map((persona) => (
-                        <Card key={persona.membershipId}>
+                        <Card
+                            key={persona.membershipId}
+                            className="border-slate-900/10 bg-white/80 shadow-sm dark:border-white/10 dark:bg-slate-900/80"
+                        >
                             <CardHeader>
                                 <CardTitle className="text-lg">
                                     {persona.role}
@@ -47,9 +54,50 @@ export default function DemoPersonas({ personas }: { personas: Persona[] }) {
                                 <CardDescription>
                                     {persona.organisation}
                                 </CardDescription>
+                                <p className="pt-2 text-sm leading-6">
+                                    {persona.responsibility}
+                                </p>
                             </CardHeader>
-                            <CardContent className="space-y-4">
-                                <p className="text-sm">{persona.name}</p>
+                            <CardContent className="space-y-5">
+                                <div className="rounded-lg bg-amber-50 p-3 text-sm leading-6 text-amber-950 dark:bg-amber-950 dark:text-amber-100">
+                                    <div className="mb-1 flex items-center gap-2 font-semibold">
+                                        <ShieldCheck
+                                            className="size-4"
+                                            aria-hidden="true"
+                                        />
+                                        Permission boundary
+                                    </div>
+                                    {persona.boundary}
+                                </div>
+                                <div>
+                                    <p className="mb-2 text-xs font-semibold tracking-wide text-slate-500 uppercase dark:text-slate-400">
+                                        Suggested evaluation
+                                    </p>
+                                    <ul className="space-y-2 text-sm">
+                                        {persona.tasks.map((task) => (
+                                            <li
+                                                key={task.label}
+                                                className="flex gap-2"
+                                            >
+                                                <ArrowRight
+                                                    className="mt-0.5 size-4 shrink-0 text-teal-700"
+                                                    aria-hidden="true"
+                                                />
+                                                <span>
+                                                    <span className="font-medium">
+                                                        {task.label}
+                                                    </span>{' '}
+                                                    <span className="text-muted-foreground">
+                                                        — {task.description}
+                                                    </span>
+                                                </span>
+                                            </li>
+                                        ))}
+                                    </ul>
+                                </div>
+                                <p className="text-muted-foreground text-xs">
+                                    Synthetic account: {persona.name}
+                                </p>
                                 <Form {...store.form()}>
                                     {({ processing }) => (
                                         <>
@@ -63,7 +111,7 @@ export default function DemoPersonas({ personas }: { personas: Persona[] }) {
                                                 type="submit"
                                                 disabled={processing}
                                             >
-                                                Continue as this persona
+                                                Continue as {persona.role}
                                             </Button>
                                         </>
                                     )}
