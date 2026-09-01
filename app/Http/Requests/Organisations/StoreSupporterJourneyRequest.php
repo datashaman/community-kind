@@ -10,6 +10,7 @@ use App\Models\Organisation;
 use App\Models\OrganisationConfiguration;
 use Illuminate\Contracts\Validation\ValidationRule;
 use Illuminate\Foundation\Http\FormRequest;
+use Illuminate\Support\Str;
 use Illuminate\Validation\Rule;
 use Illuminate\Validation\Validator;
 
@@ -19,12 +20,23 @@ class StoreSupporterJourneyRequest extends FormRequest
     {
         $defaultConfiguration = OrganisationConfiguration::query()->where('area', OrganisationConfigurationArea::SupporterJourney)->where('configuration_key', 'default')->where('status', OrganisationConfigurationStatus::Active)->latest('version')->first();
         $defaults = $defaultConfiguration instanceof OrganisationConfiguration ? $defaultConfiguration->definition : [];
+        $requestedTemplateId = $this->input('message_template_id');
+        $requestedTemplateKey = $this->input('message_template_key');
         $template = null;
-        if ($this->filled('message_template_key')) {
-            $templateConfiguration = OrganisationConfiguration::query()->where('area', OrganisationConfigurationArea::MessageTemplate)->where('configuration_key', $this->input('message_template_key'))->where('status', OrganisationConfigurationStatus::Active)->latest('version')->first();
+        $usesCustomContent = $requestedTemplateId === '__custom__' || $requestedTemplateKey === '__custom__';
+        if (! $usesCustomContent) {
+            $templateConfiguration = match (true) {
+                is_string($requestedTemplateId) && Str::isUuid($requestedTemplateId) => OrganisationConfiguration::query()->where('area', OrganisationConfigurationArea::MessageTemplate)->whereIn('status', [OrganisationConfigurationStatus::Active->value, OrganisationConfigurationStatus::Superseded->value])->find($requestedTemplateId),
+                is_string($requestedTemplateKey) && $requestedTemplateKey !== '' => OrganisationConfiguration::query()->where('area', OrganisationConfigurationArea::MessageTemplate)->where('configuration_key', $requestedTemplateKey)->where('status', OrganisationConfigurationStatus::Active)->latest('version')->first(),
+                is_string($defaults['default_message_template_id'] ?? null) => OrganisationConfiguration::query()->where('area', OrganisationConfigurationArea::MessageTemplate)->find($defaults['default_message_template_id']),
+                is_string($defaults['default_message_template_key'] ?? null) => OrganisationConfiguration::query()->where('area', OrganisationConfigurationArea::MessageTemplate)->where('configuration_key', $defaults['default_message_template_key'])->where('status', OrganisationConfigurationStatus::Active)->latest('version')->first(),
+                default => null,
+            };
             $template = $templateConfiguration instanceof OrganisationConfiguration ? $templateConfiguration->definition : null;
         }
         $this->merge([
+            'message_template_id' => $usesCustomContent ? null : $requestedTemplateId,
+            'message_template_key' => $usesCustomContent ? null : $requestedTemplateKey,
             'journey_kind' => $template['journey_kind'] ?? $this->input('journey_kind', $defaults['default_kind'] ?? SupporterJourneyKind::General->value),
             'channel' => $template['channel'] ?? $this->input('channel', $defaults['default_channel'] ?? 'email'),
             'subject' => $template['subject'] ?? $this->input('subject', ''),
@@ -53,6 +65,7 @@ class StoreSupporterJourneyRequest extends FormRequest
 
         return [
             'audience_segment_id' => ['required', 'uuid', Rule::exists('audience_segments', 'id')->where('organisation_id', $organisationId)],
+            'message_template_id' => ['bail', 'nullable', 'uuid', Rule::exists('organisation_configurations', 'id')->where(fn ($query) => $query->where('organisation_id', $organisationId)->where('area', OrganisationConfigurationArea::MessageTemplate->value)->whereIn('status', [OrganisationConfigurationStatus::Active->value, OrganisationConfigurationStatus::Superseded->value]))],
             'message_template_key' => ['nullable', 'string', 'max:100', Rule::exists('organisation_configurations', 'configuration_key')->where(fn ($query) => $query->where('organisation_id', $organisationId)->where('area', OrganisationConfigurationArea::MessageTemplate->value)->where('status', OrganisationConfigurationStatus::Active->value))],
             'name' => ['required', 'string', 'max:120', Rule::unique('supporter_journeys', 'name')->where('organisation_id', $organisationId)],
             'journey_kind' => ['required', Rule::enum(SupporterJourneyKind::class)],

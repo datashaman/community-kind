@@ -13,15 +13,32 @@ type Props = {
         recipientCount: number;
     }>;
     segments: Array<{ id: string; name: string }>;
-    templates: Array<{ key: string; channel: string; journeyKind: string }>;
+    policyDefaults: {
+        templateId: string | null;
+        journeyKind: string;
+        channel: string;
+    } | null;
+    templates: Array<{
+        key: string;
+        id: string;
+        name: string;
+        version: number;
+        status: string;
+        channel: string;
+        journeyKind: string;
+    }>;
 };
 
 export default function SupporterJourneysIndex({
     journeys,
     segments,
+    policyDefaults,
     templates,
 }: Props) {
     const organisation = usePage().props.currentOrganisation!;
+    const defaultTemplate = templates.find(
+        (template) => template.id === policyDefaults?.templateId,
+    );
 
     return (
         <>
@@ -52,19 +69,28 @@ export default function SupporterJourneysIndex({
                                             Active message template (optional)
                                         </span>
                                         <select
-                                            name="message_template_key"
+                                            name="message_template_id"
                                             className="h-9 rounded-md border bg-transparent px-3"
                                         >
                                             <option value="">
-                                                Custom content below
+                                                {defaultTemplate
+                                                    ? `Organisation default: ${defaultTemplate.name}`
+                                                    : 'Custom content below'}
                                             </option>
+                                            {defaultTemplate ? (
+                                                <option value="__custom__">
+                                                    Custom content instead
+                                                </option>
+                                            ) : null}
                                             {templates.map((template) => (
                                                 <option
-                                                    key={template.key}
-                                                    value={template.key}
+                                                    key={template.id}
+                                                    value={template.id}
                                                 >
-                                                    {template.key} ·{' '}
+                                                    {template.name} · v
+                                                    {template.version} ·{' '}
                                                     {template.channel} ·{' '}
+                                                    {template.status} ·{' '}
                                                     {template.journeyKind.replaceAll(
                                                         '_',
                                                         ' ',
@@ -81,6 +107,10 @@ export default function SupporterJourneysIndex({
                                         <span>Journey path</span>
                                         <select
                                             name="journey_kind"
+                                            defaultValue={
+                                                policyDefaults?.journeyKind ??
+                                                'general'
+                                            }
                                             className="h-9 rounded-md border bg-transparent px-3"
                                         >
                                             <option value="general">
@@ -99,6 +129,10 @@ export default function SupporterJourneysIndex({
                                         <span>Channel</span>
                                         <select
                                             name="channel"
+                                            defaultValue={
+                                                policyDefaults?.channel ??
+                                                'email'
+                                            }
                                             className="h-9 rounded-md border bg-transparent px-3"
                                         >
                                             <option value="email">Email</option>
