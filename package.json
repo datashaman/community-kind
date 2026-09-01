@@ -6,6 +6,7 @@
         "build": "vp build",
         "build:ssr": "vp build && vp build --ssr",
         "dev": "vp dev",
+        "docs:check": "node scripts/check-docs.mjs",
         "check": "vp check",
         "check:fix": "vp check --fix",
         "licenses:check": "node scripts/check-licenses.mjs",
