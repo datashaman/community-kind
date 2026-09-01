@@ -2,6 +2,7 @@
 
 namespace App\Http\Middleware;
 
+use App\Data\Demo\PersonaGuide;
 use App\Models\AudienceSegment;
 use App\Models\Donation;
 use App\Models\IntakeRequest;
@@ -96,9 +97,21 @@ class HandleInertiaRequests extends Middleware
                     $pair = SandboxPair::query()->find($pairId);
 
                     if ($pair?->status->isAccessible()) {
+                        $organisation = $user?->currentOrganisation;
+                        $role = $organisation instanceof Organisation
+                            ? $user->organisationRole($organisation)
+                            : null;
+
                         return [
                             'pairId' => $pair->id,
                             'expiresAt' => $pair->expires_at->toISOString(),
+                            'persona' => $role === null
+                                ? null
+                                : [
+                                    'role' => $role->label(),
+                                    'organisation' => $organisation->name,
+                                    ...PersonaGuide::for($role, $organisation),
+                                ],
                         ];
                     }
                 }
@@ -108,7 +121,7 @@ class HandleInertiaRequests extends Middleware
                     ?? $user?->currentOrganisation;
 
                 return $visibleOrganisation instanceof Organisation && $visibleOrganisation->is_synthetic
-                    ? ['pairId' => null, 'expiresAt' => null]
+                    ? ['pairId' => null, 'expiresAt' => null, 'persona' => null]
                     : null;
             },
             'canViewParties' => fn (): bool => $routeOrganisation instanceof Organisation

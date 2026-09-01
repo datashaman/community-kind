@@ -29,6 +29,17 @@ declare module '@inertiajs/core' {
             demoSandbox: {
                 pairId: string | null;
                 expiresAt: string | null;
+                persona: {
+                    role: string;
+                    organisation: string;
+                    responsibility: string;
+                    boundary: string;
+                    tasks: {
+                        label: string;
+                        description: string;
+                        href: string;
+                    }[];
+                } | null;
             } | null;
             [key: string]: unknown;
         };
