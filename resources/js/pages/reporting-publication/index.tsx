@@ -188,7 +188,7 @@ export default function ReportingPublicationIndex({
             <Head title="Reporting publication" />
             <Heading
                 title="Reporting publication"
-                description="Approve registered metrics for public impact pages and controlled reporting packs without handling internal identifiers or JSON."
+                description="Approve metrics for public impact pages and controlled reporting packs."
             />
 
             <Card>

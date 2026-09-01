@@ -178,7 +178,7 @@ export default function PublicFormsIndex({
             <Head title="Public forms" />
             <Heading
                 title="Public forms"
-                description="Arrange supported fields, choose optional requirements, preview the result, and publish an immutable version—without editing JSON."
+                description="Arrange fields, choose requirements, preview the result, and publish a version for public use."
             />
 
             <Card>

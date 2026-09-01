@@ -722,8 +722,7 @@ function ProgramEditor({
                                 <h3 className="font-semibold">Taxonomies</h3>
                                 <p className="text-muted-foreground text-sm">
                                     Maintain the shared classifications staff
-                                    use, with clear allowed values instead of
-                                    free-form JSON.
+                                    use across this Program.
                                 </p>
                             </div>
                             {program.canUpdate ? (
