@@ -218,7 +218,7 @@ it('publishes only configured reconciled aggregates and serves tenant-safe publi
                 'pack_metric_ids' => ['engagement.event_attendance', 'data.missing_contact_rate'],
             ],
         ]);
-        $filters = ['period_start' => now()->startOfMonth()->toDateString(), 'period_end' => now()->addDay()->toDateString()];
+        $filters = ['period_start' => now()->subDays(2)->toDateString(), 'period_end' => now()->addDay()->toDateString()];
         $public = app(PublishImpactSnapshot::class)->handle($organisation, $executive, 'public', $filters);
         $board = app(PublishImpactSnapshot::class)->handle($organisation, $executive, 'board', $filters);
 
