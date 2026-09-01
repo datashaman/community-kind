@@ -12,7 +12,7 @@ export function DemoSandboxBanner() {
 
     return (
         <div
-            className="border-amber-300 bg-amber-50 px-4 py-2 text-amber-950 dark:border-amber-800 dark:bg-amber-950 dark:text-amber-100"
+            className="border-saffron/40 bg-saffron/12 text-foreground border-b px-4 py-2"
             role="status"
             data-test="demo-sandbox-banner"
         >
@@ -31,7 +31,7 @@ export function DemoSandboxBanner() {
                     </span>
                     <Link
                         href={choosePersona()}
-                        className="rounded-sm underline underline-offset-4 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-amber-900 dark:focus-visible:outline-amber-100"
+                        className="focus-visible:outline-ring rounded-sm font-semibold underline underline-offset-4 focus-visible:outline-2 focus-visible:outline-offset-2"
                     >
                         Change perspective
                     </Link>
@@ -39,7 +39,7 @@ export function DemoSandboxBanner() {
                         {({ processing }) => (
                             <button
                                 type="submit"
-                                className="rounded-sm underline underline-offset-4 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-amber-900 disabled:opacity-60 dark:focus-visible:outline-amber-100"
+                                className="focus-visible:outline-ring rounded-sm font-semibold underline underline-offset-4 focus-visible:outline-2 focus-visible:outline-offset-2 disabled:opacity-60"
                                 disabled={processing}
                             >
                                 {processing ? 'Resetting…' : 'Reset demo'}
@@ -54,7 +54,7 @@ export function DemoSandboxBanner() {
                             <Link
                                 key={task.href}
                                 href={task.href}
-                                className="inline-flex items-center gap-1 rounded-sm underline-offset-4 hover:underline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-amber-900 dark:focus-visible:outline-amber-100"
+                                className="focus-visible:outline-ring inline-flex items-center gap-1 rounded-sm underline-offset-4 hover:underline focus-visible:outline-2 focus-visible:outline-offset-2"
                                 title={task.description}
                             >
                                 {task.label}

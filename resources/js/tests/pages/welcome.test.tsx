@@ -55,5 +55,11 @@ describe('Welcome', () => {
             screen.getAllByRole('link', { name: 'Staff log in' })[0],
         ).toHaveAttribute('href', '/login');
         expect(screen.getByText(/not yet a production service/i)).toBeVisible();
+
+        for (const link of screen.getAllByRole('link')) {
+            expect(link.tabIndex).toBe(0);
+            link.focus();
+            expect(link).toHaveFocus();
+        }
     });
 });

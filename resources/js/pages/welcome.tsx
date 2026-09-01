@@ -19,25 +19,25 @@ const operatingModel = [
         'Service delivery',
         'Respond with the right context',
         'Move from intake to assigned support with consent, safety, and programme scope carried through the work.',
-        'bg-[#1E7A70]',
+        'bg-service',
     ],
     [
         'Community engagement',
         'Turn participation into relationships',
         'Coordinate events, volunteers, and partner activity without losing the people and purpose behind them.',
-        'bg-[#5E8F4E]',
+        'bg-leaf',
     ],
     [
         'Supporter stewardship',
         'Make every welcome feel joined up',
         'Understand donations, audiences, and journeys while keeping supporter-safe work apart from confidential services.',
-        'bg-[#E5A23A]',
+        'bg-saffron',
     ],
     [
         'Impact evidence',
         'Show what changed—and why',
         'Bring operational signals into accountable impact packs for leaders, funders, partners, and communities.',
-        'bg-[#D86A56]',
+        'bg-coral',
     ],
 ] as const;
 
@@ -50,21 +50,21 @@ export default function Welcome() {
     return (
         <>
             <Head title="Community operations, connected" />
-            <div className="min-h-screen bg-[#F4F7F5] text-[#173B57] dark:bg-[#0D1D29] dark:text-[#F4F7F5]">
-                <header className="border-b border-[#173B57]/10 dark:border-white/10">
+            <div className="bg-cloud text-civic dark:text-cloud min-h-screen dark:bg-[#0D1D29]">
+                <header className="border-civic/10 border-b dark:border-white/10">
                     <div className="mx-auto flex w-full max-w-7xl items-center justify-between gap-6 px-5 py-5 sm:px-8 lg:px-12">
                         <Link
                             href="/"
-                            className="inline-flex items-center gap-3 rounded-sm text-lg font-semibold tracking-tight focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-[#1E7A70]"
+                            className="focus-visible:outline-service inline-flex items-center gap-3 rounded-sm text-lg font-semibold tracking-tight focus-visible:outline-2 focus-visible:outline-offset-4"
                         >
                             <span
-                                className="grid size-8 grid-cols-2 gap-0.5 rounded-full bg-[#173B57] p-2 dark:bg-[#F4F7F5]"
+                                className="bg-civic dark:bg-cloud grid size-8 grid-cols-2 gap-0.5 rounded-full p-2"
                                 aria-hidden="true"
                             >
-                                <span className="rounded-full bg-[#1E7A70]" />
-                                <span className="rounded-full bg-[#E5A23A]" />
-                                <span className="rounded-full bg-[#D86A56]" />
-                                <span className="rounded-full bg-[#5E8F4E]" />
+                                <span className="bg-service rounded-full" />
+                                <span className="bg-saffron rounded-full" />
+                                <span className="bg-coral rounded-full" />
+                                <span className="bg-leaf rounded-full" />
                             </span>
                             CommunityKind
                         </Link>
@@ -74,21 +74,21 @@ export default function Welcome() {
                         >
                             <a
                                 href="#operating-model"
-                                className="hidden rounded-sm text-sm font-medium hover:underline focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-[#1E7A70] sm:inline"
+                                className="focus-visible:outline-service hidden rounded-sm text-sm font-medium hover:underline focus-visible:outline-2 focus-visible:outline-offset-4 sm:inline"
                             >
                                 How it connects
                             </a>
                             {auth.user ? (
                                 <Link
                                     href={dashboardUrl}
-                                    className="rounded-full bg-[#173B57] px-4 py-2.5 text-sm font-semibold text-white transition-colors hover:bg-[#1E7A70] focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-[#1E7A70] dark:bg-[#F4F7F5] dark:text-[#173B57]"
+                                    className="bg-civic hover:bg-service focus-visible:outline-service dark:bg-cloud dark:text-civic rounded-full px-4 py-2.5 text-sm font-semibold text-white transition-colors focus-visible:outline-2 focus-visible:outline-offset-4"
                                 >
                                     Open dashboard
                                 </Link>
                             ) : (
                                 <Link
                                     href={login()}
-                                    className="rounded-full border border-[#173B57]/25 px-4 py-2.5 text-sm font-semibold transition-colors hover:border-[#1E7A70] hover:text-[#1E7A70] focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-[#1E7A70] dark:border-white/25"
+                                    className="border-civic/25 hover:border-service hover:text-service focus-visible:outline-service rounded-full border px-4 py-2.5 text-sm font-semibold transition-colors focus-visible:outline-2 focus-visible:outline-offset-4 dark:border-white/25"
                                 >
                                     Staff log in
                                 </Link>
@@ -98,10 +98,10 @@ export default function Welcome() {
                 </header>
 
                 <main>
-                    <section className="overflow-hidden border-b border-[#173B57]/10 dark:border-white/10">
+                    <section className="border-civic/10 overflow-hidden border-b dark:border-white/10">
                         <div className="mx-auto grid max-w-7xl items-center gap-14 px-5 py-16 sm:px-8 sm:py-20 lg:grid-cols-[1.05fr_0.95fr] lg:px-12">
                             <div className="relative z-10 max-w-3xl">
-                                <p className="mb-6 flex items-center gap-2 text-sm font-semibold tracking-[0.14em] text-[#1E7A70] uppercase dark:text-[#71C6BC]">
+                                <p className="text-service mb-6 flex items-center gap-2 text-sm font-semibold tracking-[0.14em] uppercase dark:text-[#71C6BC]">
                                     <CircleDot
                                         className="size-4"
                                         aria-hidden="true"
@@ -110,11 +110,11 @@ export default function Welcome() {
                                 </p>
                                 <h1 className="text-5xl leading-[0.98] font-semibold tracking-[-0.055em] text-balance sm:text-7xl lg:text-[4.6rem]">
                                     One shared thread from first contact to{' '}
-                                    <span className="font-serif font-normal text-[#1E7A70] italic dark:text-[#71C6BC]">
+                                    <span className="text-service font-serif font-normal italic dark:text-[#71C6BC]">
                                         visible impact.
                                     </span>
                                 </h1>
-                                <p className="mt-8 max-w-2xl text-lg leading-8 text-[#173B57]/75 sm:text-xl dark:text-[#F4F7F5]/75">
+                                <p className="text-civic/75 dark:text-cloud/75 mt-8 max-w-2xl text-lg leading-8 sm:text-xl">
                                     CommunityKind helps local organisations
                                     coordinate services, supporters, volunteers,
                                     and evidence—without flattening the privacy
@@ -123,7 +123,7 @@ export default function Welcome() {
                                 <div className="mt-10 flex flex-wrap items-center gap-3">
                                     <Link
                                         href={createDemo()}
-                                        className="inline-flex items-center gap-2 rounded-full bg-[#173B57] px-6 py-3.5 text-sm font-semibold text-white transition-colors hover:bg-[#1E7A70] focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-[#1E7A70] dark:bg-[#F4F7F5] dark:text-[#173B57]"
+                                        className="bg-civic hover:bg-service focus-visible:outline-service dark:bg-cloud dark:text-civic inline-flex items-center gap-2 rounded-full px-6 py-3.5 text-sm font-semibold text-white transition-colors focus-visible:outline-2 focus-visible:outline-offset-4"
                                     >
                                         Explore the demo{' '}
                                         <ArrowRight
@@ -133,7 +133,7 @@ export default function Welcome() {
                                     </Link>
                                     <a
                                         href={documentationUrl}
-                                        className="inline-flex items-center gap-2 rounded-full px-5 py-3.5 text-sm font-semibold hover:text-[#1E7A70] focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-[#1E7A70]"
+                                        className="hover:text-service focus-visible:outline-service inline-flex items-center gap-2 rounded-full px-5 py-3.5 text-sm font-semibold focus-visible:outline-2 focus-visible:outline-offset-4"
                                     >
                                         Read the documentation{' '}
                                         <BookOpen
@@ -159,7 +159,7 @@ export default function Welcome() {
                                         fill="none"
                                         stroke="currentColor"
                                         strokeWidth="3"
-                                        className="text-[#173B57]/18 dark:text-white/18"
+                                        className="text-civic/18 dark:text-white/18"
                                     />
                                     <path
                                         d="M76 76 C330 65 148 218 376 228"
@@ -187,27 +187,27 @@ export default function Welcome() {
                                     [
                                         'A person asks for support',
                                         'left-[3%] top-[5%]',
-                                        'bg-[#1E7A70]',
+                                        'bg-service',
                                     ],
                                     [
                                         'A community responds',
                                         'right-[0%] top-[32%]',
-                                        'bg-[#5E8F4E]',
+                                        'bg-leaf',
                                     ],
                                     [
                                         'Relationships grow',
                                         'left-[18%] top-[58%]',
-                                        'bg-[#E5A23A]',
+                                        'bg-saffron',
                                     ],
                                     [
                                         'Change becomes visible',
                                         'right-[0%] bottom-[4%]',
-                                        'bg-[#D86A56]',
+                                        'bg-coral',
                                     ],
                                 ].map(([label, position, color]) => (
                                     <div
                                         key={label}
-                                        className={`absolute ${position} flex max-w-48 items-center gap-3 rounded-xl border border-[#173B57]/10 bg-white/90 p-3 shadow-[0_18px_45px_rgba(23,59,87,0.12)] backdrop-blur dark:border-white/10 dark:bg-[#173B57]/90`}
+                                        className={`absolute ${position} border-civic/10 dark:bg-civic/90 flex max-w-48 items-center gap-3 rounded-xl border bg-white/90 p-3 shadow-[0_18px_45px_rgba(23,59,87,0.12)] backdrop-blur dark:border-white/10`}
                                     >
                                         <span
                                             className={`size-3 shrink-0 rounded-full ${color}`}
@@ -229,7 +229,7 @@ export default function Welcome() {
                     >
                         <div className="grid gap-10 lg:grid-cols-[0.7fr_1.3fr] lg:gap-16">
                             <div>
-                                <p className="text-sm font-semibold tracking-[0.14em] text-[#1E7A70] uppercase dark:text-[#71C6BC]">
+                                <p className="text-service text-sm font-semibold tracking-[0.14em] uppercase dark:text-[#71C6BC]">
                                     One connected operating model
                                 </p>
                                 <h2
@@ -239,26 +239,26 @@ export default function Welcome() {
                                     The work makes more sense when the thread
                                     stays intact.
                                 </h2>
-                                <p className="mt-6 text-base leading-7 text-[#173B57]/70 dark:text-[#F4F7F5]/70">
+                                <p className="text-civic/70 dark:text-cloud/70 mt-6 text-base leading-7">
                                     Each team keeps the view and safeguards it
                                     needs. Shared signals travel forward, so
                                     impact is grounded in real work instead of
                                     assembled at reporting time.
                                 </p>
                             </div>
-                            <ol className="relative border-l-2 border-[#173B57]/10 dark:border-white/10">
+                            <ol className="border-civic/10 relative border-l-2 dark:border-white/10">
                                 {operatingModel.map(
                                     ([label, title, body, color], index) => (
                                         <li
                                             key={label}
-                                            className="relative grid gap-3 border-b border-[#173B57]/10 py-7 pl-8 last:border-b-0 sm:grid-cols-[10rem_1fr] sm:gap-8 dark:border-white/10"
+                                            className="border-civic/10 relative grid gap-3 border-b py-7 pl-8 last:border-b-0 sm:grid-cols-[10rem_1fr] sm:gap-8 dark:border-white/10"
                                         >
                                             <span
-                                                className={`absolute top-9 -left-[7px] size-3 rounded-full ring-4 ring-[#F4F7F5] dark:ring-[#0D1D29] ${color}`}
+                                                className={`ring-cloud absolute top-9 -left-[7px] size-3 rounded-full ring-4 dark:ring-[#0D1D29] ${color}`}
                                                 aria-hidden="true"
                                             />
                                             <div>
-                                                <span className="text-xs font-semibold tracking-[0.12em] text-[#173B57]/55 uppercase dark:text-[#F4F7F5]/55">
+                                                <span className="text-civic/55 dark:text-cloud/55 text-xs font-semibold tracking-[0.12em] uppercase">
                                                     {String(index + 1).padStart(
                                                         2,
                                                         '0',
@@ -272,7 +272,7 @@ export default function Welcome() {
                                                 <h3 className="text-xl font-semibold tracking-tight">
                                                     {title}
                                                 </h3>
-                                                <p className="mt-2 leading-7 text-[#173B57]/70 dark:text-[#F4F7F5]/70">
+                                                <p className="text-civic/70 dark:text-cloud/70 mt-2 leading-7">
                                                     {body}
                                                 </p>
                                             </div>
@@ -283,7 +283,7 @@ export default function Welcome() {
                         </div>
                     </section>
 
-                    <section className="bg-[#173B57] text-[#F4F7F5]">
+                    <section className="bg-civic text-cloud">
                         <div className="mx-auto grid max-w-7xl gap-14 px-5 py-20 sm:px-8 sm:py-28 lg:grid-cols-2 lg:px-12">
                             <div>
                                 <LockKeyhole
@@ -293,7 +293,7 @@ export default function Welcome() {
                                 <h2 className="mt-6 text-4xl leading-tight font-semibold tracking-[-0.035em] sm:text-5xl">
                                     Privacy is part of the operating model.
                                 </h2>
-                                <p className="mt-6 max-w-xl text-lg leading-8 text-[#F4F7F5]/70">
+                                <p className="text-cloud/70 mt-6 max-w-xl text-lg leading-8">
                                     CommunityKind separates confidential service
                                     delivery from supporter-safe engagement,
                                     then applies role and programme boundaries
@@ -309,7 +309,7 @@ export default function Welcome() {
                                 ].map((item) => (
                                     <li
                                         key={item}
-                                        className="flex gap-3 border-t border-white/15 pt-4 leading-7 text-[#F4F7F5]/85"
+                                        className="text-cloud/85 flex gap-3 border-t border-white/15 pt-4 leading-7"
                                     >
                                         <Check
                                             className="mt-1 size-5 shrink-0 text-[#71C6BC]"
@@ -323,15 +323,15 @@ export default function Welcome() {
                     </section>
 
                     <section className="mx-auto max-w-7xl px-5 py-20 sm:px-8 sm:py-28 lg:px-12">
-                        <div className="grid gap-12 border-b border-[#173B57]/15 pb-20 lg:grid-cols-[1fr_0.8fr] dark:border-white/15">
+                        <div className="border-civic/15 grid gap-12 border-b pb-20 lg:grid-cols-[1fr_0.8fr] dark:border-white/15">
                             <div>
-                                <p className="text-sm font-semibold tracking-[0.14em] text-[#1E7A70] uppercase dark:text-[#71C6BC]">
+                                <p className="text-service text-sm font-semibold tracking-[0.14em] uppercase dark:text-[#71C6BC]">
                                     Open by design
                                 </p>
                                 <h2 className="mt-4 max-w-3xl text-4xl leading-tight font-semibold tracking-[-0.035em] sm:text-5xl">
                                     Inspect the decisions, not just the demo.
                                 </h2>
-                                <p className="mt-6 max-w-2xl text-lg leading-8 text-[#173B57]/70 dark:text-[#F4F7F5]/70">
+                                <p className="text-civic/70 dark:text-cloud/70 mt-6 max-w-2xl text-lg leading-8">
                                     The source, licence, domain decisions, and
                                     technical documentation are public. That
                                     makes the platform easier to evaluate,
@@ -341,7 +341,7 @@ export default function Welcome() {
                             <div className="flex flex-col justify-end gap-3">
                                 <a
                                     href={documentationUrl}
-                                    className="inline-flex items-center justify-between gap-4 border-t border-[#173B57]/15 py-4 font-semibold hover:text-[#1E7A70] focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-[#1E7A70] dark:border-white/15"
+                                    className="border-civic/15 hover:text-service focus-visible:outline-service inline-flex items-center justify-between gap-4 border-t py-4 font-semibold focus-visible:outline-2 focus-visible:outline-offset-4 dark:border-white/15"
                                 >
                                     Read the documentation{' '}
                                     <BookOpen
@@ -351,7 +351,7 @@ export default function Welcome() {
                                 </a>
                                 <a
                                     href="https://github.com/datashaman/community-kind"
-                                    className="inline-flex items-center justify-between gap-4 border-t border-[#173B57]/15 py-4 font-semibold hover:text-[#1E7A70] focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-[#1E7A70] dark:border-white/15"
+                                    className="border-civic/15 hover:text-service focus-visible:outline-service inline-flex items-center justify-between gap-4 border-t py-4 font-semibold focus-visible:outline-2 focus-visible:outline-offset-4 dark:border-white/15"
                                 >
                                     Inspect the repository{' '}
                                     <GitFork
@@ -359,18 +359,18 @@ export default function Welcome() {
                                         aria-hidden="true"
                                     />
                                 </a>
-                                <SourceAndLicenceLink className="inline-flex items-center justify-between gap-4 border-y border-[#173B57]/15 py-4 font-semibold hover:text-[#1E7A70] focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-[#1E7A70] dark:border-white/15" />
+                                <SourceAndLicenceLink className="border-civic/15 hover:text-service focus-visible:outline-service inline-flex items-center justify-between gap-4 border-y py-4 font-semibold focus-visible:outline-2 focus-visible:outline-offset-4 dark:border-white/15" />
                             </div>
                         </div>
                         <div className="grid items-end gap-10 pt-20 lg:grid-cols-[1fr_auto]">
                             <div>
-                                <p className="text-sm font-semibold tracking-[0.14em] text-[#D86A56] uppercase dark:text-[#F29A88]">
+                                <p className="text-coral text-sm font-semibold tracking-[0.14em] uppercase dark:text-[#F29A88]">
                                     Honest about readiness
                                 </p>
                                 <h2 className="mt-4 max-w-3xl text-4xl leading-tight font-semibold tracking-[-0.035em] sm:text-5xl">
                                     Evaluate the shape of the work—safely.
                                 </h2>
-                                <p className="mt-6 max-w-3xl leading-7 text-[#173B57]/70 dark:text-[#F4F7F5]/70">
+                                <p className="text-civic/70 dark:text-cloud/70 mt-6 max-w-3xl leading-7">
                                     CommunityKind is an active reference
                                     implementation, not yet a production service
                                     for real client or supporter information.
@@ -382,7 +382,7 @@ export default function Welcome() {
                             </div>
                             <Link
                                 href={createDemo()}
-                                className="inline-flex items-center justify-center gap-2 rounded-full bg-[#D86A56] px-6 py-3.5 text-sm font-semibold text-white transition-colors hover:bg-[#173B57] focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-[#D86A56] dark:hover:bg-[#F4F7F5] dark:hover:text-[#173B57]"
+                                className="bg-coral hover:bg-civic focus-visible:outline-coral dark:hover:bg-cloud dark:hover:text-civic inline-flex items-center justify-center gap-2 rounded-full px-6 py-3.5 text-sm font-semibold text-white transition-colors focus-visible:outline-2 focus-visible:outline-offset-4"
                             >
                                 Start a safe demo{' '}
                                 <ArrowRight
@@ -394,23 +394,23 @@ export default function Welcome() {
                     </section>
                 </main>
 
-                <footer className="border-t border-[#173B57]/10 dark:border-white/10">
+                <footer className="border-civic/10 border-t dark:border-white/10">
                     <div className="mx-auto flex max-w-7xl flex-wrap items-center justify-between gap-5 px-5 py-8 text-sm sm:px-8 lg:px-12">
                         <p>Built in the open for stronger community work.</p>
                         <div className="flex flex-wrap gap-5">
                             <a
                                 href={documentationUrl}
-                                className="hover:underline focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-[#1E7A70]"
+                                className="focus-visible:outline-service hover:underline focus-visible:outline-2 focus-visible:outline-offset-4"
                             >
                                 Documentation
                             </a>
                             <Link
                                 href={login()}
-                                className="hover:underline focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-[#1E7A70]"
+                                className="focus-visible:outline-service hover:underline focus-visible:outline-2 focus-visible:outline-offset-4"
                             >
                                 Staff log in
                             </Link>
-                            <SourceAndLicenceLink className="hover:underline focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-[#1E7A70]" />
+                            <SourceAndLicenceLink className="focus-visible:outline-service hover:underline focus-visible:outline-2 focus-visible:outline-offset-4" />
                         </div>
                     </div>
                 </footer>
