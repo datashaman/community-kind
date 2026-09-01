@@ -23,8 +23,9 @@ function createProgramConfigurationFixture(): array
             'request_label' => 'Request',
             'case_label' => 'Case',
             'configuration' => [
-                'outcome_measures' => [['key' => 'progress', 'label' => 'Progress', 'unit' => 'score']],
-                'taxonomies' => [],
+                'intake_fields' => [],
+                'eligibility_fields' => [],
+                'risk_flags' => [],
             ],
         ]);
         $received = $program->stages()->create(['key' => 'received', 'label' => 'Received', 'position' => 0]);
@@ -63,8 +64,9 @@ it('lets an administrator manage Program terminology and an ordered service path
         expect($program->request_label)->toBe('Support request')
             ->and($program->case_label)->toBe('Support journey')
             ->and($program->configuration)->toBe([
-                'outcome_measures' => [['key' => 'progress', 'label' => 'Progress', 'unit' => 'score']],
-                'taxonomies' => [],
+                'intake_fields' => [],
+                'eligibility_fields' => [],
+                'risk_flags' => [],
             ])
             ->and($program->stages()->pluck('key')->all())->toBe(['active', 'received', 'review_progress'])
             ->and($received->refresh()->retired_at)->not->toBeNull();

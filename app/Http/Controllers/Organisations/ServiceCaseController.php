@@ -54,7 +54,7 @@ class ServiceCaseController extends Controller
         }
 
         $serviceCase->load([
-            'party:id,uuid,display_name', 'program:id,organisation_id,name,configuration', 'intakeRequest:id',
+            'party:id,uuid,display_name', 'program:id,organisation_id,name', 'program.outcomeMeasures', 'intakeRequest:id',
             'assignments.membership.user:id,name', 'goals', 'services', 'referrals', 'tasks', 'appointments',
             'interactions', 'notes', 'outcome', 'workflowTransitions' => fn ($query) => $query->orderByDesc('recorded_at'),
             'documents.currentVersion', 'documents.versions' => fn ($query) => $query->latest('generation'),
@@ -78,7 +78,14 @@ class ServiceCaseController extends Controller
                 'closureReason' => $serviceCase->closure_reason,
                 'followUpAt' => $serviceCase->follow_up_at?->toAtomString(),
                 'party' => ['uuid' => $serviceCase->party->uuid, 'displayName' => $serviceCase->party->display_name],
-                'program' => ['id' => $serviceCase->program->id, 'name' => $serviceCase->program->name, 'configuration' => $serviceCase->program->configuration],
+                'program' => [
+                    'id' => $serviceCase->program->id,
+                    'name' => $serviceCase->program->name,
+                    'outcomeMeasures' => $serviceCase->program->outcomeMeasures
+                        ->whereNull('retired_at')
+                        ->map(fn ($measure): array => ['key' => $measure->key, 'label' => $measure->label, 'unit' => $measure->unit])
+                        ->values(),
+                ],
                 'intakeId' => $serviceCase->intake_request_id,
                 'assignments' => $serviceCase->assignments->map(fn ($assignment): array => ['id' => $assignment->id, 'worker' => $assignment->membership->user->name, 'status' => $assignment->status->value]),
                 'goals' => $serviceCase->goals->map(fn (CaseGoal $goal): array => [...$this->item($goal->id, $goal->status->value, $goal->version, $goal->encrypted_content), 'targetAt' => $goal->target_at?->toAtomString(), 'effectiveAt' => $goal->effective_at?->toAtomString(), 'reason' => $goal->terminal_reason]),

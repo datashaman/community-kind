@@ -26,10 +26,9 @@ use LogicException;
 use Ramsey\Uuid\Uuid;
 
 /**
- * @phpstan-type ProgramDefinition array{name: string, slug: string, configuration: array<string, mixed>}
- * @phpstan-type MemberDefinition array{party_uuid: string, name: string, email: string, telephone: string, owner: bool, role: OrganisationRole|null, program_slugs: list<string>}
- * @phpstan-type PartyDefinition array{uuid: string, kind: PartyKind, name: string, email?: string, telephone?: string, program_slugs?: list<string>, roles?: list<PartyBusinessRole>, interests?: list<string>}
- * @phpstan-type ScenarioDefinition array{uuid: string, name: string, slug: string, timezone: string, currency: string, reporting_at: string, synthetic: true, template_slug?: string, sandbox_pair_id?: string, demo_generation?: int, party_population: array<string, int>, programs: list<ProgramDefinition>, members: list<MemberDefinition>, parties: list<PartyDefinition>}
+ * @phpstan-import-type ProgramDefinition from ScenarioCatalog
+ * @phpstan-import-type PartyDefinition from ScenarioCatalog
+ * @phpstan-import-type ScenarioDefinition from ScenarioCatalog
  */
 final class BuildOrganisationScenario
 {
@@ -137,11 +136,11 @@ final class BuildOrganisationScenario
                 'slug' => $definition['slug'],
             ]);
             $configuration = $definition['configuration'];
-            /** @var array{request: string, case: string} $labels */
             $labels = $configuration['labels'];
-            /** @var list<array{key: string, label: string}> $stages */
             $stages = $configuration['stages'];
-            unset($configuration['labels'], $configuration['stages']);
+            $outcomeMeasures = $configuration['outcome_measures'];
+            $taxonomies = $configuration['taxonomies'];
+            unset($configuration['labels'], $configuration['stages'], $configuration['outcome_measures'], $configuration['taxonomies']);
             $program->forceFill([
                 'organisation_id' => $organisation->id,
                 'name' => $definition['name'],
@@ -160,6 +159,38 @@ final class BuildOrganisationScenario
                     ['key' => $stage['key']],
                     ['label' => $stage['label'], 'position' => $position, 'retired_at' => null],
                 );
+            }
+
+            $activeMeasureKeys = collect($outcomeMeasures)->pluck('key');
+            $program->outcomeMeasures()->whereNotIn('key', $activeMeasureKeys)->update(['retired_at' => now()]);
+
+            foreach ($outcomeMeasures as $position => $measure) {
+                $program->outcomeMeasures()->updateOrCreate(
+                    ['key' => $measure['key']],
+                    ['label' => $measure['label'], 'unit' => $measure['unit'] ?? null, 'position' => $position, 'retired_at' => null],
+                );
+            }
+
+            $activeTaxonomyKeys = collect($taxonomies)->pluck('key');
+            $program->taxonomies()->whereNotIn('key', $activeTaxonomyKeys)->update(['retired_at' => now()]);
+
+            foreach ($taxonomies as $position => $taxonomyDefinition) {
+                $taxonomy = $program->taxonomies()->updateOrCreate(
+                    ['key' => $taxonomyDefinition['key']],
+                    ['label' => $taxonomyDefinition['label'], 'position' => $position, 'retired_at' => null],
+                );
+                $valueDefinitions = collect($taxonomyDefinition['values'])->map(fn (string $label): array => [
+                    'key' => Str::of($label)->ascii()->snake()->limit(56, '')->toString() ?: 'value',
+                    'label' => $label,
+                ]);
+                $taxonomy->values()->whereNotIn('key', $valueDefinitions->pluck('key'))->update(['retired_at' => now()]);
+
+                foreach ($valueDefinitions as $valuePosition => $valueDefinition) {
+                    $taxonomy->values()->updateOrCreate(
+                        ['key' => $valueDefinition['key']],
+                        ['label' => $valueDefinition['label'], 'position' => $valuePosition, 'retired_at' => null],
+                    );
+                }
             }
 
             return [$program->slug => $program];

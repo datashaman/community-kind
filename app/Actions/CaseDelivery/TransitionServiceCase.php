@@ -100,12 +100,11 @@ class TransitionServiceCase
             throw new LogicException('Case closure requires a reason and structured outcome.');
         }
 
-        $requiredMeasures = [];
-        foreach ($case->program->configuration['outcome_measures'] ?? [] as $measure) {
-            if (is_array($measure) && is_string($measure['key'] ?? null)) {
-                $requiredMeasures[] = $measure['key'];
-            }
-        }
+        $requiredMeasures = $case->program
+            ->outcomeMeasures()
+            ->whereNull('retired_at')
+            ->pluck('key')
+            ->all();
         $providedMeasures = array_keys($closure['measures']);
         sort($requiredMeasures);
         sort($providedMeasures);

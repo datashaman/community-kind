@@ -54,11 +54,9 @@ function caseDeliveryFixture(): array
 
     [$program, $party, $case] = app(OrganisationContext::class)->run($organisation, function () use ($organisation, $manager, $managerMembership, $workerMembership): array {
         $program = Program::factory()->for($organisation)->create(['configuration' => [
-            'labels' => ['request' => 'Housing request', 'case' => 'Housing journey'],
-            'stages' => [['key' => 'received', 'label' => 'Received']],
-            'outcome_measures' => [['key' => 'housing_stability', 'label' => 'Housing stability', 'unit' => 'score']],
-            'taxonomies' => [], 'intake_fields' => [], 'eligibility_fields' => [], 'risk_flags' => [],
+            'intake_fields' => [], 'eligibility_fields' => [], 'risk_flags' => [],
         ]]);
+        $program->outcomeMeasures()->create(['key' => 'housing_stability', 'label' => 'Housing stability', 'unit' => 'score', 'position' => 0]);
         $managerMembership->programs()->attach($program);
         $workerMembership->programs()->attach($program);
         $party = Party::factory()->for($organisation)->create();
