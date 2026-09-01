@@ -32,6 +32,7 @@ use App\Http\Controllers\Organisations\PortalAccessGrantController as Organisati
 use App\Http\Controllers\Organisations\ProgramController;
 use App\Http\Controllers\Organisations\PublicFormController;
 use App\Http\Controllers\Organisations\PublishedImpactSnapshotController;
+use App\Http\Controllers\Organisations\ReportingPublicationController;
 use App\Http\Controllers\Organisations\ServiceCaseController;
 use App\Http\Controllers\Organisations\ServiceOperationsExportController;
 use App\Http\Controllers\Organisations\SupporterJourneyController;
@@ -178,6 +179,9 @@ Route::prefix('{current_organisation}')
         Route::get('public-forms', [PublicFormController::class, 'index'])->name('public-forms.index');
         Route::post('public-forms', [PublicFormController::class, 'store'])->name('public-forms.store');
         Route::post('public-forms/{publicForm}/activate', [PublicFormController::class, 'activate'])->name('public-forms.activate');
+        Route::get('reporting-publication', [ReportingPublicationController::class, 'index'])->name('reporting-publication.index');
+        Route::post('reporting-publication', [ReportingPublicationController::class, 'store'])->name('reporting-publication.store');
+        Route::post('reporting-publication/{reportingPublication}/activate', [ReportingPublicationController::class, 'activate'])->name('reporting-publication.activate');
         Route::get('impact-snapshots', [PublishedImpactSnapshotController::class, 'index'])->name('impact-snapshots.index');
         Route::post('impact-snapshots', [PublishedImpactSnapshotController::class, 'store'])->name('impact-snapshots.store');
         Route::get('impact-snapshots/{snapshot}/download', [PublishedImpactSnapshotController::class, 'download'])->name('impact-snapshots.download');

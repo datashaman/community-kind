@@ -17,21 +17,6 @@ type Configuration = {
 };
 type Area = { value: string; label: string };
 
-const examples: Record<string, string> = {
-    reporting: JSON.stringify(
-        {
-            public_metric_ids: ['engagement.event_attendance'],
-            pack_metric_ids: [
-                'service.requests_received',
-                'engagement.event_attendance',
-                'data.missing_service_area_rate',
-            ],
-        },
-        null,
-        2,
-    ),
-};
-
 export default function OrganisationConfigurationsIndex({
     configurations,
     areas,
@@ -47,85 +32,79 @@ export default function OrganisationConfigurationsIndex({
                 title="Organisation configuration"
                 description="Create immutable, validated versions. Preview the exact definition below, then explicitly activate it. Fixed consent, access, and service-data safeguards cannot be disabled."
             />
-            <Card>
-                <CardHeader>
-                    <CardTitle>Create configuration version</CardTitle>
-                </CardHeader>
-                <CardContent>
-                    <Form
-                        {...store.form(organisation.slug)}
-                        className="grid gap-4"
-                    >
-                        {({ errors, processing }) => (
-                            <>
-                                <label className="grid gap-1">
-                                    <span>Area</span>
-                                    <select
-                                        name="area"
-                                        className="h-9 rounded border bg-transparent px-3"
-                                    >
-                                        {areas.map((area) => (
-                                            <option
-                                                key={area.value}
-                                                value={area.value}
-                                            >
-                                                {area.label}
-                                            </option>
-                                        ))}
-                                    </select>
-                                    <InputError message={errors.area} />
-                                </label>
-                                <label className="grid gap-1">
-                                    <span>Configuration key</span>
-                                    <input
-                                        name="configuration_key"
-                                        defaultValue="impact"
-                                        required
-                                        className="h-9 rounded border bg-transparent px-3"
-                                    />
-                                    <InputError
-                                        message={errors.configuration_key}
-                                    />
-                                    <small className="text-muted-foreground">
-                                        Use impact for reporting definitions.
-                                    </small>
-                                </label>
-                                <label className="grid gap-1">
-                                    <span>Validated JSON definition</span>
-                                    <textarea
-                                        name="definition_json"
-                                        rows={10}
-                                        defaultValue={examples.reporting}
-                                        required
-                                        className="rounded border bg-transparent p-3 font-mono text-sm"
-                                    />
-                                    <InputError
-                                        message={errors.definition_json}
-                                    />
-                                </label>
-                                <details>
-                                    <summary>Safe examples by area</summary>
-                                    {Object.entries(examples).map(
-                                        ([area, example]) => (
-                                            <div key={area} className="mt-3">
-                                                <strong>
-                                                    {area.replaceAll('_', ' ')}
-                                                </strong>
-                                                <pre className="bg-muted overflow-auto rounded p-3 text-xs">
-                                                    {example}
-                                                </pre>
-                                            </div>
-                                        ),
-                                    )}
-                                </details>
-                                <Button disabled={processing}>
-                                    Validate and create draft
-                                </Button>
-                            </>
-                        )}
-                    </Form>
-                </CardContent>
-            </Card>
+            {areas.length > 0 ? (
+                <Card>
+                    <CardHeader>
+                        <CardTitle>Create configuration version</CardTitle>
+                    </CardHeader>
+                    <CardContent>
+                        <Form
+                            {...store.form(organisation.slug)}
+                            className="grid gap-4"
+                        >
+                            {({ errors, processing }) => (
+                                <>
+                                    <label className="grid gap-1">
+                                        <span>Area</span>
+                                        <select
+                                            name="area"
+                                            className="h-9 rounded border bg-transparent px-3"
+                                        >
+                                            {areas.map((area) => (
+                                                <option
+                                                    key={area.value}
+                                                    value={area.value}
+                                                >
+                                                    {area.label}
+                                                </option>
+                                            ))}
+                                        </select>
+                                        <InputError message={errors.area} />
+                                    </label>
+                                    <label className="grid gap-1">
+                                        <span>Configuration key</span>
+                                        <input
+                                            name="configuration_key"
+                                            defaultValue="impact"
+                                            required
+                                            className="h-9 rounded border bg-transparent px-3"
+                                        />
+                                        <InputError
+                                            message={errors.configuration_key}
+                                        />
+                                        <small className="text-muted-foreground">
+                                            Use a stable name for this
+                                            definition.
+                                        </small>
+                                    </label>
+                                    <label className="grid gap-1">
+                                        <span>Validated JSON definition</span>
+                                        <textarea
+                                            name="definition_json"
+                                            rows={10}
+                                            required
+                                            className="rounded border bg-transparent p-3 font-mono text-sm"
+                                        />
+                                        <InputError
+                                            message={errors.definition_json}
+                                        />
+                                    </label>
+                                    <Button disabled={processing}>
+                                        Validate and create draft
+                                    </Button>
+                                </>
+                            )}
+                        </Form>
+                    </CardContent>
+                </Card>
+            ) : (
+                <Card>
+                    <CardContent className="pt-6 text-sm">
+                        All configuration areas now have dedicated editors in
+                        the workspace navigation.
+                    </CardContent>
+                </Card>
+            )}
             <section className="space-y-3">
                 <h2 className="text-xl font-semibold">
                     Version history and preview

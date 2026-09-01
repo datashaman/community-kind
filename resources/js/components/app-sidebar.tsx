@@ -1,5 +1,6 @@
 import { Link, usePage } from '@inertiajs/react';
 import {
+    BarChart3,
     ClipboardList,
     CalendarDays,
     FolderGit2,
@@ -43,6 +44,7 @@ import { index as impactSnapshotsIndex } from '@/routes/impact-snapshots';
 import { index as partiesIndex } from '@/routes/parties';
 import { index as programsIndex } from '@/routes/programs';
 import { index as publicFormsIndex } from '@/routes/public-forms';
+import { index as reportingPublicationIndex } from '@/routes/reporting-publication';
 import { index as supporterJourneysIndex } from '@/routes/supporter-journeys';
 import { index as supporterJourneyPolicyIndex } from '@/routes/supporter-journey-policy';
 import { index as volunteersIndex } from '@/routes/volunteers';
@@ -171,6 +173,13 @@ export function AppSidebar() {
                           page.props.currentOrganisation.slug,
                       ),
                       icon: PanelsTopLeft,
+                  },
+                  {
+                      title: 'Reporting publication',
+                      href: reportingPublicationIndex(
+                          page.props.currentOrganisation.slug,
+                      ),
+                      icon: BarChart3,
                   },
                   {
                       title: 'Organisation configuration',
