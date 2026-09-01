@@ -35,6 +35,7 @@ import { index as auditIndex } from '@/routes/audit';
 import { index as communityEngagementIndex } from '@/routes/community-engagement';
 import { index as donationsIndex } from '@/routes/donations';
 import { index as intakesIndex } from '@/routes/intakes';
+import { index as intakeRulesIndex } from '@/routes/intake-rules';
 import { index as messageTemplatesIndex } from '@/routes/message-templates';
 import { index as configurationsIndex } from '@/routes/organisation-configurations';
 import { index as impactSnapshotsIndex } from '@/routes/impact-snapshots';
@@ -154,6 +155,13 @@ export function AppSidebar() {
                           page.props.currentOrganisation.slug,
                       ),
                       icon: SlidersHorizontal,
+                  },
+                  {
+                      title: 'Intake rules',
+                      href: intakeRulesIndex(
+                          page.props.currentOrganisation.slug,
+                      ),
+                      icon: ClipboardList,
                   },
                   {
                       title: 'Organisation configuration',
