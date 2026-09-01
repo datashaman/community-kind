@@ -2,6 +2,7 @@
 
 use App\Http\Controllers\DashboardController;
 use App\Http\Controllers\Demo\SandboxBootstrapController;
+use App\Http\Controllers\Demo\SandboxController;
 use App\Http\Controllers\Demo\SandboxOrganisationController;
 use App\Http\Controllers\Demo\SandboxPersonaController;
 use App\Http\Controllers\Organisations\AudienceSegmentController;
@@ -116,6 +117,9 @@ Route::domain('{public_organisation}.'.config('organisations.public_domain'))
 Route::inertia('/', 'welcome')->name('home');
 Route::model('current_organisation', Organisation::class);
 
+Route::get('/demo', [SandboxController::class, 'create'])->name('demo.create');
+Route::post('/demo', [SandboxController::class, 'store'])->middleware('throttle:3,60')->name('demo.store');
+Route::delete('/demo', [SandboxController::class, 'destroy'])->middleware('throttle:3,60')->name('demo.destroy');
 Route::get('/demo/bootstrap/{token}', [SandboxBootstrapController::class, 'show'])->middleware('throttle:30,1')->name('demo.bootstrap');
 Route::post('/demo/bootstrap/{token}', [SandboxBootstrapController::class, 'store'])->middleware('throttle:10,1')->name('demo.bootstrap.store');
 Route::get('/demo/personas', [SandboxPersonaController::class, 'index'])->name('demo.personas.index');

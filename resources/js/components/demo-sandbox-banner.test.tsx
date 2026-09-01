@@ -1,5 +1,6 @@
 import '@testing-library/jest-dom/vitest';
 import { render, screen } from '@testing-library/react';
+import type { ReactNode } from 'react';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { DemoSandboxBanner } from './demo-sandbox-banner';
 
@@ -9,6 +10,11 @@ let demoSandbox: {
 } | null;
 
 vi.mock('@inertiajs/react', () => ({
+    Form: ({
+        children,
+    }: {
+        children: (state: { processing: boolean }) => ReactNode;
+    }) => <form>{children({ processing: false })}</form>,
     usePage: () => ({ props: { demoSandbox } }),
 }));
 
@@ -31,6 +37,9 @@ describe('DemoSandboxBanner', () => {
         expect(screen.getByRole('status')).toHaveTextContent(
             'uploads, invitations, external messages, payments, and domains are disabled',
         );
+        expect(
+            screen.getByRole('button', { name: 'Reset demo' }),
+        ).toBeEnabled();
     });
 
     it('does not label ordinary sessions as demos', () => {

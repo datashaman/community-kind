@@ -13,7 +13,7 @@ final class BuildSandboxScenario
      */
     public function handle(array $template, string $pairId, int $generation): array
     {
-        $shortPairId = substr(str_replace('-', '', $pairId), 0, 8);
+        $shortPairId = substr(hash('sha256', $pairId), 0, 16);
         $suffix = "{$shortPairId}-g{$generation}";
         $scenario = $template;
         $scenario['uuid'] = $this->uuid($pairId, $generation, $template['uuid']);
