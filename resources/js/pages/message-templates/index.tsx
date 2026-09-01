@@ -21,6 +21,7 @@ type MessageTemplate = {
     body: string;
     journeyKind: string;
     activatedAt: string | null;
+    canActivate: boolean;
 };
 
 type JourneyKind = { value: string; label: string };
@@ -282,7 +283,7 @@ export default function MessageTemplatesIndex({
                                 >
                                     New version
                                 </Button>
-                                {template.status === 'draft' ? (
+                                {template.canActivate ? (
                                     <Form
                                         {...activate.form([
                                             organisation.slug,

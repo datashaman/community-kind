@@ -110,6 +110,36 @@ it('returns channel and variable validation errors on their fields', function ()
         ->assertSessionHasErrors('body');
 });
 
+it('only offers activation for the latest template draft', function () {
+    extract(messageTemplateEditorFixture());
+
+    foreach (['First draft', 'Second draft'] as $body) {
+        $this->actingAs($administrator)
+            ->post(route('message-templates.store', $organisation), [
+                'name' => 'Welcome email',
+                'channel' => 'email',
+                'subject' => 'Welcome',
+                'body' => $body,
+                'journey_kind' => 'general',
+            ])
+            ->assertSessionHasNoErrors();
+    }
+
+    $drafts = app(OrganisationContext::class)->run($organisation, fn () => OrganisationConfiguration::query()
+        ->where('area', OrganisationConfigurationArea::MessageTemplate)
+        ->where('configuration_key', 'welcome-email')
+        ->orderBy('version')
+        ->get());
+    $this->actingAs($administrator)
+        ->get(route('message-templates.index', $organisation))
+        ->assertInertia(fn (Assert $page) => $page
+            ->where('templates.0.canActivate', true)
+            ->where('templates.1.canActivate', false));
+    $this->actingAs($administrator)
+        ->post(route('message-templates.activate', [$organisation, $drafts->first()]))
+        ->assertStatus(409);
+});
+
 it('removes message templates from the generic JSON workflow and enforces administrator access', function () {
     extract(messageTemplateEditorFixture());
 

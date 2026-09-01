@@ -5,6 +5,7 @@ namespace App\Http\Controllers\Organisations;
 use App\Actions\Configuration\ActivateOrganisationConfiguration;
 use App\Actions\Configuration\CreateOrganisationConfiguration;
 use App\Enums\OrganisationConfigurationArea;
+use App\Enums\OrganisationConfigurationStatus;
 use App\Enums\SupporterJourneyKind;
 use App\Http\Controllers\Controller;
 use App\Http\Requests\Organisations\StoreMessageTemplateRequest;
@@ -21,25 +22,27 @@ class MessageTemplateController extends Controller
     public function index(Organisation $currentOrganisation): Response
     {
         Gate::authorize('viewAny', [OrganisationConfiguration::class, $currentOrganisation]);
+        $templates = OrganisationConfiguration::query()
+            ->where('area', OrganisationConfigurationArea::MessageTemplate)
+            ->orderBy('configuration_key')
+            ->orderByDesc('version')
+            ->get();
 
         return Inertia::render('message-templates/index', [
-            'templates' => OrganisationConfiguration::query()
-                ->where('area', OrganisationConfigurationArea::MessageTemplate)
-                ->orderBy('configuration_key')
-                ->orderByDesc('version')
-                ->get()
-                ->map(fn (OrganisationConfiguration $template): array => [
-                    'id' => $template->id,
-                    'key' => $template->configuration_key,
-                    'name' => Str::of($template->configuration_key)->replace(['-', '_'], ' ')->title()->toString(),
-                    'version' => $template->version,
-                    'status' => $template->status->value,
-                    'channel' => $template->definition['channel'],
-                    'subject' => $template->definition['subject'] ?? '',
-                    'body' => $template->definition['body'],
-                    'journeyKind' => $template->definition['journey_kind'],
-                    'activatedAt' => $template->activated_at?->toAtomString(),
-                ]),
+            'templates' => $templates->map(fn (OrganisationConfiguration $template): array => [
+                'id' => $template->id,
+                'key' => $template->configuration_key,
+                'name' => Str::of($template->configuration_key)->replace(['-', '_'], ' ')->title()->toString(),
+                'version' => $template->version,
+                'status' => $template->status->value,
+                'channel' => $template->definition['channel'],
+                'subject' => $template->definition['subject'] ?? '',
+                'body' => $template->definition['body'],
+                'journeyKind' => $template->definition['journey_kind'],
+                'activatedAt' => $template->activated_at?->toAtomString(),
+                'canActivate' => $template->status === OrganisationConfigurationStatus::Draft
+                    && $templates->where('configuration_key', $template->configuration_key)->max('version') === $template->version,
+            ]),
             'journeyKinds' => collect(SupporterJourneyKind::cases())->map(fn (SupporterJourneyKind $kind): array => [
                 'value' => $kind->value,
                 'label' => $kind->label(),
@@ -70,6 +73,12 @@ class MessageTemplateController extends Controller
             ->where('area', OrganisationConfigurationArea::MessageTemplate)
             ->findOrFail($messageTemplate);
         Gate::authorize('update', $template);
+        $latestId = OrganisationConfiguration::query()
+            ->where('area', OrganisationConfigurationArea::MessageTemplate)
+            ->where('configuration_key', $template->configuration_key)
+            ->latest('version')
+            ->value('id');
+        abort_unless($template->status === OrganisationConfigurationStatus::Draft && $template->id === $latestId, 409);
         $activate->handle($template, request()->user());
 
         return back();
