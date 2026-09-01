@@ -27,6 +27,9 @@ use Laravel\Scout\Searchable;
  * @property-read Collection<int, ProgramStage> $stages
  * @property-read Collection<int, ProgramOutcomeMeasure> $outcomeMeasures
  * @property-read Collection<int, ProgramTaxonomy> $taxonomies
+ * @property-read Collection<int, ProgramIntakeField> $intakeFields
+ * @property-read Collection<int, ProgramEligibilityQuestion> $eligibilityQuestions
+ * @property-read Collection<int, ProgramRiskFlag> $riskFlags
  */
 #[Fillable(['organisation_id', 'name', 'slug', 'request_label', 'case_label', 'configuration'])]
 class Program extends Model
@@ -79,6 +82,24 @@ class Program extends Model
     public function taxonomies(): HasMany
     {
         return $this->hasMany(ProgramTaxonomy::class)->orderBy('position')->orderBy('id');
+    }
+
+    /** @return HasMany<ProgramIntakeField, $this> */
+    public function intakeFields(): HasMany
+    {
+        return $this->hasMany(ProgramIntakeField::class)->orderBy('position')->orderBy('id');
+    }
+
+    /** @return HasMany<ProgramEligibilityQuestion, $this> */
+    public function eligibilityQuestions(): HasMany
+    {
+        return $this->hasMany(ProgramEligibilityQuestion::class)->orderBy('position')->orderBy('id');
+    }
+
+    /** @return HasMany<ProgramRiskFlag, $this> */
+    public function riskFlags(): HasMany
+    {
+        return $this->hasMany(ProgramRiskFlag::class)->orderBy('position')->orderBy('id');
     }
 
     /** @return array<string, int|string> */

@@ -33,11 +33,25 @@ function intakeWorkflowFixture(): array
     $managerMembership = $organisation->memberships()->create(['user_id' => $manager->id, 'role' => OrganisationRole::ProgramManager]);
     $workerMembership = $organisation->memberships()->create(['user_id' => $worker->id, 'role' => OrganisationRole::CaseWorker]);
     [$program, $party] = app(OrganisationContext::class)->run($organisation, function () use ($organisation, $managerMembership, $workerMembership): array {
-        $program = Program::factory()->for($organisation)->create(['configuration' => [
-            'intake_fields' => [['key' => 'current_situation', 'label' => 'Current situation', 'type' => 'textarea', 'required' => true]],
-            'eligibility_fields' => [['key' => 'service_area', 'label' => 'Lives in service area']],
-            'risk_flags' => [['key' => 'housing_loss', 'label' => 'At risk of losing housing']],
-        ]]);
+        $program = Program::factory()->for($organisation)->create(['configuration' => []]);
+        $program->intakeFields()->create([
+            'key' => 'current_situation',
+            'label' => 'Current situation',
+            'field_type' => 'textarea',
+            'is_required' => true,
+            'position' => 0,
+        ]);
+        $program->eligibilityQuestions()->create([
+            'key' => 'service_area',
+            'label' => 'Lives in service area',
+            'is_required' => false,
+            'position' => 0,
+        ]);
+        $program->riskFlags()->create([
+            'key' => 'housing_loss',
+            'label' => 'At risk of losing housing',
+            'position' => 0,
+        ]);
         $managerMembership->programs()->attach($program);
         $workerMembership->programs()->attach($program);
         $party = Party::factory()->for($organisation)->create(['display_name' => 'Amina Example']);

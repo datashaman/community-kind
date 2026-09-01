@@ -6,6 +6,7 @@ use App\Actions\Programs\BuildProgramReport;
 use App\Actions\Programs\ExportPrograms;
 use App\Actions\Programs\SearchPrograms;
 use App\Actions\Programs\UpdateProgram;
+use App\Enums\ProgramIntakeFieldType;
 use App\Http\Controllers\Controller;
 use App\Http\Requests\Organisations\UpdateProgramRequest;
 use App\Models\Organisation;
@@ -27,7 +28,7 @@ class ProgramController extends Controller
 
         return Inertia::render('programs/index', [
             'programs' => Program::query()
-                ->with(['stages', 'outcomeMeasures', 'taxonomies.values'])
+                ->with(['stages', 'outcomeMeasures', 'taxonomies.values', 'intakeFields', 'eligibilityQuestions', 'riskFlags'])
                 ->orderBy('name')
                 ->get(['id', 'organisation_id', 'name', 'slug', 'request_label', 'case_label', 'configuration'])
                 ->map(fn (Program $program): array => $this->serializeProgram($program) + [
@@ -41,7 +42,7 @@ class ProgramController extends Controller
         $program = $this->findProgram($program);
         Gate::authorize('view', $program);
 
-        return response()->json($this->serializeProgram($program->load(['stages', 'outcomeMeasures', 'taxonomies.values'])));
+        return response()->json($this->serializeProgram($program->load(['stages', 'outcomeMeasures', 'taxonomies.values', 'intakeFields', 'eligibilityQuestions', 'riskFlags'])));
     }
 
     public function update(UpdateProgramRequest $request, Organisation $organisation, string $program, UpdateProgram $updateProgram): JsonResponse|RedirectResponse
@@ -95,12 +96,13 @@ class ProgramController extends Controller
      *     stages?: list<array{id: int|null, label: string, retired: bool}>,
      *     outcome_measures?: list<array{id: int|null, label: string, unit: string|null, retired: bool}>,
      *     taxonomies?: list<array{id: int|null, label: string, retired: bool, values: list<array{id: int|null, label: string, retired: bool}>}>,
-     *     configuration?: array<string, mixed>
+     *     intake_fields?: list<array{id: int|null, label: string, field_type: ProgramIntakeFieldType, is_required: bool, retired: bool}>,
+     *     eligibility_questions?: list<array{id: int|null, label: string, is_required: bool, retired: bool}>,
+     *     risk_flags?: list<array{id: int|null, label: string, retired: bool}>
      * }
      */
     private function updateAttributes(UpdateProgramRequest $request): array
     {
-        $configuration = $request->validated('configuration');
         $attributes = [
             'name' => $request->string('name')->toString(),
             'slug' => $request->string('slug')->toString(),
@@ -150,9 +152,37 @@ class ProgramController extends Controller
             ], $taxonomies);
         }
 
-        if ($request->has('configuration') && is_array($configuration)) {
-            /** @var array<string, mixed> $configuration */
-            $attributes['configuration'] = $configuration;
+        if ($request->has('intake_fields')) {
+            /** @var list<array{id?: int|null, label: string, field_type: string, is_required: bool, retired: bool}> $intakeFields */
+            $intakeFields = $request->validated('intake_fields');
+            $attributes['intake_fields'] = array_map(fn (array $field): array => [
+                'id' => isset($field['id']) ? (int) $field['id'] : null,
+                'label' => $field['label'],
+                'field_type' => ProgramIntakeFieldType::from($field['field_type']),
+                'is_required' => $field['is_required'],
+                'retired' => $field['retired'],
+            ], $intakeFields);
+        }
+
+        if ($request->has('eligibility_questions')) {
+            /** @var list<array{id?: int|null, label: string, is_required: bool, retired: bool}> $eligibilityQuestions */
+            $eligibilityQuestions = $request->validated('eligibility_questions');
+            $attributes['eligibility_questions'] = array_map(fn (array $question): array => [
+                'id' => isset($question['id']) ? (int) $question['id'] : null,
+                'label' => $question['label'],
+                'is_required' => $question['is_required'],
+                'retired' => $question['retired'],
+            ], $eligibilityQuestions);
+        }
+
+        if ($request->has('risk_flags')) {
+            /** @var list<array{id?: int|null, label: string, retired: bool}> $riskFlags */
+            $riskFlags = $request->validated('risk_flags');
+            $attributes['risk_flags'] = array_map(fn (array $flag): array => [
+                'id' => isset($flag['id']) ? (int) $flag['id'] : null,
+                'label' => $flag['label'],
+                'retired' => $flag['retired'],
+            ], $riskFlags);
         }
 
         return $attributes;
@@ -187,6 +217,27 @@ class ProgramController extends Controller
                     'label' => $value->label,
                     'retired' => $value->retired_at !== null,
                 ])->values(),
+            ])->values(),
+            'intake_fields' => $program->intakeFields->map(fn ($field): array => [
+                'id' => $field->id,
+                'key' => $field->key,
+                'label' => $field->label,
+                'field_type' => $field->field_type->value,
+                'is_required' => $field->is_required,
+                'retired' => $field->retired_at !== null,
+            ])->values(),
+            'eligibility_questions' => $program->eligibilityQuestions->map(fn ($question): array => [
+                'id' => $question->id,
+                'key' => $question->key,
+                'label' => $question->label,
+                'is_required' => $question->is_required,
+                'retired' => $question->retired_at !== null,
+            ])->values(),
+            'risk_flags' => $program->riskFlags->map(fn ($flag): array => [
+                'id' => $flag->id,
+                'key' => $flag->key,
+                'label' => $flag->label,
+                'retired' => $flag->retired_at !== null,
             ])->values(),
         ];
     }

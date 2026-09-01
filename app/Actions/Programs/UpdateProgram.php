@@ -3,6 +3,7 @@
 namespace App\Actions\Programs;
 
 use App\Actions\Auditing\RecordTenantAuditEvent;
+use App\Enums\ProgramIntakeFieldType;
 use App\Enums\TenantAuditEventType;
 use App\Models\Program;
 use App\Models\User;
@@ -23,7 +24,9 @@ class UpdateProgram
      *     stages?: list<array{id: int|null, label: string, retired: bool}>,
      *     outcome_measures?: list<array{id: int|null, label: string, unit: string|null, retired: bool}>,
      *     taxonomies?: list<array{id: int|null, label: string, retired: bool, values: list<array{id: int|null, label: string, retired: bool}>}>,
-     *     configuration?: array<string, mixed>
+     *     intake_fields?: list<array{id: int|null, label: string, field_type: ProgramIntakeFieldType, is_required: bool, retired: bool}>,
+     *     eligibility_questions?: list<array{id: int|null, label: string, is_required: bool, retired: bool}>,
+     *     risk_flags?: list<array{id: int|null, label: string, retired: bool}>
      * } $attributes
      */
     public function handle(Program $program, array $attributes, User $actor): Program
@@ -33,7 +36,10 @@ class UpdateProgram
             $stages = $attributes['stages'] ?? null;
             $outcomeMeasures = $attributes['outcome_measures'] ?? null;
             $taxonomies = $attributes['taxonomies'] ?? null;
-            unset($attributes['stages'], $attributes['outcome_measures'], $attributes['taxonomies']);
+            $intakeFields = $attributes['intake_fields'] ?? null;
+            $eligibilityQuestions = $attributes['eligibility_questions'] ?? null;
+            $riskFlags = $attributes['risk_flags'] ?? null;
+            unset($attributes['stages'], $attributes['outcome_measures'], $attributes['taxonomies'], $attributes['intake_fields'], $attributes['eligibility_questions'], $attributes['risk_flags']);
             $program->fill($attributes);
             $changedFields = array_keys($program->getDirty());
             $program->save();
@@ -103,6 +109,57 @@ class UpdateProgram
                 }
             }
 
+            foreach ($intakeFields ?? [] as $position => $fieldAttributes) {
+                $field = $fieldAttributes['id'] === null
+                    ? $program->intakeFields()->make(['key' => $this->uniqueKey($program->intakeFields(), $fieldAttributes['label'], 'field')])
+                    : $program->intakeFields()->whereKey($fieldAttributes['id'])->firstOrFail();
+                $field->fill([
+                    'label' => $fieldAttributes['label'],
+                    'field_type' => $fieldAttributes['field_type'],
+                    'is_required' => $fieldAttributes['is_required'],
+                    'position' => $position,
+                    'retired_at' => $fieldAttributes['retired'] ? ($field->retired_at ?? now()) : null,
+                ]);
+
+                if (! $field->exists || $field->isDirty()) {
+                    $field->save();
+                    $changedFields[] = 'intake_fields';
+                }
+            }
+
+            foreach ($eligibilityQuestions ?? [] as $position => $questionAttributes) {
+                $question = $questionAttributes['id'] === null
+                    ? $program->eligibilityQuestions()->make(['key' => $this->uniqueKey($program->eligibilityQuestions(), $questionAttributes['label'], 'question')])
+                    : $program->eligibilityQuestions()->whereKey($questionAttributes['id'])->firstOrFail();
+                $question->fill([
+                    'label' => $questionAttributes['label'],
+                    'is_required' => $questionAttributes['is_required'],
+                    'position' => $position,
+                    'retired_at' => $questionAttributes['retired'] ? ($question->retired_at ?? now()) : null,
+                ]);
+
+                if (! $question->exists || $question->isDirty()) {
+                    $question->save();
+                    $changedFields[] = 'eligibility_questions';
+                }
+            }
+
+            foreach ($riskFlags ?? [] as $position => $flagAttributes) {
+                $flag = $flagAttributes['id'] === null
+                    ? $program->riskFlags()->make(['key' => $this->uniqueKey($program->riskFlags(), $flagAttributes['label'], 'risk')])
+                    : $program->riskFlags()->whereKey($flagAttributes['id'])->firstOrFail();
+                $flag->fill([
+                    'label' => $flagAttributes['label'],
+                    'position' => $position,
+                    'retired_at' => $flagAttributes['retired'] ? ($flag->retired_at ?? now()) : null,
+                ]);
+
+                if (! $flag->exists || $flag->isDirty()) {
+                    $flag->save();
+                    $changedFields[] = 'risk_flags';
+                }
+            }
+
             $changedFields = array_values(array_unique($changedFields));
 
             $this->recordTenantAuditEvent->handle(
@@ -117,7 +174,7 @@ class UpdateProgram
                 $actor,
             );
 
-            return $program->refresh()->load(['stages', 'outcomeMeasures', 'taxonomies.values']);
+            return $program->refresh()->load(['stages', 'outcomeMeasures', 'taxonomies.values', 'intakeFields', 'eligibilityQuestions', 'riskFlags']);
         });
     }
 

@@ -13,16 +13,14 @@ import { index, show, store } from '@/routes/intakes';
 type FieldDefinition = {
     key: string;
     label: string;
-    type: 'text' | 'textarea' | 'boolean' | 'date';
+    fieldType: 'text' | 'textarea' | 'boolean' | 'date';
     required: boolean;
 };
 type Program = {
     id: number;
     name: string;
-    configuration: {
-        intake_fields?: FieldDefinition[];
-        risk_flags?: { key: string; label: string }[];
-    };
+    intakeFields: FieldDefinition[];
+    riskFlags: { key: string; label: string }[];
 };
 type Party = { uuid: string; displayName: string };
 type Intake = {
@@ -60,8 +58,8 @@ export default function IntakesIndex({ intakes, programs, parties }: Props) {
     const program = programs.find(
         (candidate) => candidate.id === Number(form.data.program_id),
     );
-    const fields = program?.configuration.intake_fields ?? [];
-    const risks = program?.configuration.risk_flags ?? [];
+    const fields = program?.intakeFields ?? [];
+    const risks = program?.riskFlags ?? [];
     const submit = (event: FormEvent) => {
         event.preventDefault();
         form.post(store.url(organisation.slug));
@@ -234,7 +232,7 @@ export default function IntakesIndex({ intakes, programs, parties }: Props) {
                                 <div
                                     key={field.key}
                                     className={
-                                        field.type === 'textarea'
+                                        field.fieldType === 'textarea'
                                             ? 'md:col-span-2'
                                             : ''
                                     }
@@ -242,7 +240,7 @@ export default function IntakesIndex({ intakes, programs, parties }: Props) {
                                     <Label htmlFor={`field-${field.key}`}>
                                         {field.label}
                                     </Label>
-                                    {field.type === 'textarea' ? (
+                                    {field.fieldType === 'textarea' ? (
                                         <Textarea
                                             id={`field-${field.key}`}
                                             value={String(
@@ -259,11 +257,12 @@ export default function IntakesIndex({ intakes, programs, parties }: Props) {
                                             }
                                             required={field.required}
                                         />
-                                    ) : field.type === 'boolean' ? (
+                                    ) : field.fieldType === 'boolean' ? (
                                         <input
                                             id={`field-${field.key}`}
                                             className="ml-3 size-4"
                                             type="checkbox"
+                                            required={field.required}
                                             checked={Boolean(
                                                 form.data.intake_fields[
                                                     field.key
@@ -280,7 +279,7 @@ export default function IntakesIndex({ intakes, programs, parties }: Props) {
                                     ) : (
                                         <Input
                                             id={`field-${field.key}`}
-                                            type={field.type}
+                                            type={field.fieldType}
                                             value={String(
                                                 form.data.intake_fields[
                                                     field.key
@@ -296,6 +295,13 @@ export default function IntakesIndex({ intakes, programs, parties }: Props) {
                                             required={field.required}
                                         />
                                     )}
+                                    <InputError
+                                        message={
+                                            form.errors[
+                                                `intake_fields.${field.key}`
+                                            ]
+                                        }
+                                    />
                                 </div>
                             ))}
                             {risks.length > 0 ? (

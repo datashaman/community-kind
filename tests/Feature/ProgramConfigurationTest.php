@@ -22,11 +22,7 @@ function createProgramConfigurationFixture(): array
         $program = Program::factory()->for($organisation)->create([
             'request_label' => 'Request',
             'case_label' => 'Case',
-            'configuration' => [
-                'intake_fields' => [],
-                'eligibility_fields' => [],
-                'risk_flags' => [],
-            ],
+            'configuration' => [],
         ]);
         $received = $program->stages()->create(['key' => 'received', 'label' => 'Received', 'position' => 0]);
         $active = $program->stages()->create(['key' => 'active', 'label' => 'Active', 'position' => 1]);
@@ -63,11 +59,7 @@ it('lets an administrator manage Program terminology and an ordered service path
 
         expect($program->request_label)->toBe('Support request')
             ->and($program->case_label)->toBe('Support journey')
-            ->and($program->configuration)->toBe([
-                'intake_fields' => [],
-                'eligibility_fields' => [],
-                'risk_flags' => [],
-            ])
+            ->and($program->configuration)->toBe([])
             ->and($program->stages()->pluck('key')->all())->toBe(['active', 'received', 'review_progress'])
             ->and($received->refresh()->retired_at)->not->toBeNull();
     });
@@ -184,6 +176,7 @@ it('rejects terminology and stages hidden inside Program configuration JSON', fu
             'case_label' => 'Case',
             'stages' => [
                 ['id' => $received->id, 'key' => $received->key, 'label' => 'Received', 'retired' => false],
+                ['id' => $active->id, 'key' => $active->key, 'label' => 'Active', 'retired' => false],
             ],
             'configuration' => [
                 'labels' => ['request' => 'Hidden request', 'case' => 'Hidden case'],
