@@ -70,8 +70,7 @@ it('manages ordered outcome measures taxonomies and allowed values without JSON'
         expect($program->outcomeMeasures()->pluck('key')->all())->toBe(['wellbeing', 'progress', 'housing_stability'])
             ->and($program->taxonomies()->firstOrFail()->values()->pluck('key')->all())->toBe(['food', 'housing', 'employment'])
             ->and($progress->refresh()->retired_at)->not->toBeNull()
-            ->and($housing->refresh()->retired_at)->not->toBeNull()
-            ->and($program->refresh()->configuration)->not->toHaveKeys(['outcome_measures', 'taxonomies']);
+            ->and($housing->refresh()->retired_at)->not->toBeNull();
     });
 });
 

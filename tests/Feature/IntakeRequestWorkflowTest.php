@@ -33,7 +33,7 @@ function intakeWorkflowFixture(): array
     $managerMembership = $organisation->memberships()->create(['user_id' => $manager->id, 'role' => OrganisationRole::ProgramManager]);
     $workerMembership = $organisation->memberships()->create(['user_id' => $worker->id, 'role' => OrganisationRole::CaseWorker]);
     [$program, $party] = app(OrganisationContext::class)->run($organisation, function () use ($organisation, $managerMembership, $workerMembership): array {
-        $program = Program::factory()->for($organisation)->create(['configuration' => []]);
+        $program = Program::factory()->for($organisation)->create();
         $program->intakeFields()->create([
             'key' => 'current_situation',
             'label' => 'Current situation',

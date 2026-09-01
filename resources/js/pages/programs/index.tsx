@@ -66,6 +66,7 @@ type Program = {
     slug: string;
     request_label: string;
     case_label: string;
+    case_default_classification: 'confidential' | 'highly_restricted';
     stages: ProgramStage[];
     outcome_measures: OutcomeMeasure[];
     taxonomies: ProgramTaxonomy[];
@@ -87,6 +88,7 @@ function ProgramEditor({
         slug: program.slug,
         request_label: program.request_label,
         case_label: program.case_label,
+        case_default_classification: program.case_default_classification,
         stages: program.stages,
         outcome_measures: program.outcome_measures.map((measure) => ({
             ...measure,
@@ -292,6 +294,50 @@ function ProgramEditor({
                                 disabled={!program.canUpdate}
                             />
                             <InputError message={errors.slug} />
+                        </div>
+                    </section>
+
+                    <section className="space-y-3">
+                        <div>
+                            <h3 className="font-semibold">
+                                Default case protection
+                            </h3>
+                            <p className="text-muted-foreground text-sm">
+                                Choose the starting classification for cases
+                                accepted through this Program. Staff can only
+                                lower it later with a recorded justification.
+                            </p>
+                        </div>
+                        <div className="grid max-w-xl gap-2">
+                            <Label
+                                htmlFor={`program-${program.id}-case-classification`}
+                            >
+                                New cases start as
+                            </Label>
+                            <select
+                                id={`program-${program.id}-case-classification`}
+                                className="h-9 rounded-md border bg-transparent px-3"
+                                value={form.data.case_default_classification}
+                                onChange={(event) =>
+                                    form.setData(
+                                        'case_default_classification',
+                                        event.target.value as
+                                            | 'confidential'
+                                            | 'highly_restricted',
+                                    )
+                                }
+                                disabled={!program.canUpdate}
+                            >
+                                <option value="confidential">
+                                    Confidential
+                                </option>
+                                <option value="highly_restricted">
+                                    Highly restricted
+                                </option>
+                            </select>
+                            <InputError
+                                message={errors.case_default_classification}
+                            />
                         </div>
                     </section>
 

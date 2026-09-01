@@ -135,22 +135,18 @@ final class BuildOrganisationScenario
                 'organisation_id' => $organisation->id,
                 'slug' => $definition['slug'],
             ]);
-            $configuration = $definition['configuration'];
-            $labels = $configuration['labels'];
-            $stages = $configuration['stages'];
-            $outcomeMeasures = $configuration['outcome_measures'];
-            $taxonomies = $configuration['taxonomies'];
-            $intakeFields = $configuration['intake_fields'];
-            $eligibilityQuestions = $configuration['eligibility_fields'];
-            $riskFlags = $configuration['risk_flags'];
-            unset($configuration['labels'], $configuration['stages'], $configuration['outcome_measures'], $configuration['taxonomies'], $configuration['intake_fields'], $configuration['eligibility_fields'], $configuration['risk_flags']);
+            $stages = $definition['stages'];
+            $outcomeMeasures = $definition['outcome_measures'];
+            $taxonomies = $definition['taxonomies'];
+            $intakeFields = $definition['intake_fields'];
+            $eligibilityQuestions = $definition['eligibility_questions'];
+            $riskFlags = $definition['risk_flags'];
             $program->forceFill([
                 'organisation_id' => $organisation->id,
                 'name' => $definition['name'],
                 'slug' => $definition['slug'],
-                'request_label' => $labels['request'],
-                'case_label' => $labels['case'],
-                'configuration' => $configuration,
+                'request_label' => $definition['request_label'],
+                'case_label' => $definition['case_label'],
                 'deleted_at' => null,
             ])->save();
 

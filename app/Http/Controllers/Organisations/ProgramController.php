@@ -6,6 +6,7 @@ use App\Actions\Programs\BuildProgramReport;
 use App\Actions\Programs\ExportPrograms;
 use App\Actions\Programs\SearchPrograms;
 use App\Actions\Programs\UpdateProgram;
+use App\Enums\CaseClassification;
 use App\Enums\ProgramIntakeFieldType;
 use App\Http\Controllers\Controller;
 use App\Http\Requests\Organisations\UpdateProgramRequest;
@@ -30,7 +31,7 @@ class ProgramController extends Controller
             'programs' => Program::query()
                 ->with(['stages', 'outcomeMeasures', 'taxonomies.values', 'intakeFields', 'eligibilityQuestions', 'riskFlags'])
                 ->orderBy('name')
-                ->get(['id', 'organisation_id', 'name', 'slug', 'request_label', 'case_label', 'configuration'])
+                ->get(['id', 'organisation_id', 'name', 'slug', 'request_label', 'case_label', 'case_default_classification'])
                 ->map(fn (Program $program): array => $this->serializeProgram($program) + [
                     'canUpdate' => Gate::allows('update', $program),
                 ]),
@@ -93,6 +94,7 @@ class ProgramController extends Controller
      *     slug: string,
      *     request_label?: string,
      *     case_label?: string,
+     *     case_default_classification?: CaseClassification,
      *     stages?: list<array{id: int|null, label: string, retired: bool}>,
      *     outcome_measures?: list<array{id: int|null, label: string, unit: string|null, retired: bool}>,
      *     taxonomies?: list<array{id: int|null, label: string, retired: bool, values: list<array{id: int|null, label: string, retired: bool}>}>,
@@ -114,6 +116,10 @@ class ProgramController extends Controller
 
         if ($request->has('case_label')) {
             $attributes['case_label'] = $request->string('case_label')->toString();
+        }
+
+        if ($request->has('case_default_classification')) {
+            $attributes['case_default_classification'] = CaseClassification::from($request->string('case_default_classification')->toString());
         }
 
         if ($request->has('stages')) {
@@ -192,7 +198,8 @@ class ProgramController extends Controller
     private function serializeProgram(Program $program): array
     {
         return [
-            ...$program->only(['id', 'organisation_id', 'name', 'slug', 'request_label', 'case_label', 'configuration']),
+            ...$program->only(['id', 'organisation_id', 'name', 'slug', 'request_label', 'case_label']),
+            'case_default_classification' => $program->case_default_classification->value,
             'stages' => $program->stages->map(fn ($stage): array => [
                 'id' => $stage->id,
                 'key' => $stage->key,

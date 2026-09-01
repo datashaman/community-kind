@@ -22,7 +22,7 @@ class PersonaGuide
                 'boundary' => 'Can inspect organisation-wide setup and audit history. Demo confinement still blocks invitations, uploads, domains, payments, and outbound messages.',
                 'tasks' => [
                     self::task('Review programme setup', 'See how service programmes are structured.', 'programs.index', $organisation),
-                    self::task('Inspect organisation configuration', 'Review the controls that shape day-to-day work.', 'organisation-configurations.index', $organisation),
+                    self::task('Inspect reporting publication', 'Review which registered metrics may leave the organisation.', 'reporting-publication.index', $organisation),
                     self::task('Trace the audit history', 'See how important actions remain accountable.', 'audit.index', $organisation),
                 ],
             ],

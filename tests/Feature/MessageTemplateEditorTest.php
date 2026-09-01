@@ -150,24 +150,21 @@ it('removes message templates from the generic JSON workflow and enforces admini
     ]));
 
     $this->actingAs($administrator)
-        ->get(route('organisation-configurations.index', $organisation))
-        ->assertOk()
-        ->assertInertia(fn (Assert $page) => $page
-            ->where('areas', fn ($areas) => collect($areas)->doesntContain('value', 'message_template'))
-            ->where('configurations', fn ($configurations) => collect($configurations)->doesntContain('area', 'message_template')));
+        ->get("/{$organisation->slug}/organisation-configurations")
+        ->assertNotFound();
     $this->actingAs($administrator)
-        ->post(route('organisation-configurations.store', $organisation), [
+        ->post("/{$organisation->slug}/organisation-configurations", [
             'area' => 'message_template',
             'configuration_key' => 'raw-json',
             'definition_json' => json_encode(['channel' => 'sms'], JSON_THROW_ON_ERROR),
         ])
-        ->assertSessionHasErrors('area');
+        ->assertNotFound();
     $historicalTemplate = app(OrganisationContext::class)->run($organisation, fn (): OrganisationConfiguration => OrganisationConfiguration::query()
         ->where('area', OrganisationConfigurationArea::MessageTemplate)
         ->where('configuration_key', 'historical_template')
         ->sole());
     $this->actingAs($administrator)
-        ->post(route('organisation-configurations.activate', [$organisation, $historicalTemplate]))
+        ->post("/{$organisation->slug}/organisation-configurations/{$historicalTemplate->id}/activate")
         ->assertNotFound();
     $this->actingAs($administrator)
         ->post(route('message-templates.store', $organisation), [

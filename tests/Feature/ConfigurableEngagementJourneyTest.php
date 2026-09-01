@@ -95,12 +95,12 @@ it('versions, previews, audits, and protects organisation configuration', functi
     $this->actingAs($administrator)->get(route('public-forms.index', $organisation))
         ->assertOk()
         ->assertSee('interests');
-    $this->actingAs($administrator)->post(route('organisation-configurations.store', $organisation), [
+    $this->actingAs($administrator)->post("/{$organisation->slug}/organisation-configurations", [
         'area' => OrganisationConfigurationArea::PublicForm->value,
         'configuration_key' => 'volunteer_registration',
         'definition_json' => json_encode(['form' => 'volunteer_registration', 'required_fields' => ['name']], JSON_THROW_ON_ERROR),
-    ])->assertSessionHasErrors('area');
-    $this->actingAs($officer)->get(route('organisation-configurations.index', $organisation))->assertForbidden();
+    ])->assertNotFound();
+    $this->actingAs($officer)->get("/{$organisation->slug}/organisation-configurations")->assertNotFound();
 });
 
 it('evaluates declared donation, event, and volunteer recency-frequency-value semantics', function () {

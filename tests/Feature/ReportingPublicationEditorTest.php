@@ -106,12 +106,12 @@ it('rejects unavailable metrics and removes reporting from the generic JSON work
         ])
         ->assertSessionHasErrors(['public_metric_ids.0', 'pack_metric_ids']);
     $this->actingAs($administrator)
-        ->post(route('organisation-configurations.store', $organisation), [
+        ->post("/{$organisation->slug}/organisation-configurations", [
             'area' => 'reporting',
             'configuration_key' => 'impact',
             'definition_json' => '{}',
         ])
-        ->assertSessionHasErrors('area');
+        ->assertNotFound();
     $this->actingAs($officer)
         ->get(route('reporting-publication.index', $organisation))
         ->assertForbidden();
@@ -136,7 +136,7 @@ it('only permits activation of the latest reporting draft', function () {
         ->get());
 
     $this->actingAs($administrator)
-        ->post(route('organisation-configurations.activate', [$organisation, $drafts->last()]))
+        ->post("/{$organisation->slug}/organisation-configurations/{$drafts->last()->id}/activate")
         ->assertNotFound();
     $this->actingAs($administrator)
         ->post(route('reporting-publication.activate', [$organisation, $drafts->first()]))

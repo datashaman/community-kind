@@ -3,6 +3,7 @@
 namespace App\Actions\Programs;
 
 use App\Actions\Auditing\RecordTenantAuditEvent;
+use App\Enums\CaseClassification;
 use App\Enums\ProgramIntakeFieldType;
 use App\Enums\TenantAuditEventType;
 use App\Models\Program;
@@ -21,6 +22,7 @@ class UpdateProgram
      *     slug: string,
      *     request_label?: string,
      *     case_label?: string,
+     *     case_default_classification?: CaseClassification,
      *     stages?: list<array{id: int|null, label: string, retired: bool}>,
      *     outcome_measures?: list<array{id: int|null, label: string, unit: string|null, retired: bool}>,
      *     taxonomies?: list<array{id: int|null, label: string, retired: bool, values: list<array{id: int|null, label: string, retired: bool}>}>,

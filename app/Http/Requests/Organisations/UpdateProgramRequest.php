@@ -2,6 +2,7 @@
 
 namespace App\Http\Requests\Organisations;
 
+use App\Enums\CaseClassification;
 use App\Enums\ProgramIntakeFieldType;
 use App\Models\Organisation;
 use App\Models\Program;
@@ -46,6 +47,7 @@ class UpdateProgramRequest extends FormRequest
             ],
             'request_label' => ['sometimes', 'required', 'string', 'max:100'],
             'case_label' => ['sometimes', 'required', 'string', 'max:100'],
+            'case_default_classification' => ['sometimes', 'required', Rule::enum(CaseClassification::class)],
             'stages' => ['sometimes', 'required', 'array', 'min:1', 'max:20'],
             'stages.*' => ['array:id,key,label,retired'],
             'stages.*.id' => [

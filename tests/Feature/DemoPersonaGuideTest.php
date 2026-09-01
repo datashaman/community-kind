@@ -31,7 +31,7 @@ it('explains each perspective and links to meaningful permitted work', function 
     $destinations = [
         OrganisationRole::OrganisationAdministrator->value => [
             'programs.index',
-            'organisation-configurations.index',
+            'reporting-publication.index',
             'audit.index',
         ],
         OrganisationRole::ProgramManager->value => [
