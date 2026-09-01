@@ -1,6 +1,7 @@
 import { Head, Link, usePage } from '@inertiajs/react';
 import { dashboard, login } from '@/routes';
 import SourceAndLicenceLink from '@/components/source-and-licence-link';
+import { create as createDemo } from '@/routes/demo';
 
 export default function Welcome() {
     const { auth, currentOrganisation } = usePage().props;
@@ -59,6 +60,20 @@ export default function Welcome() {
                             synthetic data. It is not ready for real client or
                             supporter information.
                         </p>
+                        <div className="mt-8 flex flex-wrap gap-3">
+                            <Link
+                                href={createDemo()}
+                                className="rounded-md bg-neutral-900 px-5 py-3 text-sm font-medium text-white dark:bg-white dark:text-neutral-900"
+                            >
+                                Explore the demo
+                            </Link>
+                            <Link
+                                href={login()}
+                                className="rounded-md border px-5 py-3 text-sm font-medium"
+                            >
+                                Staff log in
+                            </Link>
+                        </div>
                     </div>
                 </main>
 

@@ -8,6 +8,7 @@ import {
     CardHeader,
     CardTitle,
 } from '@/components/ui/card';
+import { destroy } from '@/routes/demo';
 import { store } from '@/routes/demo/personas';
 
 type Persona = {
@@ -70,6 +71,21 @@ export default function DemoPersonas({ personas }: { personas: Persona[] }) {
                             </CardContent>
                         </Card>
                     ))}
+                </div>
+                <div className="flex justify-center border-t pt-6">
+                    <Form {...destroy.form()}>
+                        {({ processing }) => (
+                            <Button
+                                type="submit"
+                                variant="outline"
+                                disabled={processing}
+                            >
+                                {processing
+                                    ? 'Preparing a clean demo…'
+                                    : 'Reset with fresh demo data'}
+                            </Button>
+                        )}
+                    </Form>
                 </div>
             </div>
         </main>
