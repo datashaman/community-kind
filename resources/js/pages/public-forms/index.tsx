@@ -26,13 +26,18 @@ type Purpose = {
 
 type PublicFormVersion = {
     id: string;
-    purpose: string;
-    purposeLabel: string;
     version: number;
     status: string;
     fields: FormField[];
     activatedAt: string | null;
     canActivate: boolean;
+};
+
+type PublicForm = {
+    purpose: string;
+    purposeLabel: string;
+    activeVersion: number | null;
+    versions: PublicFormVersion[];
 };
 
 function FieldPreview({ field }: { field: FormField }) {
@@ -79,12 +84,60 @@ function FieldPreview({ field }: { field: FormField }) {
     );
 }
 
+function VersionDetail({
+    version,
+    organisationSlug,
+    onNewVersion,
+}: {
+    version: PublicFormVersion;
+    organisationSlug: string;
+    onNewVersion: () => void;
+}) {
+    return (
+        <div className="grid gap-3 lg:grid-cols-[1fr_auto]">
+            <div className="space-y-2">
+                <div className="flex flex-wrap items-center gap-2">
+                    <strong>v{version.version}</strong>
+                    <Badge>{version.status}</Badge>
+                    {version.activatedAt ? (
+                        <time
+                            className="text-muted-foreground text-sm"
+                            dateTime={version.activatedAt}
+                        >
+                            activated{' '}
+                            {new Date(version.activatedAt).toLocaleDateString()}
+                        </time>
+                    ) : null}
+                </div>
+                <ol className="grid gap-1 text-sm sm:grid-cols-2">
+                    {version.fields.map((field, fieldIndex) => (
+                        <li key={field.key}>
+                            {fieldIndex + 1}. {field.label}
+                            {field.required ? ' · required' : ' · optional'}
+                        </li>
+                    ))}
+                </ol>
+            </div>
+            <div className="flex flex-wrap items-start gap-2">
+                <Button type="button" variant="outline" onClick={onNewVersion}>
+                    New version
+                </Button>
+                {version.canActivate ? (
+                    <Form {...activate.form([organisationSlug, version.id])}>
+                        <Button>Activate</Button>
+                    </Form>
+                ) : null}
+            </div>
+        </div>
+    );
+}
+
 export default function PublicFormsIndex({
     purposes,
     forms,
 }: {
     purposes: Purpose[];
-    forms: PublicFormVersion[];
+    forms: PublicForm[];
 }) {
     const organisation = usePage().props.currentOrganisation!;
     const initialPurpose = purposes[0];
@@ -154,11 +207,14 @@ export default function PublicFormsIndex({
         );
     };
 
-    const useAsStartingPoint = (form: PublicFormVersion) => {
+    const useAsStartingPoint = (
+        purpose: string,
+        version: PublicFormVersion,
+    ) => {
         editor.setData({
-            form: form.purpose,
-            ordered_fields: form.fields.map((field) => field.key),
-            required_fields: form.fields
+            form: purpose,
+            ordered_fields: version.fields.map((field) => field.key),
+            required_fields: version.fields
                 .filter((field) => field.required)
                 .map((field) => field.key),
         });
@@ -334,56 +390,70 @@ export default function PublicFormsIndex({
             </Card>
 
             <section className="space-y-3">
-                <h2 className="text-xl font-semibold">Version history</h2>
+                <h2 className="text-xl font-semibold">All forms</h2>
                 {forms.length === 0 ? (
                     <p className="text-muted-foreground text-sm">
-                        No public form versions yet. Built-in form behavior
-                        remains in place until a draft is activated.
+                        No public forms yet. Built-in form behavior remains in
+                        place until a draft is activated.
                     </p>
                 ) : null}
-                {forms.map((form) => (
-                    <Card key={form.id}>
-                        <CardContent className="grid gap-4 pt-6 lg:grid-cols-[1fr_auto]">
-                            <div className="space-y-3">
-                                <div className="flex flex-wrap items-center gap-2">
-                                    <strong>
-                                        {form.purposeLabel} · v{form.version}
-                                    </strong>
-                                    <Badge>{form.status}</Badge>
-                                </div>
-                                <ol className="grid gap-1 text-sm sm:grid-cols-2">
-                                    {form.fields.map((field, fieldIndex) => (
-                                        <li key={field.key}>
-                                            {fieldIndex + 1}. {field.label}
-                                            {field.required
-                                                ? ' · required'
-                                                : ' · optional'}
-                                        </li>
-                                    ))}
-                                </ol>
-                            </div>
-                            <div className="flex flex-wrap items-start gap-2">
-                                <Button
-                                    type="button"
-                                    variant="outline"
-                                    onClick={() => useAsStartingPoint(form)}
-                                >
-                                    New version
-                                </Button>
-                                {form.canActivate ? (
-                                    <Form
-                                        {...activate.form([
-                                            organisation.slug,
-                                            form.id,
-                                        ])}
-                                    >
-                                        <Button>Activate</Button>
-                                    </Form>
+                {forms.map((form) => {
+                    const [current, ...superseded] = form.versions;
+
+                    return (
+                        <Card key={form.purpose}>
+                            <CardHeader className="flex-row items-baseline justify-between gap-3 space-y-0">
+                                <CardTitle>{form.purposeLabel}</CardTitle>
+                                <p className="text-muted-foreground text-sm">
+                                    {form.activeVersion === null
+                                        ? 'Not published'
+                                        : `Live: v${form.activeVersion}`}
+                                </p>
+                            </CardHeader>
+                            <CardContent className="space-y-4">
+                                {current ? (
+                                    <VersionDetail
+                                        version={current}
+                                        organisationSlug={organisation.slug}
+                                        onNewVersion={() =>
+                                            useAsStartingPoint(
+                                                form.purpose,
+                                                current,
+                                            )
+                                        }
+                                    />
                                 ) : null}
-                            </div>
-                        </CardContent>
-                    </Card>
-                ))}
+                                {superseded.length > 0 ? (
+                                    <details className="border-t pt-4">
+                                        <summary className="cursor-pointer text-sm font-medium">
+                                            {superseded.length} earlier{' '}
+                                            {superseded.length === 1
+                                                ? 'version'
+                                                : 'versions'}
+                                        </summary>
+                                        <div className="mt-4 space-y-4">
+                                            {superseded.map((version) => (
+                                                <VersionDetail
+                                                    key={version.id}
+                                                    version={version}
+                                                    organisationSlug={
+                                                        organisation.slug
+                                                    }
+                                                    onNewVersion={() =>
+                                                        useAsStartingPoint(
+                                                            form.purpose,
+                                                            version,
+                                                        )
+                                                    }
+                                                />
+                                            ))}
+                                        </div>
+                                    </details>
+                                ) : null}
+                            </CardContent>
+                        </Card>
+                    );
+                })}
             </section>
         </div>
     );

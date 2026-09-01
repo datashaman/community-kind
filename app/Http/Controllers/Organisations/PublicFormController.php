@@ -11,6 +11,7 @@ use App\Http\Controllers\Controller;
 use App\Http\Requests\Organisations\StorePublicFormRequest;
 use App\Models\Organisation;
 use App\Models\OrganisationConfiguration;
+use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Support\Facades\Gate;
 use Inertia\Inertia;
@@ -21,10 +22,21 @@ class PublicFormController extends Controller
     public function index(Organisation $currentOrganisation): Response
     {
         Gate::authorize('viewAny', [OrganisationConfiguration::class, $currentOrganisation]);
+
+        /*
+         * Each purpose is one form; version is a revision of it. Group by
+         * purpose so the page reads as an index of forms rather than a flat
+         * list of every revision of every form.
+         */
         $forms = OrganisationConfiguration::query()
             ->where('area', OrganisationConfigurationArea::PublicForm)
-            ->latest('version')
-            ->get();
+            ->orderByDesc('version')
+            ->get()
+            ->groupBy(fn (OrganisationConfiguration $form): string => $this->purpose($form))
+            ->map(fn (Collection $versions, string $purpose): array => $this->presentForm($purpose, $versions))
+            ->sortBy('purposeLabel')
+            ->values()
+            ->all();
 
         return Inertia::render('public-forms/index', [
             'purposes' => collect(PublicFormDefinition::catalogue())->map(fn (array $purpose, string $value): array => [
@@ -39,18 +51,37 @@ class PublicFormController extends Controller
                     'fixedRequired' => $field['fixed_required'],
                 ])->all(),
             ])->values(),
-            'forms' => $forms->map(fn (OrganisationConfiguration $form): array => [
+            'forms' => $forms,
+        ]);
+    }
+
+    /**
+     * @param  Collection<int, OrganisationConfiguration>  $versions  Newest first.
+     * @return array<string, mixed>
+     */
+    private function presentForm(string $purpose, Collection $versions): array
+    {
+        $highestVersion = $versions->max('version');
+
+        return [
+            'purpose' => $purpose,
+            /*
+             * A row whose stored purpose is no longer in the catalogue falls
+             * back to its configuration key, which has no catalogue entry.
+             * Indexing the catalogue directly used to fail the whole page.
+             */
+            'purposeLabel' => PublicFormDefinition::catalogue()[$purpose]['label'] ?? $purpose,
+            'activeVersion' => $versions->firstWhere('status', OrganisationConfigurationStatus::Active)?->version,
+            'versions' => $versions->map(fn (OrganisationConfiguration $form): array => [
                 'id' => $form->id,
-                'purpose' => $this->purpose($form),
-                'purposeLabel' => PublicFormDefinition::catalogue()[$this->purpose($form)]['label'],
                 'version' => $form->version,
                 'status' => $form->status->value,
-                'fields' => PublicFormDefinition::displayFields($this->purpose($form), $form->definition),
+                'fields' => PublicFormDefinition::displayFields($purpose, $form->definition),
                 'activatedAt' => $form->activated_at?->toAtomString(),
                 'canActivate' => $form->status === OrganisationConfigurationStatus::Draft
-                    && $forms->firstWhere('configuration_key', $form->configuration_key)?->id === $form->id,
-            ]),
-        ]);
+                    && $highestVersion === $form->version,
+            ])->values()->all(),
+        ];
     }
 
     public function store(StorePublicFormRequest $request, Organisation $currentOrganisation, CreateOrganisationConfiguration $create): RedirectResponse

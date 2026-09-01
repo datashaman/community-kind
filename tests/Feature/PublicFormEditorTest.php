@@ -55,9 +55,11 @@ it('creates previews and activates an ordered purpose-built public form', functi
         ->assertInertia(fn (Assert $page) => $page
             ->component('public-forms/index')
             ->where('forms.0.purpose', 'volunteer_registration')
-            ->where('forms.0.fields.0.key', 'email')
-            ->where('forms.0.fields.3.required', true)
-            ->where('forms.0.canActivate', true));
+            ->where('forms.0.activeVersion', null)
+            ->count('forms.0.versions', 1)
+            ->where('forms.0.versions.0.fields.0.key', 'email')
+            ->where('forms.0.versions.0.fields.3.required', true)
+            ->where('forms.0.versions.0.canActivate', true));
 
     $this->actingAs($administrator)
         ->post(route('public-forms.activate', [$organisation, $form]))
@@ -80,16 +82,39 @@ it('derives the structured editor state from legacy public form definitions', fu
     $this->actingAs($administrator)
         ->get(route('public-forms.index', $organisation))
         ->assertInertia(fn (Assert $page) => $page
-            ->where('forms.0.id', $legacy->id)
             ->where('forms.0.purpose', 'supporter_profile')
             ->where('forms.0.purposeLabel', 'Supporter profile')
-            ->where('forms.0.fields', [
+            ->where('forms.0.versions.0.id', $legacy->id)
+            ->where('forms.0.versions.0.fields', [
                 ['key' => 'name', 'label' => 'Name', 'type' => 'text', 'required' => true, 'fixedRequired' => true],
                 ['key' => 'email', 'label' => 'Email address', 'type' => 'email', 'required' => true, 'fixedRequired' => true],
                 ['key' => 'telephone', 'label' => 'Telephone number', 'type' => 'tel', 'required' => true, 'fixedRequired' => false],
             ]));
 
     expect($legacy->refresh()->definition)->not->toHaveKey('fields');
+});
+
+it('lists a form whose purpose has left the catalogue', function () {
+    extract(publicFormEditorFixture());
+
+    /*
+     * `purpose()` falls back to the configuration key when the stored purpose
+     * is no longer one the catalogue knows. Indexing the catalogue with that
+     * key used to fail the whole index.
+     */
+    app(OrganisationContext::class)->run($organisation, fn (): OrganisationConfiguration => OrganisationConfiguration::factory()->create([
+        'area' => OrganisationConfigurationArea::PublicForm,
+        'configuration_key' => 'retired_pledge_form',
+        'definition' => ['form' => 'a_purpose_that_no_longer_exists', 'required_fields' => []],
+    ]));
+
+    $this->actingAs($administrator)
+        ->get(route('public-forms.index', $organisation))
+        ->assertOk()
+        ->assertInertia(fn (Assert $page) => $page
+            ->where('forms.0.purpose', 'retired_pledge_form')
+            ->where('forms.0.purposeLabel', 'retired_pledge_form')
+            ->where('forms.0.versions.0.fields', []));
 });
 
 it('rejects malformed form definitions and the generic JSON workflow', function () {
@@ -134,6 +159,22 @@ it('only permits activation of the latest draft for each public form purpose', f
         ->where('configuration_key', 'event_registration')
         ->orderBy('version')
         ->get());
+
+    /*
+     * Both revisions belong to one purpose, so the index must list one form
+     * holding two versions rather than two entries competing for the same
+     * name.
+     */
+    $this->actingAs($administrator)
+        ->get(route('public-forms.index', $organisation))
+        ->assertInertia(fn (Assert $page) => $page
+            ->count('forms', 1)
+            ->where('forms.0.purpose', 'event_registration')
+            ->count('forms.0.versions', 2)
+            ->where('forms.0.versions.0.version', 2)
+            ->where('forms.0.versions.0.canActivate', true)
+            ->where('forms.0.versions.1.version', 1)
+            ->where('forms.0.versions.1.canActivate', false));
 
     $this->actingAs($administrator)
         ->post("/{$organisation->slug}/organisation-configurations/{$drafts->last()->id}/activate")
