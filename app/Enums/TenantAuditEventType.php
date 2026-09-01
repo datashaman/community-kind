@@ -49,6 +49,7 @@ enum TenantAuditEventType: string
     case PartnerCommitmentRecorded = 'partner_commitment_recorded';
     case OrganisationConfigurationCreated = 'organisation_configuration_created';
     case OrganisationConfigurationActivated = 'organisation_configuration_activated';
+    case OrganisationConfigurationRetired = 'organisation_configuration_retired';
     case ImpactSnapshotPublished = 'impact_snapshot_published';
     case SupporterJourneyTransitioned = 'supporter_journey_transitioned';
 
@@ -199,6 +200,7 @@ enum TenantAuditEventType: string
             self::PartnerCommitmentRecorded => ['commitment_id' => 'string', 'partner_profile_id' => 'string', 'status' => 'string'],
             self::OrganisationConfigurationCreated => ['configuration_id' => 'string', 'area' => 'string', 'configuration_key' => 'string', 'version' => 'integer'],
             self::OrganisationConfigurationActivated => ['configuration_id' => 'string', 'area' => 'string', 'configuration_key' => 'string', 'version' => 'integer'],
+            self::OrganisationConfigurationRetired => ['configuration_id' => 'string', 'area' => 'string', 'configuration_key' => 'string', 'version' => 'integer'],
             self::ImpactSnapshotPublished => ['snapshot_id' => 'string', 'audience' => 'string', 'registry_version' => 'string', 'metric_count' => 'integer'],
             self::SupporterJourneyTransitioned => ['journey_id' => 'string', 'from_status' => 'string', 'to_status' => 'string', 'scheduled_for' => 'nullable_string'],
         };

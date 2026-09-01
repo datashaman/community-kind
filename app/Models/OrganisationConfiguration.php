@@ -41,9 +41,10 @@ class OrganisationConfiguration extends Model
             if ($configuration->isDirty('status')) {
                 $from = OrganisationConfigurationStatus::from((string) $configuration->getRawOriginal('status'));
                 $allowed = match ($from) {
-                    OrganisationConfigurationStatus::Draft => [OrganisationConfigurationStatus::Active],
-                    OrganisationConfigurationStatus::Active => [OrganisationConfigurationStatus::Superseded],
+                    OrganisationConfigurationStatus::Draft => [OrganisationConfigurationStatus::Active, OrganisationConfigurationStatus::Retired],
+                    OrganisationConfigurationStatus::Active => [OrganisationConfigurationStatus::Superseded, OrganisationConfigurationStatus::Retired],
                     OrganisationConfigurationStatus::Superseded => [],
+                    OrganisationConfigurationStatus::Retired => [],
                 };
                 if (! in_array($configuration->status, $allowed, true)) {
                     throw new LogicException("Cannot transition configuration from {$from->value} to {$configuration->status->value}.");
