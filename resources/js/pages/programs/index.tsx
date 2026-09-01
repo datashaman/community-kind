@@ -10,6 +10,9 @@ import {
 import type { FormEvent } from 'react';
 import Heading from '@/components/heading';
 import InputError from '@/components/input-error';
+import ProgramDefinitionList, {
+    type ProgramDefinition,
+} from '@/components/program-definition-list';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -48,6 +51,15 @@ type ProgramTaxonomy = {
     values: TaxonomyValue[];
 };
 
+type IntakeFieldDefinition = ProgramDefinition & {
+    field_type: 'text' | 'textarea' | 'boolean' | 'date';
+    is_required: boolean;
+};
+
+type EligibilityQuestionDefinition = ProgramDefinition & {
+    is_required: boolean;
+};
+
 type Program = {
     id: number;
     name: string;
@@ -57,6 +69,9 @@ type Program = {
     stages: ProgramStage[];
     outcome_measures: OutcomeMeasure[];
     taxonomies: ProgramTaxonomy[];
+    intake_fields: IntakeFieldDefinition[];
+    eligibility_questions: EligibilityQuestionDefinition[];
+    risk_flags: ProgramDefinition[];
     canUpdate: boolean;
 };
 
@@ -78,6 +93,9 @@ function ProgramEditor({
             unit: measure.unit ?? '',
         })),
         taxonomies: program.taxonomies,
+        intake_fields: program.intake_fields,
+        eligibility_questions: program.eligibility_questions,
+        risk_flags: program.risk_flags,
     });
     const errors = form.errors as Record<string, string>;
 
@@ -929,6 +947,48 @@ function ProgramEditor({
                         </div>
                         <InputError message={errors.taxonomies} />
                     </section>
+
+                    <ProgramDefinitionList
+                        title="Intake questions"
+                        description="Choose the information staff collect when recording a request, including its input type and whether it is required."
+                        singular="Intake question"
+                        fieldName="intake_fields"
+                        definitions={form.data.intake_fields}
+                        canUpdate={program.canUpdate}
+                        supportsFieldType
+                        supportsRequired
+                        errors={errors}
+                        onChange={(definitions) =>
+                            form.setData('intake_fields', definitions)
+                        }
+                    />
+
+                    <ProgramDefinitionList
+                        title="Eligibility questions"
+                        description="Define the yes-or-no checks staff complete during triage. Retired questions remain available for earlier requests."
+                        singular="Eligibility question"
+                        fieldName="eligibility_questions"
+                        definitions={form.data.eligibility_questions}
+                        canUpdate={program.canUpdate}
+                        supportsRequired
+                        errors={errors}
+                        onChange={(definitions) =>
+                            form.setData('eligibility_questions', definitions)
+                        }
+                    />
+
+                    <ProgramDefinitionList
+                        title="Risk flags"
+                        description="Maintain the safety and urgency indicators staff can record without asking them to invent labels."
+                        singular="Risk flag"
+                        fieldName="risk_flags"
+                        definitions={form.data.risk_flags}
+                        canUpdate={program.canUpdate}
+                        errors={errors}
+                        onChange={(definitions) =>
+                            form.setData('risk_flags', definitions)
+                        }
+                    />
 
                     {program.canUpdate ? (
                         <div className="flex items-center gap-3">

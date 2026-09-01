@@ -2,6 +2,7 @@
 
 namespace App\Http\Requests\Organisations;
 
+use App\Enums\ProgramIntakeFieldType;
 use App\Models\Organisation;
 use App\Models\Program;
 use Illuminate\Contracts\Validation\ValidationRule;
@@ -104,21 +105,28 @@ class UpdateProgramRequest extends FormRequest
             'taxonomies.*.values.*.key' => ['nullable', 'string', 'max:64'],
             'taxonomies.*.values.*.label' => ['required', 'string', 'max:100'],
             'taxonomies.*.values.*.retired' => ['required', 'boolean'],
-            'configuration' => ['sometimes', 'array:intake_fields,eligibility_fields,risk_flags'],
-            'configuration.intake_fields' => ['sometimes', 'array', 'max:30'],
-            'configuration.intake_fields.*' => ['array:key,label,type,required'],
-            'configuration.intake_fields.*.key' => ['required', 'string', 'max:64', 'regex:/^[a-z][a-z0-9_]*$/', 'distinct'],
-            'configuration.intake_fields.*.label' => ['required', 'string', 'max:100'],
-            'configuration.intake_fields.*.type' => ['required', Rule::in(['text', 'textarea', 'boolean', 'date'])],
-            'configuration.intake_fields.*.required' => ['required', 'boolean'],
-            'configuration.eligibility_fields' => ['sometimes', 'array', 'max:20'],
-            'configuration.eligibility_fields.*' => ['array:key,label'],
-            'configuration.eligibility_fields.*.key' => ['required', 'string', 'max:64', 'regex:/^[a-z][a-z0-9_]*$/', 'distinct'],
-            'configuration.eligibility_fields.*.label' => ['required', 'string', 'max:100'],
-            'configuration.risk_flags' => ['sometimes', 'array', 'max:20'],
-            'configuration.risk_flags.*' => ['array:key,label'],
-            'configuration.risk_flags.*.key' => ['required', 'string', 'max:64', 'regex:/^[a-z][a-z0-9_]*$/', 'distinct'],
-            'configuration.risk_flags.*.label' => ['required', 'string', 'max:100'],
+            'intake_fields' => ['sometimes', 'array', 'max:30'],
+            'intake_fields.*' => ['array:id,key,label,field_type,is_required,retired'],
+            'intake_fields.*.id' => $this->definitionIdRules('program_intake_fields', $organisation, $program),
+            'intake_fields.*.key' => ['nullable', 'string', 'max:64'],
+            'intake_fields.*.label' => ['required', 'string', 'max:100'],
+            'intake_fields.*.field_type' => ['required', Rule::enum(ProgramIntakeFieldType::class)],
+            'intake_fields.*.is_required' => ['required', 'boolean'],
+            'intake_fields.*.retired' => ['required', 'boolean'],
+            'eligibility_questions' => ['sometimes', 'array', 'max:20'],
+            'eligibility_questions.*' => ['array:id,key,label,is_required,retired'],
+            'eligibility_questions.*.id' => $this->definitionIdRules('program_eligibility_questions', $organisation, $program),
+            'eligibility_questions.*.key' => ['nullable', 'string', 'max:64'],
+            'eligibility_questions.*.label' => ['required', 'string', 'max:100'],
+            'eligibility_questions.*.is_required' => ['required', 'boolean'],
+            'eligibility_questions.*.retired' => ['required', 'boolean'],
+            'risk_flags' => ['sometimes', 'array', 'max:20'],
+            'risk_flags.*' => ['array:id,key,label,retired'],
+            'risk_flags.*.id' => $this->definitionIdRules('program_risk_flags', $organisation, $program),
+            'risk_flags.*.key' => ['nullable', 'string', 'max:64'],
+            'risk_flags.*.label' => ['required', 'string', 'max:100'],
+            'risk_flags.*.retired' => ['required', 'boolean'],
+            'configuration' => ['prohibited'],
         ];
     }
 
@@ -185,7 +193,39 @@ class UpdateProgramRequest extends FormRequest
                     );
                 }
             }
+
+            foreach ([
+                'intake_fields' => $program->intakeFields(),
+                'eligibility_questions' => $program->eligibilityQuestions(),
+                'risk_flags' => $program->riskFlags(),
+            ] as $field => $relationship) {
+                if ($this->has($field) && ! $validator->errors()->hasAny([$field, "{$field}.*"])) {
+                    $this->requireExistingRecords(
+                        $validator,
+                        $field,
+                        $this->items($field),
+                        $this->recordIds($relationship->pluck('id')->all()),
+                    );
+                }
+            }
         }];
+    }
+
+    /**
+     * @return list<ValidationRule|array<mixed>|string>
+     */
+    private function definitionIdRules(string $table, mixed $organisation, ?Program $program): array
+    {
+        return [
+            'nullable',
+            'integer',
+            'distinct',
+            Rule::exists($table, 'id')->where(
+                fn ($query) => $query
+                    ->where('organisation_id', $organisation instanceof Organisation ? $organisation->id : 0)
+                    ->where('program_id', $program instanceof Program ? $program->id : 0),
+            ),
+        ];
     }
 
     /**

@@ -71,7 +71,12 @@ export default function IntakeShow({ intake, canTransition, workers }: any) {
                                 ([key, value]) => (
                                     <p key={key}>
                                         <strong>
-                                            {key.replaceAll('_', ' ')}:
+                                            {intake.intakeFieldDefinitions.find(
+                                                (field: any) =>
+                                                    field.key === key,
+                                            )?.label ??
+                                                key.replaceAll('_', ' ')}
+                                            :
                                         </strong>{' '}
                                         {String(value)}
                                     </p>
@@ -80,7 +85,10 @@ export default function IntakeShow({ intake, canTransition, workers }: any) {
                             <div className="flex flex-wrap gap-2">
                                 {intake.riskFlags.map((risk: string) => (
                                     <Badge key={risk} variant="destructive">
-                                        {risk.replaceAll('_', ' ')}
+                                        {intake.riskFlagDefinitions.find(
+                                            (definition: any) =>
+                                                definition.key === risk,
+                                        )?.label ?? risk.replaceAll('_', ' ')}
                                     </Badge>
                                 ))}
                             </div>
@@ -184,52 +192,82 @@ export default function IntakeShow({ intake, canTransition, workers }: any) {
                                                     </option>
                                                 </select>
                                             </div>
-                                            {(
-                                                intake.configuration
-                                                    .eligibility_fields ?? []
-                                            ).map((field: any) => (
-                                                <label
-                                                    key={field.key}
-                                                    className="flex items-center gap-2 text-sm"
-                                                >
-                                                    <input
-                                                        type="hidden"
-                                                        name={`eligibility_context[${field.key}]`}
-                                                        value="0"
-                                                    />
-                                                    <input
-                                                        type="checkbox"
-                                                        name={`eligibility_context[${field.key}]`}
-                                                        value="1"
-                                                        defaultChecked={Boolean(
-                                                            intake
-                                                                .eligibilityContext[
-                                                                field.key
-                                                            ],
-                                                        )}
-                                                    />
-                                                    {field.label}
-                                                </label>
-                                            ))}
-                                            {(
-                                                intake.configuration
-                                                    .risk_flags ?? []
-                                            ).map((risk: any) => (
-                                                <label
-                                                    key={risk.key}
-                                                    className="flex items-center gap-2 text-sm"
-                                                >
-                                                    <input
-                                                        type="checkbox"
-                                                        name="risk_flags[]"
-                                                        value={risk.key}
-                                                        defaultChecked={intake.riskFlags.includes(
-                                                            risk.key,
-                                                        )}
-                                                    />
-                                                    {risk.label}
-                                                </label>
-                                            ))}
+                                            {intake.eligibilityQuestions.map(
+                                                (field: any) => (
+                                                    <label
+                                                        key={field.key}
+                                                        className="flex items-center gap-2 text-sm"
+                                                    >
+                                                        <input
+                                                            type="hidden"
+                                                            name={`eligibility_context[${field.key}]`}
+                                                            value={
+                                                                field.retired
+                                                                    ? intake
+                                                                          .eligibilityContext[
+                                                                          field
+                                                                              .key
+                                                                      ]
+                                                                        ? '1'
+                                                                        : '0'
+                                                                    : '0'
+                                                            }
+                                                        />
+                                                        <input
+                                                            type="checkbox"
+                                                            name={`eligibility_context[${field.key}]`}
+                                                            value="1"
+                                                            disabled={
+                                                                field.retired
+                                                            }
+                                                            defaultChecked={Boolean(
+                                                                intake
+                                                                    .eligibilityContext[
+                                                                    field.key
+                                                                ],
+                                                            )}
+                                                        />
+                                                        {field.label}
+                                                        {field.required
+                                                            ? ' (required)'
+                                                            : ''}
+                                                        {field.retired
+                                                            ? ' (retired)'
+                                                            : ''}
+                                                    </label>
+                                                ),
+                                            )}
+                                            {intake.riskFlagDefinitions.map(
+                                                (risk: any) => (
+                                                    <label
+                                                        key={risk.key}
+                                                        className="flex items-center gap-2 text-sm"
+                                                    >
+                                                        {risk.retired ? (
+                                                            <input
+                                                                type="hidden"
+                                                                name="risk_flags[]"
+                                                                value={risk.key}
+                                                            />
+                                                        ) : null}
+                                                        <input
+                                                            type="checkbox"
+                                                            name="risk_flags[]"
+                                                            value={risk.key}
+                                                            disabled={
+                                                                risk.retired
+                                                            }
+                                                            defaultChecked={intake.riskFlags.includes(
+                                                                risk.key,
+                                                            )}
+                                                        />
+                                                        {risk.label}
+                                                        {risk.retired
+                                                            ? ' (retired)'
+                                                            : ''}
+                                                    </label>
+                                                ),
+                                            )}
                                             <input
                                                 type="hidden"
                                                 name="risk_flags[]"

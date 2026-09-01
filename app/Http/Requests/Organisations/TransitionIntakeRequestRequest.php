@@ -42,13 +42,17 @@ class TransitionIntakeRequestRequest extends FormRequest
         $identifier = $this->route('intake');
         $intake = is_string($identifier) ? IntakeRequest::query()->find($identifier) : null;
         $eligibilityKeys = $intake instanceof IntakeRequest
-            ? $this->configuredFieldKeys($intake, 'eligibility_fields')
+            ? $intake->program->eligibilityQuestions()
+                ->where(fn ($query) => $query->whereNull('retired_at')->orWhereIn('key', array_keys($intake->eligibility_context)))
+                ->pluck('key')->all()
             : [];
         $riskKeys = $intake instanceof IntakeRequest
-            ? $this->configuredFieldKeys($intake, 'risk_flags')
+            ? $intake->program->riskFlags()
+                ->where(fn ($query) => $query->whereNull('retired_at')->orWhereIn('key', $intake->risk_flags))
+                ->pluck('key')->all()
             : [];
 
-        return [
+        $rules = [
             'status' => ['required', Rule::enum(IntakeStatus::class)],
             'expected_version' => ['required', 'integer', 'min:1'],
             'reason' => ['nullable', Rule::in(['client_request', 'eligibility', 'capacity', 'external_referral', 'duplicate', 'other'])],
@@ -60,25 +64,13 @@ class TransitionIntakeRequestRequest extends FormRequest
             'risk_flags.*' => ['string', 'distinct', Rule::in($riskKeys)],
             'worker_membership_id' => ['nullable', 'integer'],
         ];
-    }
 
-    /** @return list<string> */
-    private function configuredFieldKeys(IntakeRequest $intake, string $configurationKey): array
-    {
-        $definitions = $intake->program->configuration[$configurationKey] ?? null;
-
-        if (! is_array($definitions)) {
-            return [];
-        }
-
-        $keys = [];
-
-        foreach ($definitions as $definition) {
-            if (is_array($definition) && isset($definition['key']) && is_string($definition['key'])) {
-                $keys[] = $definition['key'];
+        if ($intake instanceof IntakeRequest) {
+            foreach ($intake->program->eligibilityQuestions()->whereNull('retired_at')->where('is_required', true)->pluck('key') as $key) {
+                $rules['eligibility_context.'.$key] = ['required', 'boolean'];
             }
         }
 
-        return $keys;
+        return $rules;
     }
 }

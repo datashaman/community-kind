@@ -38,9 +38,9 @@ class StoreIntakeRequestRequest extends FormRequest
         $organisation = $this->route('current_organisation');
         $organisationId = $organisation instanceof Organisation ? $organisation->id : 0;
         $program = Program::query()->whereKey($this->integer('program_id'))->first();
-        $fieldDefinitions = $program === null ? [] : $this->configuredFields($program, 'intake_fields');
-        $fieldKeys = $this->configuredFieldKeys($fieldDefinitions);
-        $riskKeys = $program === null ? [] : $this->configuredFieldKeys($this->configuredFields($program, 'risk_flags'));
+        $fieldDefinitions = $program?->intakeFields()->whereNull('retired_at')->get() ?? collect();
+        $fieldKeys = $fieldDefinitions->pluck('key')->all();
+        $riskKeys = $program?->riskFlags()->whereNull('retired_at')->pluck('key')->all() ?? [];
         $required = array_values(array_map('strval', $this->activeRules()?->definition['required_fields'] ?? []));
         $rules = [
             'program_id' => ['required', 'integer', Rule::exists('programs', 'id')->where('organisation_id', $organisationId)],
@@ -60,51 +60,17 @@ class StoreIntakeRequestRequest extends FormRequest
         ];
 
         foreach ($fieldDefinitions as $definition) {
-            $key = $definition['key'] ?? null;
-
-            if (! is_string($key)) {
-                continue;
-            }
-
-            $fieldRules = [($definition['required'] ?? false) === true ? 'required' : 'nullable'];
-            $fieldRules[] = match ($definition['type'] ?? 'text') {
+            $fieldRules = [$definition->is_required ? 'required' : 'nullable'];
+            $fieldRules[] = match ($definition->field_type->value) {
                 'boolean' => 'boolean',
                 'date' => 'date',
                 default => 'string',
             };
-            $fieldRules[] = 'max:'.(($definition['type'] ?? null) === 'textarea' ? '10000' : '255');
-            $rules['intake_fields.'.$key] = $fieldRules;
+            $fieldRules[] = 'max:'.($definition->field_type->value === 'textarea' ? '10000' : '255');
+            $rules['intake_fields.'.$definition->key] = $fieldRules;
         }
 
         return $rules;
-    }
-
-    /** @return list<array<string, mixed>> */
-    private function configuredFields(Program $program, string $key): array
-    {
-        $value = $program->configuration[$key] ?? null;
-
-        if (! is_array($value)) {
-            return [];
-        }
-
-        return array_values(array_filter($value, is_array(...)));
-    }
-
-    /** @param list<array<string, mixed>> $definitions
-     * @return list<string>
-     */
-    private function configuredFieldKeys(array $definitions): array
-    {
-        $keys = [];
-
-        foreach ($definitions as $definition) {
-            if (isset($definition['key']) && is_string($definition['key'])) {
-                $keys[] = $definition['key'];
-            }
-        }
-
-        return $keys;
     }
 
     private function activeRules(): ?OrganisationConfiguration

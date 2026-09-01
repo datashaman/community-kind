@@ -12,6 +12,8 @@ use App\Models\Membership;
 use App\Models\Organisation;
 use App\Models\Party;
 use App\Models\Program;
+use App\Models\ProgramIntakeField;
+use App\Models\ProgramRiskFlag;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
@@ -24,7 +26,7 @@ class IntakeRequestController extends Controller
     public function index(Request $request, Organisation $currentOrganisation): Response
     {
         Gate::authorize('viewAny', [IntakeRequest::class, $currentOrganisation]);
-        $programs = Program::query()->orderBy('name')->get()->filter(
+        $programs = Program::query()->with(['intakeFields' => fn ($query) => $query->whereNull('retired_at'), 'riskFlags' => fn ($query) => $query->whereNull('retired_at')])->orderBy('name')->get()->filter(
             fn (Program $program): bool => Gate::allows('create', [IntakeRequest::class, $program]),
         )->values();
         $managerProgramIds = $programs->filter(fn (Program $program): bool => $request->user()->hasOrganisationRole(
@@ -54,7 +56,13 @@ class IntakeRequestController extends Controller
             'programs' => $programs->map(fn (Program $program): array => [
                 'id' => $program->id,
                 'name' => $program->name,
-                'configuration' => $program->configuration,
+                'intakeFields' => $program->intakeFields->map(fn (ProgramIntakeField $field): array => [
+                    'key' => $field->key,
+                    'label' => $field->label,
+                    'fieldType' => $field->field_type->value,
+                    'required' => $field->is_required,
+                ])->values(),
+                'riskFlags' => $program->riskFlags->map(fn (ProgramRiskFlag $flag): array => ['key' => $flag->key, 'label' => $flag->label])->values(),
             ]),
             'parties' => Party::query()
                 ->whereHas('programs', fn (Builder $query) => $query->whereIn('programs.id', $programs->modelKeys()))
@@ -99,7 +107,10 @@ class IntakeRequestController extends Controller
         Gate::authorize('view', $intakeRequest);
         $intakeRequest->load([
             'party:id,uuid,display_name',
-            'program:id,organisation_id,name,slug,configuration',
+            'program:id,organisation_id,name,slug',
+            'program.intakeFields',
+            'program.eligibilityQuestions',
+            'program.riskFlags',
             'transitions' => fn ($query) => $query->orderBy('version'),
             'duplicateReviews.candidateParty:id,uuid,display_name',
             'serviceCase.assignments' => fn ($query) => $query->orderBy('started_at'),
@@ -116,7 +127,24 @@ class IntakeRequestController extends Controller
                 'intakeFields' => is_array($content['intake_fields'] ?? null) ? $content['intake_fields'] : [],
                 'eligibilityContext' => $intakeRequest->eligibility_context,
                 'riskFlags' => $intakeRequest->risk_flags,
-                'configuration' => $intakeRequest->program->configuration,
+                'intakeFieldDefinitions' => $intakeRequest->program->intakeFields->map(fn ($field): array => [
+                    'key' => $field->key,
+                    'label' => $field->label,
+                    'fieldType' => $field->field_type->value,
+                    'retired' => $field->retired_at !== null,
+                ])->values(),
+                'eligibilityQuestions' => $intakeRequest->program->eligibilityQuestions
+                    ->filter(fn ($question): bool => $question->retired_at === null || array_key_exists($question->key, $intakeRequest->eligibility_context))
+                    ->map(fn ($question): array => [
+                        'key' => $question->key,
+                        'label' => $question->label,
+                        'required' => $question->is_required,
+                        'retired' => $question->retired_at !== null,
+                    ])->values(),
+                'riskFlagDefinitions' => $intakeRequest->program->riskFlags
+                    ->filter(fn ($flag): bool => $flag->retired_at === null || in_array($flag->key, $intakeRequest->risk_flags, true))
+                    ->map(fn ($flag): array => ['key' => $flag->key, 'label' => $flag->label, 'retired' => $flag->retired_at !== null])
+                    ->values(),
                 'transitions' => $intakeRequest->transitions->map(fn ($transition): array => [
                     'id' => $transition->id,
                     'from' => $transition->from_status?->value,

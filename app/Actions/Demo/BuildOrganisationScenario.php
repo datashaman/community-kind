@@ -140,7 +140,10 @@ final class BuildOrganisationScenario
             $stages = $configuration['stages'];
             $outcomeMeasures = $configuration['outcome_measures'];
             $taxonomies = $configuration['taxonomies'];
-            unset($configuration['labels'], $configuration['stages'], $configuration['outcome_measures'], $configuration['taxonomies']);
+            $intakeFields = $configuration['intake_fields'];
+            $eligibilityQuestions = $configuration['eligibility_fields'];
+            $riskFlags = $configuration['risk_flags'];
+            unset($configuration['labels'], $configuration['stages'], $configuration['outcome_measures'], $configuration['taxonomies'], $configuration['intake_fields'], $configuration['eligibility_fields'], $configuration['risk_flags']);
             $program->forceFill([
                 'organisation_id' => $organisation->id,
                 'name' => $definition['name'],
@@ -191,6 +194,47 @@ final class BuildOrganisationScenario
                         ['label' => $valueDefinition['label'], 'position' => $valuePosition, 'retired_at' => null],
                     );
                 }
+            }
+
+            $activeIntakeFieldKeys = collect($intakeFields)->pluck('key');
+            $program->intakeFields()->whereNotIn('key', $activeIntakeFieldKeys)->update(['retired_at' => now()]);
+
+            foreach ($intakeFields as $position => $fieldDefinition) {
+                $program->intakeFields()->updateOrCreate(
+                    ['key' => $fieldDefinition['key']],
+                    [
+                        'label' => $fieldDefinition['label'],
+                        'field_type' => $fieldDefinition['type'],
+                        'is_required' => $fieldDefinition['required'],
+                        'position' => $position,
+                        'retired_at' => null,
+                    ],
+                );
+            }
+
+            $activeEligibilityQuestionKeys = collect($eligibilityQuestions)->pluck('key');
+            $program->eligibilityQuestions()->whereNotIn('key', $activeEligibilityQuestionKeys)->update(['retired_at' => now()]);
+
+            foreach ($eligibilityQuestions as $position => $questionDefinition) {
+                $program->eligibilityQuestions()->updateOrCreate(
+                    ['key' => $questionDefinition['key']],
+                    [
+                        'label' => $questionDefinition['label'],
+                        'is_required' => $questionDefinition['required'] ?? false,
+                        'position' => $position,
+                        'retired_at' => null,
+                    ],
+                );
+            }
+
+            $activeRiskFlagKeys = collect($riskFlags)->pluck('key');
+            $program->riskFlags()->whereNotIn('key', $activeRiskFlagKeys)->update(['retired_at' => now()]);
+
+            foreach ($riskFlags as $position => $flagDefinition) {
+                $program->riskFlags()->updateOrCreate(
+                    ['key' => $flagDefinition['key']],
+                    ['label' => $flagDefinition['label'], 'position' => $position, 'retired_at' => null],
+                );
             }
 
             return [$program->slug => $program];
