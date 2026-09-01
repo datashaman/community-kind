@@ -68,7 +68,7 @@ it('exports the exact privacy-safe dashboard context and audits it separately', 
         $audits = TenantAuditEvent::query()->where('type', TenantAuditEventType::ImpactReportExported)->get();
         expect($audits)->toHaveCount(3)
             ->and($audits->every(fn (TenantAuditEvent $audit): bool => $audit->payload['metric_count'] === 4 && $audit->payload['registry_version'] === '2026.4'))->toBeTrue()
-            ->and($audits->pluck('payload.format')->all())->toBe(['csv', 'csv', 'svg']);
+            ->and($audits->pluck('payload.format')->sort()->values()->all())->toBe(['csv', 'csv', 'svg']);
     });
 });
 

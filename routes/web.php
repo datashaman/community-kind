@@ -116,7 +116,8 @@ Route::domain('{public_organisation}.'.config('organisations.public_domain'))
 Route::inertia('/', 'welcome')->name('home');
 Route::model('current_organisation', Organisation::class);
 
-Route::get('/demo/bootstrap/{token}', SandboxBootstrapController::class)->middleware('throttle:30,1')->name('demo.bootstrap');
+Route::get('/demo/bootstrap/{token}', [SandboxBootstrapController::class, 'show'])->middleware('throttle:30,1')->name('demo.bootstrap');
+Route::post('/demo/bootstrap/{token}', [SandboxBootstrapController::class, 'store'])->middleware('throttle:10,1')->name('demo.bootstrap.store');
 Route::get('/demo/personas', [SandboxPersonaController::class, 'index'])->name('demo.personas.index');
 Route::post('/demo/personas', [SandboxPersonaController::class, 'store'])->middleware('throttle:30,1')->name('demo.personas.store');
 

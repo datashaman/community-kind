@@ -70,6 +70,27 @@ return new class extends Migration
                 SQL);
         } elseif (DB::getDriverName() === 'sqlite') {
             DB::unprepared("CREATE TRIGGER case_assignments_append_only_delete BEFORE DELETE ON case_assignments BEGIN SELECT RAISE(ABORT, 'Case assignment history is append-only.'); END");
+            DB::unprepared(<<<'SQL'
+                CREATE TRIGGER case_assignments_history_guard
+                BEFORE UPDATE ON case_assignments
+                FOR EACH ROW
+                WHEN OLD.status <> 'active'
+                    OR NEW.status <> 'ended'
+                    OR NEW.active_primary_marker IS NOT NULL
+                    OR OLD.ended_at IS NOT NULL
+                    OR NEW.ended_at IS NULL
+                    OR NEW.id IS NOT OLD.id
+                    OR NEW.organisation_id IS NOT OLD.organisation_id
+                    OR NEW.service_case_id IS NOT OLD.service_case_id
+                    OR NEW.membership_id IS NOT OLD.membership_id
+                    OR NEW.role IS NOT OLD.role
+                    OR NEW.started_at IS NOT OLD.started_at
+                    OR NEW.assigned_reason IS NOT OLD.assigned_reason
+                    OR NEW.assigned_by_user_id IS NOT OLD.assigned_by_user_id
+                BEGIN
+                    SELECT RAISE(ABORT, 'Case assignment history may only be ended.');
+                END
+                SQL);
         }
     }
 
