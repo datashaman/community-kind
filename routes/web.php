@@ -17,6 +17,7 @@ use App\Http\Controllers\Organisations\DonationController;
 use App\Http\Controllers\Organisations\ImpactChartExportController;
 use App\Http\Controllers\Organisations\ImpactReportExportController;
 use App\Http\Controllers\Organisations\IntakeRequestController;
+use App\Http\Controllers\Organisations\IntakeRulesController;
 use App\Http\Controllers\Organisations\IntakeTransitionController;
 use App\Http\Controllers\Organisations\MessageTemplateController;
 use App\Http\Controllers\Organisations\OrganisationConfigurationController;
@@ -170,6 +171,9 @@ Route::prefix('{current_organisation}')
         Route::get('supporter-journey-policy', [SupporterJourneyPolicyController::class, 'index'])->name('supporter-journey-policy.index');
         Route::post('supporter-journey-policy', [SupporterJourneyPolicyController::class, 'store'])->name('supporter-journey-policy.store');
         Route::post('supporter-journey-policy/{supporterJourneyPolicy}/activate', [SupporterJourneyPolicyController::class, 'activate'])->name('supporter-journey-policy.activate');
+        Route::get('intake-rules', [IntakeRulesController::class, 'index'])->name('intake-rules.index');
+        Route::post('intake-rules', [IntakeRulesController::class, 'store'])->name('intake-rules.store');
+        Route::post('intake-rules/{intakeRule}/activate', [IntakeRulesController::class, 'activate'])->name('intake-rules.activate');
         Route::get('impact-snapshots', [PublishedImpactSnapshotController::class, 'index'])->name('impact-snapshots.index');
         Route::post('impact-snapshots', [PublishedImpactSnapshotController::class, 'store'])->name('impact-snapshots.store');
         Route::get('impact-snapshots/{snapshot}/download', [PublishedImpactSnapshotController::class, 'download'])->name('impact-snapshots.download');

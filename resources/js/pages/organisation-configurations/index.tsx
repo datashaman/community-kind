@@ -23,15 +23,6 @@ const examples: Record<string, string> = {
         null,
         2,
     ),
-    intake_rules: JSON.stringify(
-        {
-            required_fields: ['party_uuid', 'email', 'presenting_needs'],
-            default_urgency: 'routine',
-            allow_restricted_access_bypass: false,
-        },
-        null,
-        2,
-    ),
     reporting: JSON.stringify(
         {
             public_metric_ids: ['engagement.event_attendance'],
@@ -101,10 +92,10 @@ export default function OrganisationConfigurationsIndex({
                                         message={errors.configuration_key}
                                     />
                                     <small className="text-muted-foreground">
-                                        Use impact for reporting, default for
-                                        intake defaults, and the form name (for
-                                        example volunteer_registration) for
-                                        public forms.
+                                        Use impact for reporting and the form
+                                        name (for example
+                                        volunteer_registration) for public
+                                        forms.
                                     </small>
                                 </label>
                                 <label className="grid gap-1">
