@@ -116,8 +116,7 @@ export default function OrganisationConfigurationsIndex({
                                         journey or intake defaults, and the form
                                         name (for example
                                         volunteer_registration) for public
-                                        forms. Message-template keys are your
-                                        choice.
+                                        forms.
                                     </small>
                                 </label>
                                 <label className="grid gap-1">
