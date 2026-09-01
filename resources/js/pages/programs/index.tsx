@@ -468,23 +468,13 @@ function ProgramEditor({
                                                 stage.retired
                                             }
                                         />
-                                        <div className="flex flex-wrap items-center gap-2">
-                                            {stage.key ? (
-                                                <span className="text-muted-foreground font-mono text-xs">
-                                                    {stage.key}
-                                                </span>
-                                            ) : (
-                                                <span className="text-muted-foreground text-xs">
-                                                    A stable reference will be
-                                                    created when saved.
-                                                </span>
-                                            )}
-                                            {stage.retired ? (
+                                        {stage.retired ? (
+                                            <div>
                                                 <Badge variant="outline">
                                                     Retired
                                                 </Badge>
-                                            ) : null}
-                                        </div>
+                                            </div>
+                                        ) : null}
                                         <InputError
                                             message={
                                                 errors[
@@ -607,10 +597,6 @@ function ProgramEditor({
                                                     measure.retired
                                                 }
                                             />
-                                            <span className="text-muted-foreground font-mono text-xs">
-                                                {measure.key ??
-                                                    'Stable reference created on save'}
-                                            </span>
                                             <InputError
                                                 message={
                                                     errors[
@@ -771,10 +757,6 @@ function ProgramEditor({
                                                         taxonomy.retired
                                                     }
                                                 />
-                                                <span className="text-muted-foreground font-mono text-xs">
-                                                    {taxonomy.key ??
-                                                        'Stable reference created on save'}
-                                                </span>
                                                 <InputError
                                                     message={
                                                         errors[
@@ -906,10 +888,6 @@ function ProgramEditor({
                                                                     value.retired
                                                                 }
                                                             />
-                                                            <span className="text-muted-foreground font-mono text-xs">
-                                                                {value.key ??
-                                                                    'Reference created on save'}
-                                                            </span>
                                                             <InputError
                                                                 message={
                                                                     errors[

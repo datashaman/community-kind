@@ -81,9 +81,6 @@ function MetricSelection({
                             <span className="text-muted-foreground block text-sm">
                                 {metric.description}
                             </span>
-                            <span className="text-muted-foreground block truncate font-mono text-xs">
-                                {metric.id}
-                            </span>
                         </span>
                     </label>
                 ))}

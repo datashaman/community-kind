@@ -118,10 +118,6 @@ export default function ProgramDefinitionList<T extends ProgramDefinition>({
                                 disabled={!canUpdate || definition.retired}
                             />
                             <div className="flex flex-wrap items-center gap-3">
-                                <span className="text-muted-foreground font-mono text-xs">
-                                    {definition.key ??
-                                        'Stable reference created on save'}
-                                </span>
                                 {supportsFieldType ? (
                                     <select
                                         aria-label={`${singular} ${index + 1} type`}

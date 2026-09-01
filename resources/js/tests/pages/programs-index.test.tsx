@@ -68,10 +68,49 @@ const program = (id: number, name: string) => ({
     request_label: 'Request',
     case_label: 'Case',
     case_default_classification: 'confidential' as const,
-    stages: [],
-    outcome_measures: [],
-    taxonomies: [],
-    intake_fields: [],
+    stages: [
+        {
+            id: 1,
+            key: 'internal_received_key',
+            label: 'Received',
+            retired: false,
+        },
+    ],
+    outcome_measures: [
+        {
+            id: 2,
+            key: 'internal_outcome_key',
+            label: 'Progress',
+            unit: 'score',
+            retired: false,
+        },
+    ],
+    taxonomies: [
+        {
+            id: 3,
+            key: 'internal_taxonomy_key',
+            label: 'Need',
+            retired: false,
+            values: [
+                {
+                    id: 4,
+                    key: 'internal_value_key',
+                    label: 'Housing',
+                    retired: false,
+                },
+            ],
+        },
+    ],
+    intake_fields: [
+        {
+            id: 5,
+            key: 'internal_field_key',
+            label: 'Contact preference',
+            field_type: 'text' as const,
+            is_required: false,
+            retired: false,
+        },
+    ],
     eligibility_questions: [],
     risk_flags: [],
     canUpdate: true,
@@ -103,6 +142,7 @@ describe('Program pathways', () => {
         expect(
             screen.queryByDisplayValue('Youth Development'),
         ).not.toBeInTheDocument();
+        expect(screen.queryByText(/internal_.*_key/)).not.toBeInTheDocument();
 
         fireEvent.change(screen.getByRole('combobox', { name: 'Program' }), {
             target: { value: '20' },
