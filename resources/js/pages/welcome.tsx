@@ -12,7 +12,7 @@ import { dashboard, login } from '@/routes';
 import { create as createDemo } from '@/routes/demo';
 
 const documentationUrl =
-    'https://github.com/datashaman/community-kind/tree/main/docs';
+    'https://github.com/datashaman/community-kind/blob/main/docs/index.md';
 
 const operatingModel = [
     [

@@ -49,7 +49,7 @@ describe('Welcome', () => {
             screen.getAllByRole('link', { name: 'Read the documentation' })[0],
         ).toHaveAttribute(
             'href',
-            'https://github.com/datashaman/community-kind/tree/main/docs',
+            'https://github.com/datashaman/community-kind/blob/main/docs/index.md',
         );
         expect(
             screen.getAllByRole('link', { name: 'Staff log in' })[0],

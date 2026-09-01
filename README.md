@@ -2,13 +2,17 @@
 
 CommunityKind is an open-source, multi-tenant community impact platform for local nonprofits that deliver support services while mobilising donors and supporters.
 
-The project is in its specification-build stage. Its centrepiece is a privacy-preserving request-to-outcome workflow, with strict separation between service-client information, supporter activity, and nonprofit tenants.
+The project is an active reference implementation. Its centrepiece is a privacy-preserving request-to-outcome workflow, with strict separation between service-client information, supporter activity, and nonprofit tenants.
 
-Read the [product requirements document](PRD-community-impact-platform.md) for the proposed scope, architecture, delivery milestones, safeguards, and sustainability model.
+Start with the [documentation](docs/index.md), or read the [product requirements document](PRD-community-impact-platform.md) for scope, architecture, delivery milestones, safeguards, and sustainability.
 
 ## Project status
 
-**Foundation only.** The Laravel application and engineering baseline are runnable, but the product workflows are not yet implemented. The requirements use fictional organisations and synthetic data and have not been validated with a real nonprofit, practitioner, or jurisdiction-specific legal adviser. Do not use real data.
+**Active reference implementation.** The connected service, engagement, stewardship, impact, tenancy, billing-foundation, and resettable-demo workflows are runnable. They use fictional organisations and synthetic data and have not been validated as a production service with a real nonprofit, practitioner, or jurisdiction-specific legal adviser. Do not use real data.
+
+## Quick start
+
+For evaluation, open the application and choose **Explore the demo**. For development, follow the [non-Docker local setup guide](docs/how-to/local-setup.md); Docker remains an [optional separate setup](docs/how-to/docker-setup.md).
 
 ## Technology baseline
 
@@ -37,6 +41,7 @@ Create a PostgreSQL database and user for the application, then copy the
 environment file:
 
 ```bash
+cd /path/to/community-kind
 cp .env.example .env
 ```
 
@@ -130,6 +135,7 @@ Docker Desktop (or a compatible Docker Engine), Composer 2, and PHP 8.4 or
 newer for the initial dependency install.
 
 ```bash
+cd /path/to/community-kind
 cp .env.example .env
 composer install
 ./vendor/bin/sail up -d

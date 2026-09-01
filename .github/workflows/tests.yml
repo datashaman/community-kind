@@ -112,6 +112,9 @@ jobs:
       - name: Run frontend tests
         run: npm test
 
+      - name: Check documentation links and freshness
+        run: npm run docs:check
+
       - name: Build production assets
         run: npm run build
 
