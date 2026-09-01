@@ -136,13 +136,31 @@ final class BuildOrganisationScenario
                 'organisation_id' => $organisation->id,
                 'slug' => $definition['slug'],
             ]);
+            $configuration = $definition['configuration'];
+            /** @var array{request: string, case: string} $labels */
+            $labels = $configuration['labels'];
+            /** @var list<array{key: string, label: string}> $stages */
+            $stages = $configuration['stages'];
+            unset($configuration['labels'], $configuration['stages']);
             $program->forceFill([
                 'organisation_id' => $organisation->id,
                 'name' => $definition['name'],
                 'slug' => $definition['slug'],
-                'configuration' => $definition['configuration'],
+                'request_label' => $labels['request'],
+                'case_label' => $labels['case'],
+                'configuration' => $configuration,
                 'deleted_at' => null,
             ])->save();
+
+            $activeStageKeys = collect($stages)->pluck('key');
+            $program->stages()->whereNotIn('key', $activeStageKeys)->update(['retired_at' => now()]);
+
+            foreach ($stages as $position => $stage) {
+                $program->stages()->updateOrCreate(
+                    ['key' => $stage['key']],
+                    ['label' => $stage['label'], 'position' => $position, 'retired_at' => null],
+                );
+            }
 
             return [$program->slug => $program];
         });

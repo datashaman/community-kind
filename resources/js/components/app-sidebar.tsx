@@ -130,7 +130,7 @@ export function AppSidebar() {
         ...(page.props.canViewPrograms && page.props.currentOrganisation
             ? [
                   {
-                      title: 'Program configuration',
+                      title: 'Program pathways',
                       href: programsIndex(page.props.currentOrganisation.slug),
                       icon: Settings2,
                   },

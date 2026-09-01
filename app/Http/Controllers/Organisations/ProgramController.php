@@ -11,6 +11,7 @@ use App\Http\Requests\Organisations\UpdateProgramRequest;
 use App\Models\Organisation;
 use App\Models\Program;
 use Illuminate\Http\JsonResponse;
+use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Gate;
 use Illuminate\Support\Facades\Storage;
@@ -26,10 +27,10 @@ class ProgramController extends Controller
 
         return Inertia::render('programs/index', [
             'programs' => Program::query()
+                ->with('stages')
                 ->orderBy('name')
-                ->get(['id', 'organisation_id', 'name', 'slug', 'configuration'])
-                ->map(fn (Program $program): array => [
-                    ...$program->only(['id', 'name', 'slug', 'configuration']),
+                ->get(['id', 'organisation_id', 'name', 'slug', 'request_label', 'case_label', 'configuration'])
+                ->map(fn (Program $program): array => $this->serializeProgram($program) + [
                     'canUpdate' => Gate::allows('update', $program),
                 ]),
         ]);
@@ -40,16 +41,20 @@ class ProgramController extends Controller
         $program = $this->findProgram($program);
         Gate::authorize('view', $program);
 
-        return response()->json($program->only(['id', 'organisation_id', 'name', 'slug', 'configuration']));
+        return response()->json($this->serializeProgram($program->load('stages')));
     }
 
-    public function update(UpdateProgramRequest $request, Organisation $organisation, string $program, UpdateProgram $updateProgram): JsonResponse
+    public function update(UpdateProgramRequest $request, Organisation $organisation, string $program, UpdateProgram $updateProgram): JsonResponse|RedirectResponse
     {
         $program = $this->findProgram($program);
         Gate::authorize('update', $program);
         $program = $updateProgram->handle($program, $this->updateAttributes($request), $request->user());
 
-        return response()->json($program->only(['id', 'organisation_id', 'name', 'slug', 'configuration']));
+        if ($request->header('X-Inertia') !== null) {
+            return back();
+        }
+
+        return response()->json($this->serializeProgram($program));
     }
 
     public function search(Request $request, Organisation $organisation, SearchPrograms $searchPrograms): JsonResponse
@@ -81,20 +86,61 @@ class ProgramController extends Controller
             : Program::query()->where('slug', $identifier)->firstOrFail();
     }
 
-    /** @return array{name: string, slug: string, configuration?: array<string, mixed>} */
+    /**
+     * @return array{
+     *     name: string,
+     *     slug: string,
+     *     request_label?: string,
+     *     case_label?: string,
+     *     stages?: list<array{id: int|null, label: string, retired: bool}>,
+     *     configuration?: array<string, mixed>
+     * }
+     */
     private function updateAttributes(UpdateProgramRequest $request): array
     {
         $configuration = $request->validated('configuration');
+        $attributes = [
+            'name' => $request->string('name')->toString(),
+            'slug' => $request->string('slug')->toString(),
+        ];
 
-        return $request->has('configuration') && is_array($configuration)
-            ? [
-                'name' => $request->string('name')->toString(),
-                'slug' => $request->string('slug')->toString(),
-                'configuration' => $configuration,
-            ]
-            : [
-                'name' => $request->string('name')->toString(),
-                'slug' => $request->string('slug')->toString(),
-            ];
+        if ($request->has('request_label')) {
+            $attributes['request_label'] = $request->string('request_label')->toString();
+        }
+
+        if ($request->has('case_label')) {
+            $attributes['case_label'] = $request->string('case_label')->toString();
+        }
+
+        if ($request->has('stages')) {
+            /** @var list<array{id?: int|null, label: string, retired: bool}> $stages */
+            $stages = $request->validated('stages');
+            $attributes['stages'] = array_map(fn (array $stage): array => [
+                'id' => isset($stage['id']) ? (int) $stage['id'] : null,
+                'label' => (string) $stage['label'],
+                'retired' => (bool) $stage['retired'],
+            ], $stages);
+        }
+
+        if ($request->has('configuration') && is_array($configuration)) {
+            /** @var array<string, mixed> $configuration */
+            $attributes['configuration'] = $configuration;
+        }
+
+        return $attributes;
+    }
+
+    /** @return array<string, mixed> */
+    private function serializeProgram(Program $program): array
+    {
+        return [
+            ...$program->only(['id', 'organisation_id', 'name', 'slug', 'request_label', 'case_label', 'configuration']),
+            'stages' => $program->stages->map(fn ($stage): array => [
+                'id' => $stage->id,
+                'key' => $stage->key,
+                'label' => $stage->label,
+                'retired' => $stage->retired_at !== null,
+            ])->values(),
+        ];
     }
 }
