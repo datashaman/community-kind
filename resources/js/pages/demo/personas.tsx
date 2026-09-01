@@ -59,7 +59,7 @@ export default function DemoPersonas({ personas }: { personas: Persona[] }) {
                                 </p>
                             </CardHeader>
                             <CardContent className="space-y-5">
-                                <div className="border-saffron bg-saffron/10 rounded-lg border-l-4 p-3 text-sm leading-6">
+                                <div className="border-saffron/40 bg-saffron/10 rounded-lg border p-3 text-sm leading-6">
                                     <div className="mb-1 flex items-center gap-2 font-semibold">
                                         <ShieldCheck
                                             className="size-4"
