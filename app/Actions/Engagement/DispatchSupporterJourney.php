@@ -2,9 +2,12 @@
 
 namespace App\Actions\Engagement;
 
+use App\Enums\OrganisationConfigurationArea;
+use App\Enums\OrganisationConfigurationStatus;
 use App\Enums\SupporterJourneyEventType;
 use App\Enums\SupporterJourneyRecipientStatus;
 use App\Enums\SupporterJourneyStatus;
+use App\Models\OrganisationConfiguration;
 use App\Models\Party;
 use App\Models\SupporterJourney;
 use App\Models\SupporterJourneyRecipient;
@@ -31,8 +34,11 @@ class DispatchSupporterJourney
             throw new LogicException('Supporter journeys are restricted to local simulation.');
         }
 
-        if ($journey->status === SupporterJourneyStatus::Draft || $journey->audience_snapshot === null) {
+        if (! in_array($journey->status, [SupporterJourneyStatus::Approved, SupporterJourneyStatus::Scheduled], true) || $journey->audience_snapshot === null) {
             throw new LogicException('Only an approved journey can be simulated.');
+        }
+        if ($journey->status === SupporterJourneyStatus::Scheduled && ($journey->scheduled_for === null || $journey->scheduled_for->isFuture())) {
+            throw new LogicException('The scheduled journey is not due for dispatch.');
         }
 
         $eligibleUuids = $this->evaluate->handle($journey->audienceSegment)->pluck('uuid');
@@ -48,6 +54,7 @@ class DispatchSupporterJourney
                     [
                         'organisation_id' => $journey->organisation_id,
                         'status' => SupporterJourneyRecipientStatus::Queued,
+                        'variant' => $journey->experiment === null ? null : ((hexdec(substr(hash('sha256', $party->uuid), 0, 2)) % 2 === 0) ? 'A' : 'B'),
                     ],
                 );
                 $eligible = $eligibleUuids->contains($uuid) && ! $this->frequencyCapped($recipient);
@@ -64,11 +71,14 @@ class DispatchSupporterJourney
 
     private function frequencyCapped(SupporterJourneyRecipient $recipient): bool
     {
+        $configuredDays = OrganisationConfiguration::query()->where('area', OrganisationConfigurationArea::SupporterJourney)->where('configuration_key', 'default')->where('status', OrganisationConfigurationStatus::Active)->latest('version')->value('definition->frequency_cap_days');
+        $frequencyCapDays = max((int) config('engagement.frequency_cap_days'), (int) ($configuredDays ?? 0));
+
         return SupporterJourneyRecipient::query()
             ->where('party_id', $recipient->party_id)
             ->where('supporter_journey_id', '!=', $recipient->supporter_journey_id)
             ->where('status', SupporterJourneyRecipientStatus::Delivered)
-            ->where('updated_at', '>=', now()->subDays(config('engagement.frequency_cap_days')))
+            ->where('updated_at', '>=', now()->subDays($frequencyCapDays))
             ->exists();
     }
 }

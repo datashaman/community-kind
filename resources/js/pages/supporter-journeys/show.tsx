@@ -5,12 +5,14 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { approve, dispatch, index, show } from '@/routes/supporter-journeys';
 import { store as transition } from '@/routes/supporter-journeys/recipients/transitions';
+import { store as transitionJourney } from '@/routes/supporter-journeys/transitions';
 
 type Recipient = {
     id: string;
     displayName: string;
     status: string;
     attemptCount: number;
+    variant: string | null;
     events: Array<{ id: string; type: string }>;
     actionKeys: Record<string, string>;
 };
@@ -20,11 +22,18 @@ type Journey = {
     subject: string;
     body: string;
     status: string;
+    kind: string;
+    channel: string;
+    scheduledFor: string | null;
+    pausedAt: string | null;
+    experiment: { subject: string; body: string } | null;
     audienceName: string;
     audienceSnapshot: Array<{
         uuid: string;
         displayName: string;
         donationCount: number;
+        activityFrequency: number;
+        activityValue: number | null;
     }>;
     approvalHash: string | null;
     recipients: Recipient[];
@@ -59,6 +68,13 @@ export default function SupporterJourneyShow({
                     </CardHeader>
                     <CardContent className="space-y-4">
                         <Badge>{journey.status}</Badge>
+                        <p className="text-muted-foreground text-sm">
+                            {journey.kind.replaceAll('_', ' ')} ·{' '}
+                            {journey.channel}
+                            {journey.scheduledFor
+                                ? ` · scheduled ${new Date(journey.scheduledFor).toLocaleString()}`
+                                : ''}
+                        </p>
                         <div className="rounded-md border p-4">
                             <strong>
                                 {render(
@@ -73,6 +89,25 @@ export default function SupporterJourneyShow({
                                 )}
                             </p>
                         </div>
+                        {journey.experiment ? (
+                            <div className="rounded-md border border-dashed p-4">
+                                <p className="text-sm font-medium">
+                                    Variant B preview
+                                </p>
+                                <strong>
+                                    {render(
+                                        journey.experiment.subject,
+                                        journey.audienceSnapshot[0],
+                                    )}
+                                </strong>
+                                <p className="mt-3 whitespace-pre-wrap">
+                                    {render(
+                                        journey.experiment.body,
+                                        journey.audienceSnapshot[0],
+                                    )}
+                                </p>
+                            </div>
+                        ) : null}
                         <p className="text-muted-foreground text-sm">
                             {journey.status === 'draft'
                                 ? 'Approval freezes this content and the currently eligible audience.'
@@ -86,7 +121,7 @@ export default function SupporterJourneyShow({
                                     </Button>
                                 )}
                             </Form>
-                        ) : (
+                        ) : journey.status !== 'paused' ? (
                             <Form {...dispatch.form(routeArgs)}>
                                 {({ processing }) => (
                                     <Button disabled={processing}>
@@ -95,7 +130,47 @@ export default function SupporterJourneyShow({
                                     </Button>
                                 )}
                             </Form>
-                        )}
+                        ) : null}
+                        {journey.status === 'approved' ? (
+                            <div className="flex flex-wrap gap-2">
+                                <Form
+                                    {...transitionJourney.form(routeArgs)}
+                                    className="flex gap-2"
+                                >
+                                    <input
+                                        type="hidden"
+                                        name="status"
+                                        value="scheduled"
+                                    />
+                                    <input
+                                        type="datetime-local"
+                                        name="scheduled_for"
+                                        required
+                                        className="h-9 rounded border bg-transparent px-2"
+                                    />
+                                    <Button variant="outline">Schedule</Button>
+                                </Form>
+                                <JourneyTransition
+                                    routeArgs={routeArgs}
+                                    status="paused"
+                                    label="Pause"
+                                />
+                            </div>
+                        ) : null}
+                        {journey.status === 'scheduled' ? (
+                            <JourneyTransition
+                                routeArgs={routeArgs}
+                                status="paused"
+                                label="Pause schedule"
+                            />
+                        ) : null}
+                        {journey.status === 'paused' ? (
+                            <JourneyTransition
+                                routeArgs={routeArgs}
+                                status="approved"
+                                label="Resume approved"
+                            />
+                        ) : null}
                     </CardContent>
                 </Card>
                 <section
@@ -116,6 +191,9 @@ export default function SupporterJourneyShow({
                                     <p className="text-muted-foreground text-sm">
                                         {recipient.status} ·{' '}
                                         {recipient.attemptCount} retries
+                                        {recipient.variant
+                                            ? ` · variant ${recipient.variant}`
+                                            : ''}
                                     </p>
                                 </div>
                                 <div className="flex flex-wrap gap-2">
@@ -164,7 +242,12 @@ export default function SupporterJourneyShow({
 
 function render(
     template: string,
-    supporter?: { displayName: string; donationCount: number },
+    supporter?: {
+        displayName: string;
+        donationCount: number;
+        activityFrequency: number;
+        activityValue: number | null;
+    },
 ) {
     return template
         .replaceAll(
@@ -174,7 +257,32 @@ function render(
         .replaceAll(
             '{{ donation_count }}',
             String(supporter?.donationCount ?? 0),
+        )
+        .replaceAll(
+            '{{ activity_frequency }}',
+            String(supporter?.activityFrequency ?? 0),
+        )
+        .replaceAll(
+            '{{ activity_value }}',
+            String(supporter?.activityValue ?? 0),
         );
+}
+
+function JourneyTransition({
+    routeArgs,
+    status,
+    label,
+}: {
+    routeArgs: [string, string];
+    status: string;
+    label: string;
+}) {
+    return (
+        <Form {...transitionJourney.form(routeArgs)}>
+            <input type="hidden" name="status" value={status} />
+            <Button variant="outline">{label}</Button>
+        </Form>
+    );
 }
 
 function actionsFor(status: string): string[] {

@@ -1,0 +1,5 @@
+<!DOCTYPE html>
+<html lang="{{ str_replace('_', '-', app()->getLocale()) }}">
+<head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1"><title>Impact · {{ $organisation->name }}</title><style>:root{color-scheme:light dark;font-family:ui-sans-serif,system-ui,sans-serif;line-height:1.6}main{width:min(48rem,calc(100% - 2rem));margin:3rem auto}.metric{border:1px solid GrayText;border-radius:.75rem;padding:1rem;margin:1rem 0}</style></head>
+<body><main><p><a href="{{ route('public.organisations.show', $organisation->slug) }}">← {{ $organisation->name }}</a></p><h1>Published impact</h1><p>Approved aggregate metrics · registry {{ $snapshot->registry_version }} · period {{ $snapshot->period['start'] }} to {{ $snapshot->period['endExclusive'] }} exclusive.</p>@foreach($snapshot->metrics as $metric)<article class="metric"><h2>{{ $metric['definition']['label'] }}</h2><p>{{ $metric['availability'] === 'available' ? $metric['value'].' '.$metric['definition']['unit'] : ucfirst($metric['availability']) }}</p><small>{{ $metric['definition']['formula'] }}</small></article>@endforeach</main></body>
+</html>

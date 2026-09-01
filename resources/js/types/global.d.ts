@@ -22,6 +22,8 @@ declare module '@inertiajs/core' {
             canViewSupporterJourneys: boolean;
             canViewVolunteers: boolean;
             canViewAudit: boolean;
+            canViewOrganisationConfigurations: boolean;
+            canViewImpactSnapshots: boolean;
             currentOrganisation: Organisation | null;
             organisations: Organisation[];
             demoSandbox: {

@@ -21,6 +21,7 @@
             <p><a href="{{ $volunteerUrl }}">Volunteer opportunities</a></p>
             <p><a href="{{ $eventsUrl }}">Community events</a></p>
             <p><a href="{{ $inKindUrl }}">Offer goods or materials</a></p>
+            @if($impactUrl)<p><a href="{{ $impactUrl }}">Published impact</a></p>@endif
             <p><a href="{{ $sourceUrl }}">Source and licence</a></p>
         </main>
     </body>

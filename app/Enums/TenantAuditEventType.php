@@ -47,6 +47,10 @@ enum TenantAuditEventType: string
     case InKindOfferTransitioned = 'in_kind_offer_transitioned';
     case PartnerProfileCreated = 'partner_profile_created';
     case PartnerCommitmentRecorded = 'partner_commitment_recorded';
+    case OrganisationConfigurationCreated = 'organisation_configuration_created';
+    case OrganisationConfigurationActivated = 'organisation_configuration_activated';
+    case ImpactSnapshotPublished = 'impact_snapshot_published';
+    case SupporterJourneyTransitioned = 'supporter_journey_transitioned';
 
     /** @return array<string, string> */
     public function payloadSchema(): array
@@ -193,6 +197,10 @@ enum TenantAuditEventType: string
             self::InKindOfferTransitioned => ['offer_id' => 'string', 'from_status' => 'string', 'to_status' => 'string'],
             self::PartnerProfileCreated => ['partner_profile_id' => 'string', 'party_uuid' => 'string'],
             self::PartnerCommitmentRecorded => ['commitment_id' => 'string', 'partner_profile_id' => 'string', 'status' => 'string'],
+            self::OrganisationConfigurationCreated => ['configuration_id' => 'string', 'area' => 'string', 'configuration_key' => 'string', 'version' => 'integer'],
+            self::OrganisationConfigurationActivated => ['configuration_id' => 'string', 'area' => 'string', 'configuration_key' => 'string', 'version' => 'integer'],
+            self::ImpactSnapshotPublished => ['snapshot_id' => 'string', 'audience' => 'string', 'registry_version' => 'string', 'metric_count' => 'integer'],
+            self::SupporterJourneyTransitioned => ['journey_id' => 'string', 'from_status' => 'string', 'to_status' => 'string', 'scheduled_for' => 'nullable_string'],
         };
     }
 }

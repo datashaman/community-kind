@@ -3,6 +3,7 @@
 namespace App\Http\Controllers\Organisations;
 
 use App\Actions\Intake\CreateIntakeRequest;
+use App\Enums\IntakeUrgency;
 use App\Enums\OrganisationRole;
 use App\Http\Controllers\Controller;
 use App\Http\Requests\Organisations\StoreIntakeRequestRequest;
@@ -76,6 +77,7 @@ class IntakeRequestController extends Controller
             'source' => $request->string('source')->toString(),
             'narrative' => $request->string('narrative')->toString(),
             'presenting_needs' => $request->string('presenting_needs')->toString(),
+            'urgency' => IntakeUrgency::from($request->string('urgency')->toString()),
             'intake_fields' => $request->array('intake_fields'),
             'eligibility_context' => [],
             'risk_flags' => array_values(array_map(strval(...), $request->array('risk_flags'))),

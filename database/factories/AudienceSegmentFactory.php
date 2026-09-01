@@ -32,6 +32,10 @@ class AudienceSegmentFactory extends Factory
                 'interest' => null,
                 'donation_activity' => true,
                 'campaign_source' => null,
+                'activity_type' => 'donation',
+                'recency_days' => null,
+                'minimum_frequency' => 1,
+                'minimum_value' => null,
             ],
         ];
     }

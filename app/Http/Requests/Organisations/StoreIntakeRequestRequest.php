@@ -2,7 +2,11 @@
 
 namespace App\Http\Requests\Organisations;
 
+use App\Enums\IntakeUrgency;
+use App\Enums\OrganisationConfigurationArea;
+use App\Enums\OrganisationConfigurationStatus;
 use App\Models\Organisation;
+use App\Models\OrganisationConfiguration;
 use App\Models\Program;
 use Illuminate\Contracts\Validation\ValidationRule;
 use Illuminate\Foundation\Http\FormRequest;
@@ -10,6 +14,12 @@ use Illuminate\Validation\Rule;
 
 class StoreIntakeRequestRequest extends FormRequest
 {
+    protected function prepareForValidation(): void
+    {
+        $configuration = $this->activeRules();
+        $this->merge(['urgency' => $this->input('urgency', $configuration?->definition['default_urgency'] ?? IntakeUrgency::Routine->value)]);
+    }
+
     /**
      * Determine if the user is authorized to make this request.
      */
@@ -31,14 +41,16 @@ class StoreIntakeRequestRequest extends FormRequest
         $fieldDefinitions = $program === null ? [] : $this->configuredFields($program, 'intake_fields');
         $fieldKeys = $this->configuredFieldKeys($fieldDefinitions);
         $riskKeys = $program === null ? [] : $this->configuredFieldKeys($this->configuredFields($program, 'risk_flags'));
+        $required = array_values(array_map('strval', $this->activeRules()?->definition['required_fields'] ?? []));
         $rules = [
             'program_id' => ['required', 'integer', Rule::exists('programs', 'id')->where('organisation_id', $organisationId)],
             'party_uuid' => ['required', 'uuid', Rule::exists('parties', 'uuid')->where('organisation_id', $organisationId)],
             'source' => ['required', Rule::in(['staff_referral', 'self_referral', 'partner_referral', 'phone', 'walk_in', 'online'])],
             'narrative' => ['required', 'string', 'max:10000'],
             'presenting_needs' => ['required', 'string', 'max:10000'],
-            'email' => ['nullable', 'email:rfc', 'max:255'],
-            'telephone' => ['nullable', 'string', 'max:50'],
+            'urgency' => ['required', Rule::enum(IntakeUrgency::class)],
+            'email' => [Rule::requiredIf(in_array('email', $required, true)), 'nullable', 'email:rfc', 'max:255'],
+            'telephone' => [Rule::requiredIf(in_array('telephone', $required, true)), 'nullable', 'string', 'max:50'],
             'intake_fields' => [$fieldKeys === [] ? 'array' : 'array:'.implode(',', $fieldKeys)],
             'risk_flags' => ['present', 'array', 'max:20'],
             'risk_flags.*' => ['string', 'distinct', Rule::in($riskKeys)],
@@ -93,5 +105,10 @@ class StoreIntakeRequestRequest extends FormRequest
         }
 
         return $keys;
+    }
+
+    private function activeRules(): ?OrganisationConfiguration
+    {
+        return OrganisationConfiguration::query()->where('area', OrganisationConfigurationArea::IntakeRules)->where('configuration_key', 'default')->where('status', OrganisationConfigurationStatus::Active)->latest('version')->first();
     }
 }

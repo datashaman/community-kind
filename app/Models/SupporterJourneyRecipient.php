@@ -18,11 +18,12 @@ use Illuminate\Database\Eloquent\Relations\HasMany;
  * @property string $supporter_journey_id
  * @property int $party_id
  * @property SupporterJourneyRecipientStatus $status
+ * @property string|null $variant
  * @property int $attempt_count
  * @property-read Party $party
  * @property-read SupporterJourney $journey
  */
-#[Fillable(['organisation_id', 'supporter_journey_id', 'party_id', 'status', 'attempt_count', 'last_attempted_at'])]
+#[Fillable(['organisation_id', 'supporter_journey_id', 'party_id', 'status', 'variant', 'attempt_count', 'last_attempted_at'])]
 class SupporterJourneyRecipient extends Model
 {
     /** @use HasFactory<SupporterJourneyRecipientFactory> */

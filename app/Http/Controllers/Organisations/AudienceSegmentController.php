@@ -4,6 +4,7 @@ namespace App\Http\Controllers\Organisations;
 
 use App\Actions\Engagement\CreateAudienceSegment;
 use App\Actions\Engagement\EvaluateAudienceSegment;
+use App\Enums\AudienceActivityType;
 use App\Enums\ConsentChannel;
 use App\Enums\ConsentPurpose;
 use App\Enums\PartyBusinessRole;
@@ -39,6 +40,7 @@ class AudienceSegmentController extends Controller
                 'serviceAreas' => PartyAddress::query()->whereNotNull('service_area')->distinct()->orderBy('service_area')->pluck('service_area'),
                 'interests' => PartyInterest::query()->select(['slug', 'label'])->distinct()->orderBy('label')->get(),
                 'campaignSources' => Donation::query()->distinct()->orderBy('source_code')->pluck('source_code'),
+                'activityTypes' => collect(AudienceActivityType::cases())->map(fn (AudienceActivityType $type): array => ['value' => $type->value, 'label' => $type->label()]),
             ],
         ]);
     }
@@ -58,6 +60,10 @@ class AudienceSegmentController extends Controller
                 'interest' => $validated['interest'] ?? null,
                 'donation_activity' => (bool) $validated['donation_activity'],
                 'campaign_source' => $validated['campaign_source'] ?? null,
+                'activity_type' => $validated['activity_type'],
+                'recency_days' => isset($validated['recency_days']) ? (int) $validated['recency_days'] : null,
+                'minimum_frequency' => (int) $validated['minimum_frequency'],
+                'minimum_value' => isset($validated['minimum_value']) ? (int) $validated['minimum_value'] : null,
             ],
             $request->user(),
         );

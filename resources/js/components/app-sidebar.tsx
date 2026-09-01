@@ -12,6 +12,8 @@ import {
     Settings2,
     UsersRound,
     HeartHandshake,
+    SlidersHorizontal,
+    ChartNoAxesCombined,
 } from 'lucide-react';
 import AppLogo from '@/components/app-logo';
 import { NavFooter } from '@/components/nav-footer';
@@ -33,6 +35,8 @@ import { index as auditIndex } from '@/routes/audit';
 import { index as communityEngagementIndex } from '@/routes/community-engagement';
 import { index as donationsIndex } from '@/routes/donations';
 import { index as intakesIndex } from '@/routes/intakes';
+import { index as configurationsIndex } from '@/routes/organisation-configurations';
+import { index as impactSnapshotsIndex } from '@/routes/impact-snapshots';
 import { index as partiesIndex } from '@/routes/parties';
 import { index as programsIndex } from '@/routes/programs';
 import { index as supporterJourneysIndex } from '@/routes/supporter-journeys';
@@ -129,6 +133,29 @@ export function AppSidebar() {
                       title: 'Program configuration',
                       href: programsIndex(page.props.currentOrganisation.slug),
                       icon: Settings2,
+                  },
+              ]
+            : []),
+        ...(page.props.canViewOrganisationConfigurations &&
+        page.props.currentOrganisation
+            ? [
+                  {
+                      title: 'Organisation configuration',
+                      href: configurationsIndex(
+                          page.props.currentOrganisation.slug,
+                      ),
+                      icon: SlidersHorizontal,
+                  },
+              ]
+            : []),
+        ...(page.props.canViewImpactSnapshots && page.props.currentOrganisation
+            ? [
+                  {
+                      title: 'Impact packs',
+                      href: impactSnapshotsIndex(
+                          page.props.currentOrganisation.slug,
+                      ),
+                      icon: ChartNoAxesCombined,
                   },
               ]
             : []),

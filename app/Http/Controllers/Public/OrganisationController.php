@@ -4,6 +4,7 @@ namespace App\Http\Controllers\Public;
 
 use App\Http\Controllers\Controller;
 use App\Models\Organisation;
+use App\Models\PublishedImpactSnapshot;
 use Illuminate\Contracts\View\View;
 use Illuminate\Http\Request;
 
@@ -28,6 +29,7 @@ class OrganisationController extends Controller
             'volunteerUrl' => route('public.volunteers.index', ['public_organisation' => $organisation->slug]),
             'eventsUrl' => route('public.events.index', ['public_organisation' => $organisation->slug]),
             'inKindUrl' => route('public.in-kind.create', ['public_organisation' => $organisation->slug]),
+            'impactUrl' => PublishedImpactSnapshot::query()->where('audience', 'public')->whereNotNull('published_at')->exists() ? route('public.impact.show', ['public_organisation' => $organisation->slug]) : null,
         ]);
     }
 }

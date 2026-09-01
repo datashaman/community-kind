@@ -17,7 +17,7 @@ class CreateAudienceSegment
         private readonly RecordTenantAuditEvent $recordAudit,
     ) {}
 
-    /** @param array{purpose: string, channel: string, role: string, service_area: string|null, interest: string|null, donation_activity: bool, campaign_source: string|null} $criteria */
+    /** @param array{purpose: string, channel: string, role: string, service_area: string|null, interest: string|null, donation_activity: bool, campaign_source: string|null, activity_type: string, recency_days: int|null, minimum_frequency: int, minimum_value: int|null} $criteria */
     public function handle(Organisation $organisation, string $name, array $criteria, User $actor): AudienceSegment
     {
         $this->context->ensureOwns($organisation->id);

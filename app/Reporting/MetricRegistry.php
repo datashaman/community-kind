@@ -6,7 +6,21 @@ use App\Enums\OrganisationRole;
 
 class MetricRegistry
 {
-    public const VERSION = '2026.3';
+    public const VERSION = '2026.4';
+
+    /** @return list<string> */
+    public function ids(): array
+    {
+        $ids = [];
+
+        foreach (OrganisationRole::cases() as $role) {
+            foreach ($this->forRole($role) as $definition) {
+                $ids[$definition['id']] = true;
+            }
+        }
+
+        return array_keys($ids);
+    }
 
     /** @return list<array{id: string, version: string, category: string, domain: string, label: string, description: string, formula: string, unit: string, dimensions: list<string>}> */
     public function forRole(?OrganisationRole $role): array
@@ -23,6 +37,8 @@ class MetricRegistry
             $this->definition('engagement.event_attendance', 'output', 'engagement', 'Event attendance', 'Event registrations entering attended state in the reporting period.', 'count(attended registrations)', 'count', ['date', 'area', 'location', 'cohort']),
             $this->definition('engagement.in_kind_fulfilments', 'output', 'engagement', 'In-kind fulfilments', 'In-kind offers fulfilled in the reporting period.', 'count(fulfilled offers)', 'count', ['date', 'area', 'location', 'cohort']),
             $this->definition('engagement.partner_commitments', 'activity', 'engagement', 'Partner commitments', 'Partner commitments recorded in the reporting period.', 'count(commitments)', 'count', ['date', 'area', 'location', 'cohort']),
+            $this->definition('data.missing_service_area_rate', 'quality', 'data', 'Missing service-area rate', 'Party records created in the reporting period without a service-area value.', 'parties missing service area / parties created', 'percent', ['date', 'cohort']),
+            $this->definition('data.missing_contact_rate', 'quality', 'data', 'Missing contact rate', 'Party records created in the reporting period without an email or telephone contact.', 'parties missing email and telephone / parties created', 'percent', ['date', 'cohort']),
             $this->definition('fundraising.net_raised', 'output', 'fundraising', 'Net raised', 'Succeeded payment value less refunds recorded in the reporting period.', 'sum(succeeded payment minor units) - sum(refund minor units)', 'currency', ['date', 'area', 'location', 'cohort', 'campaign']),
             $this->definition('engagement.meaningful_action_rate', 'outcome', 'engagement', 'Meaningful action rate', 'Recipients with a meaningful action divided by delivered recipients.', 'meaningful recipients / delivered recipients', 'percent', ['date', 'area', 'location', 'cohort', 'campaign']),
         ];
@@ -30,7 +46,7 @@ class MetricRegistry
         $domains = match ($role) {
             OrganisationRole::ProgramManager => ['service'],
             OrganisationRole::EngagementOfficer => ['fundraising', 'engagement'],
-            OrganisationRole::ExecutiveViewer => ['service', 'fundraising', 'engagement'],
+            OrganisationRole::ExecutiveViewer => ['service', 'fundraising', 'engagement', 'data'],
             default => [],
         };
 

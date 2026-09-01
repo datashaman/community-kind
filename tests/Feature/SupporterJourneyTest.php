@@ -202,6 +202,8 @@ function journeySegment(?string $name = null, ConsentChannel $channel = ConsentC
             ...$factory->raw()['criteria'],
             'channel' => $channel->value,
             'donation_activity' => false,
+            'activity_type' => 'any',
+            'minimum_frequency' => 0,
         ],
     ]);
 }

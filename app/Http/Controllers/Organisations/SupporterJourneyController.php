@@ -5,13 +5,19 @@ namespace App\Http\Controllers\Organisations;
 use App\Actions\Engagement\ApproveSupporterJourney;
 use App\Actions\Engagement\DispatchSupporterJourney;
 use App\Actions\Engagement\EvaluateAudienceSegment;
+use App\Actions\Engagement\TransitionSupporterJourney;
 use App\Actions\Engagement\TransitionSupporterJourneyRecipient;
+use App\Enums\OrganisationConfigurationArea;
+use App\Enums\OrganisationConfigurationStatus;
 use App\Enums\SupporterJourneyEventType;
+use App\Enums\SupporterJourneyStatus;
 use App\Http\Controllers\Controller;
 use App\Http\Requests\Organisations\StoreSupporterJourneyRequest;
 use App\Http\Requests\Organisations\TransitionSupporterJourneyRecipientRequest;
+use App\Http\Requests\Organisations\TransitionSupporterJourneyRequest;
 use App\Models\AudienceSegment;
 use App\Models\Organisation;
+use App\Models\OrganisationConfiguration;
 use App\Models\SupporterJourney;
 use App\Models\SupporterJourneyEvent;
 use App\Models\SupporterJourneyRecipient;
@@ -35,6 +41,7 @@ class SupporterJourneyController extends Controller
                 'recipientCount' => $journey->recipients_count,
             ]),
             'segments' => AudienceSegment::query()->orderBy('name')->get(['id', 'name']),
+            'templates' => OrganisationConfiguration::query()->where('area', OrganisationConfigurationArea::MessageTemplate)->where('status', OrganisationConfigurationStatus::Active)->orderBy('configuration_key')->get()->map(fn (OrganisationConfiguration $configuration): array => ['key' => $configuration->configuration_key, 'channel' => $configuration->definition['channel'], 'journeyKind' => $configuration->definition['journey_kind']]),
         ]);
     }
 
@@ -43,7 +50,15 @@ class SupporterJourneyController extends Controller
         Gate::authorize('create', [SupporterJourney::class, $currentOrganisation]);
         $journey = SupporterJourney::query()->create([
             'organisation_id' => $currentOrganisation->id,
-            ...$request->validated(),
+            'audience_segment_id' => $request->validated('audience_segment_id'),
+            'name' => $request->validated('name'),
+            'journey_kind' => $request->validated('journey_kind'),
+            'channel' => $request->validated('channel'),
+            'subject' => (string) $request->validated('subject'),
+            'body' => $request->validated('body'),
+            'status' => SupporterJourneyStatus::Draft,
+            'version' => 1,
+            'experiment' => $request->boolean('experiment_enabled') ? ['subject' => $request->validated('variant_subject'), 'body' => $request->validated('variant_body')] : null,
             'created_by_user_id' => $request->user()->id,
         ]);
 
@@ -59,6 +74,8 @@ class SupporterJourneyController extends Controller
                 'uuid' => $supporter['uuid'],
                 'displayName' => $supporter['displayName'],
                 'donationCount' => $supporter['donationCount'],
+                'activityFrequency' => $supporter['activityFrequency'],
+                'activityValue' => $supporter['activityValue'],
             ])->values()->all();
 
         return Inertia::render('supporter-journeys/show', [
@@ -68,6 +85,11 @@ class SupporterJourneyController extends Controller
                 'subject' => $journey->subject,
                 'body' => $journey->body,
                 'status' => $journey->status->value,
+                'kind' => $journey->journey_kind->value,
+                'channel' => $journey->channel,
+                'scheduledFor' => $journey->scheduled_for?->toAtomString(),
+                'pausedAt' => $journey->paused_at?->toAtomString(),
+                'experiment' => $journey->experiment,
                 'audienceName' => $journey->audienceSegment->name,
                 'audienceSnapshot' => $previewAudience,
                 'approvalHash' => $journey->approval_hash,
@@ -75,6 +97,7 @@ class SupporterJourneyController extends Controller
                     'id' => $recipient->id,
                     'displayName' => $recipient->party->display_name,
                     'status' => $recipient->status->value,
+                    'variant' => $recipient->variant,
                     'attemptCount' => $recipient->attempt_count,
                     'events' => $recipient->events->map(fn (SupporterJourneyEvent $event): array => ['id' => $event->id, 'type' => $event->type->value]),
                     'actionKeys' => collect(SupporterJourneyEventType::cases())->mapWithKeys(fn (SupporterJourneyEventType $type): array => [$type->value => Str::uuid()->toString()]),
@@ -98,6 +121,16 @@ class SupporterJourneyController extends Controller
         $journey = SupporterJourney::query()->findOrFail($supporterJourney);
         Gate::authorize('update', $journey);
         $dispatch->handle($journey);
+
+        return back();
+    }
+
+    public function transitionJourney(TransitionSupporterJourneyRequest $request, Organisation $currentOrganisation, string $supporterJourney, TransitionSupporterJourney $transition): RedirectResponse
+    {
+        $journey = SupporterJourney::query()->findOrFail($supporterJourney);
+        Gate::authorize('update', $journey);
+        $scheduledFor = $request->validated('scheduled_for');
+        $transition->handle($journey, SupporterJourneyStatus::from($request->string('status')->toString()), is_string($scheduledFor) ? $scheduledFor : null, $request->user());
 
         return back();
     }

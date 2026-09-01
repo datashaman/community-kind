@@ -17,6 +17,7 @@ use App\Http\Controllers\Organisations\ImpactChartExportController;
 use App\Http\Controllers\Organisations\ImpactReportExportController;
 use App\Http\Controllers\Organisations\IntakeRequestController;
 use App\Http\Controllers\Organisations\IntakeTransitionController;
+use App\Http\Controllers\Organisations\OrganisationConfigurationController;
 use App\Http\Controllers\Organisations\OrganisationInvitationController;
 use App\Http\Controllers\Organisations\PartyAddressController;
 use App\Http\Controllers\Organisations\PartyConsentController;
@@ -26,6 +27,7 @@ use App\Http\Controllers\Organisations\PartyRelationshipController;
 use App\Http\Controllers\Organisations\PartySafeContactInstructionController;
 use App\Http\Controllers\Organisations\PortalAccessGrantController as OrganisationPortalAccessGrantController;
 use App\Http\Controllers\Organisations\ProgramController;
+use App\Http\Controllers\Organisations\PublishedImpactSnapshotController;
 use App\Http\Controllers\Organisations\ServiceCaseController;
 use App\Http\Controllers\Organisations\ServiceOperationsExportController;
 use App\Http\Controllers\Organisations\SupporterJourneyController;
@@ -39,6 +41,7 @@ use App\Http\Controllers\Portal\PortalRecurringMandateController;
 use App\Http\Controllers\Portal\PortalRegistrationController;
 use App\Http\Controllers\Public\CommunityEventController as PublicCommunityEventController;
 use App\Http\Controllers\Public\DonationController as PublicDonationController;
+use App\Http\Controllers\Public\ImpactController as PublicImpactController;
 use App\Http\Controllers\Public\InKindOfferController as PublicInKindOfferController;
 use App\Http\Controllers\Public\OrganisationController as PublicOrganisationController;
 use App\Http\Controllers\Public\VolunteerOpportunityController as PublicVolunteerOpportunityController;
@@ -94,6 +97,7 @@ Route::domain('{public_organisation}.'.config('organisations.public_domain'))
         Route::post('/events/{event}', [PublicCommunityEventController::class, 'store'])->middleware('throttle:10,1')->name('public.events.store');
         Route::get('/in-kind', [PublicInKindOfferController::class, 'create'])->name('public.in-kind.create');
         Route::post('/in-kind', [PublicInKindOfferController::class, 'store'])->middleware('throttle:10,1')->name('public.in-kind.store');
+        Route::get('/impact', PublicImpactController::class)->name('public.impact.show');
         Route::get('/portal/access/{token}', [PortalAccessController::class, 'use'])
             ->middleware('throttle:20,1')
             ->name('portal.access.use');
@@ -150,12 +154,19 @@ Route::prefix('{current_organisation}')
         Route::post('community-engagement/in-kind-offers/{offer}/transitions', [CommunityEngagementController::class, 'transitionOffer'])->name('community-engagement.in-kind-offers.transitions.store');
         Route::post('community-engagement/partners', [CommunityEngagementController::class, 'storePartner'])->name('community-engagement.partners.store');
         Route::post('community-engagement/partners/{partner}/commitments', [CommunityEngagementController::class, 'storeCommitment'])->name('community-engagement.partners.commitments.store');
+        Route::get('organisation-configurations', [OrganisationConfigurationController::class, 'index'])->name('organisation-configurations.index');
+        Route::post('organisation-configurations', [OrganisationConfigurationController::class, 'store'])->name('organisation-configurations.store');
+        Route::post('organisation-configurations/{configuration}/activate', [OrganisationConfigurationController::class, 'activate'])->name('organisation-configurations.activate');
+        Route::get('impact-snapshots', [PublishedImpactSnapshotController::class, 'index'])->name('impact-snapshots.index');
+        Route::post('impact-snapshots', [PublishedImpactSnapshotController::class, 'store'])->name('impact-snapshots.store');
+        Route::get('impact-snapshots/{snapshot}/download', [PublishedImpactSnapshotController::class, 'download'])->name('impact-snapshots.download');
         Route::post('volunteers/{volunteer}/applications/{application}/transitions', [VolunteerOpportunityController::class, 'transitionApplication'])->name('volunteers.applications.transitions.store');
         Route::post('volunteers/{volunteer}/applications/{application}/credentials', [VolunteerOpportunityController::class, 'storeCredential'])->name('volunteers.applications.credentials.store');
         Route::post('volunteers/{volunteer}/shifts', [VolunteerOpportunityController::class, 'storeShift'])->name('volunteers.shifts.store');
         Route::post('volunteers/{volunteer}/assignments/{assignment}/transitions', [VolunteerOpportunityController::class, 'transitionAssignment'])->name('volunteers.assignments.transitions.store');
         Route::post('supporter-journeys/{supporter_journey}/approve', [SupporterJourneyController::class, 'approve'])->name('supporter-journeys.approve');
         Route::post('supporter-journeys/{supporter_journey}/dispatch', [SupporterJourneyController::class, 'dispatch'])->name('supporter-journeys.dispatch');
+        Route::post('supporter-journeys/{supporter_journey}/transitions', [SupporterJourneyController::class, 'transitionJourney'])->name('supporter-journeys.transitions.store');
         Route::post('supporter-journeys/{supporter_journey}/recipients/{recipient}/transitions', [SupporterJourneyController::class, 'transition'])->name('supporter-journeys.recipients.transitions.store');
         Route::resource('parties', PartyController::class)->only(['index', 'store', 'show', 'update']);
         Route::resource('intakes', IntakeRequestController::class)

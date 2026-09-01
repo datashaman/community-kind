@@ -32,6 +32,8 @@ class ApproveSupporterJourney
                     'uuid' => $supporter['uuid'],
                     'displayName' => $supporter['displayName'],
                     'donationCount' => $supporter['donationCount'],
+                    'activityFrequency' => $supporter['activityFrequency'],
+                    'activityValue' => $supporter['activityValue'],
                 ])->values()->all();
             $locked->update([
                 'status' => SupporterJourneyStatus::Approved,
@@ -39,10 +41,14 @@ class ApproveSupporterJourney
                 'approval_hash' => hash('sha256', json_encode([
                     'subject' => $locked->subject,
                     'body' => $locked->body,
+                    'journey_kind' => $locked->journey_kind->value,
+                    'channel' => $locked->channel,
+                    'experiment' => $locked->experiment,
                     'audience' => array_column($snapshot, 'uuid'),
                 ], JSON_THROW_ON_ERROR)),
                 'approved_at' => now(),
                 'approved_by_user_id' => $actor->id,
+                'version' => $locked->version + 1,
             ]);
 
             if ($locked->audience_snapshot === null) {
