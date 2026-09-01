@@ -38,6 +38,20 @@ it('provisions a confined pair through a single-use hashed bootstrap and audited
         ->and($bootstrap->getAttributes())->not->toContain($plainTextToken);
 
     $this->get(route('demo.bootstrap', ['token' => $plainTextToken]))
+        ->assertOk()
+        ->assertInertia(fn (Assert $page) => $page
+            ->component('demo/bootstrap')
+            ->where('token', $plainTextToken))
+        ->assertHeader('Referrer-Policy', 'no-referrer')
+        ->assertHeader('Cache-Control', 'no-store, private');
+
+    expect($bootstrap->refresh()->used_at)->toBeNull()
+        ->and($pair->refresh()->status)->toBe(SandboxPairStatus::Ready);
+
+    $this->get(route('demo.bootstrap', ['token' => $plainTextToken]))->assertOk();
+    expect($bootstrap->refresh()->used_at)->toBeNull();
+
+    $this->post(route('demo.bootstrap.store', ['token' => $plainTextToken]))
         ->assertRedirect(route('demo.personas.index'))
         ->assertHeader('Referrer-Policy', 'no-referrer')
         ->assertHeader('Cache-Control', 'no-store, private');
@@ -52,7 +66,8 @@ it('provisions a confined pair through a single-use hashed bootstrap and audited
     expect($pair->bootstrapTokens()->count())->toBe(3)
         ->and($pair->bootstrapTokens()->whereNull('used_at')->whereNull('revoked_at')->count())->toBe(1);
 
-    $this->get(route('demo.bootstrap', ['token' => $plainTextToken]))->assertGone();
+    $this->get(route('demo.bootstrap', ['token' => $plainTextToken]))
+        ->assertRedirect(route('demo.personas.index'));
     $this->get(route('demo.personas.index'))
         ->assertOk()
         ->assertInertia(fn (Assert $page) => $page
@@ -79,14 +94,19 @@ it('provisions a confined pair through a single-use hashed bootstrap and audited
     $this->get(route('dashboard', ['current_organisation' => $unrelated]))->assertNotFound();
     $this->post(route('organisations.invitations.store', ['organisation' => $harbourKind]))->assertForbidden();
     $this->patch(route('profile.update'), ['name' => 'Evaluator', 'email' => 'evaluator@example.com'])->assertForbidden();
+    $bootstrapUrl = route('demo.bootstrap', ['token' => $plainTextToken]);
     $this->get("https://{$harbourKind->slug}.community-kind.test/")->assertOk();
     $this->get("https://{$unrelated->slug}.community-kind.test/")->assertNotFound();
+
+    $this->flushSession();
+    $this->get($bootstrapUrl)->assertGone();
 });
 
 it('resets only the selected Organisation and invalidates its generation', function () {
     $result = app(ProvisionSandboxPair::class)->handle();
     $pair = $result['pair'];
-    $this->get(route('demo.bootstrap', ['token' => $result['token']]))->assertRedirect();
+    $this->get(route('demo.bootstrap', ['token' => $result['token']]))->assertOk();
+    $this->post(route('demo.bootstrap.store', ['token' => $result['token']]))->assertRedirect();
     $harbourKind = $pair->organisations()->where('sandbox_template', 'harbourkind')->firstOrFail();
     $neighbourLink = $pair->organisations()->where('sandbox_template', 'neighbourlink')->firstOrFail();
     $administrator = Membership::query()->findOrFail((int) DB::table('role_assignments')
