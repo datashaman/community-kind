@@ -7,7 +7,7 @@ import {
     Plus,
     RotateCcw,
 } from 'lucide-react';
-import type { FormEvent } from 'react';
+import { type FormEvent, useEffect, useState } from 'react';
 import Heading from '@/components/heading';
 import InputError from '@/components/input-error';
 import ProgramDefinitionList, {
@@ -18,6 +18,13 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
+import {
+    Select,
+    SelectContent,
+    SelectItem,
+    SelectTrigger,
+    SelectValue,
+} from '@/components/ui/select';
 import { index } from '@/routes/programs';
 import { update } from '@/routes/organisations/programs';
 
@@ -79,9 +86,11 @@ type Program = {
 function ProgramEditor({
     program,
     organisation,
+    onDirtyChange,
 }: {
     program: Program;
     organisation: string;
+    onDirtyChange: (isDirty: boolean) => void;
 }) {
     const form = useForm({
         name: program.name,
@@ -100,6 +109,10 @@ function ProgramEditor({
         risk_flags: program.risk_flags,
     });
     const errors = form.errors as Record<string, string>;
+
+    useEffect(() => {
+        onDirtyChange(form.isDirty);
+    }, [form.isDirty, onDirtyChange]);
 
     const updateStage = (
         stageIndex: number,
@@ -248,6 +261,7 @@ function ProgramEditor({
         event.preventDefault();
         form.patch(update.url([organisation, program.slug]), {
             preserveScroll: true,
+            onSuccess: () => form.setDefaults(),
         });
     };
 
@@ -454,23 +468,13 @@ function ProgramEditor({
                                                 stage.retired
                                             }
                                         />
-                                        <div className="flex flex-wrap items-center gap-2">
-                                            {stage.key ? (
-                                                <span className="text-muted-foreground font-mono text-xs">
-                                                    {stage.key}
-                                                </span>
-                                            ) : (
-                                                <span className="text-muted-foreground text-xs">
-                                                    A stable reference will be
-                                                    created when saved.
-                                                </span>
-                                            )}
-                                            {stage.retired ? (
+                                        {stage.retired ? (
+                                            <div>
                                                 <Badge variant="outline">
                                                     Retired
                                                 </Badge>
-                                            ) : null}
-                                        </div>
+                                            </div>
+                                        ) : null}
                                         <InputError
                                             message={
                                                 errors[
@@ -593,10 +597,6 @@ function ProgramEditor({
                                                     measure.retired
                                                 }
                                             />
-                                            <span className="text-muted-foreground font-mono text-xs">
-                                                {measure.key ??
-                                                    'Stable reference created on save'}
-                                            </span>
                                             <InputError
                                                 message={
                                                     errors[
@@ -708,8 +708,7 @@ function ProgramEditor({
                                 <h3 className="font-semibold">Taxonomies</h3>
                                 <p className="text-muted-foreground text-sm">
                                     Maintain the shared classifications staff
-                                    use, with clear allowed values instead of
-                                    free-form JSON.
+                                    use across this Program.
                                 </p>
                             </div>
                             {program.canUpdate ? (
@@ -758,10 +757,6 @@ function ProgramEditor({
                                                         taxonomy.retired
                                                     }
                                                 />
-                                                <span className="text-muted-foreground font-mono text-xs">
-                                                    {taxonomy.key ??
-                                                        'Stable reference created on save'}
-                                                </span>
                                                 <InputError
                                                     message={
                                                         errors[
@@ -893,10 +888,6 @@ function ProgramEditor({
                                                                     value.retired
                                                                 }
                                                             />
-                                                            <span className="text-muted-foreground font-mono text-xs">
-                                                                {value.key ??
-                                                                    'Reference created on save'}
-                                                            </span>
                                                             <InputError
                                                                 message={
                                                                     errors[
@@ -1058,6 +1049,26 @@ function ProgramEditor({
 
 export default function ProgramsIndex({ programs }: { programs: Program[] }) {
     const organisation = usePage().props.currentOrganisation!;
+    const [selectedProgramId, setSelectedProgramId] = useState(
+        programs[0]?.id.toString() ?? '',
+    );
+    const [hasUnsavedChanges, setHasUnsavedChanges] = useState(false);
+    const selectedProgram = programs.find(
+        (program) => program.id.toString() === selectedProgramId,
+    );
+    const selectProgram = (programId: string) => {
+        if (
+            programId !== selectedProgramId &&
+            hasUnsavedChanges &&
+            !window.confirm(
+                'Discard your unsaved changes and open another Program?',
+            )
+        ) {
+            return;
+        }
+
+        setSelectedProgramId(programId);
+    };
 
     return (
         <>
@@ -1067,15 +1078,51 @@ export default function ProgramsIndex({ programs }: { programs: Program[] }) {
                     title="Program pathways"
                     description="Use familiar language and a clear service pathway so staff can recognise how work progresses."
                 />
-                <div className="grid gap-6">
-                    {programs.map((program) => (
-                        <ProgramEditor
-                            key={program.id}
-                            program={program}
-                            organisation={organisation.slug}
-                        />
-                    ))}
-                </div>
+                {programs.length > 0 ? (
+                    <div className="grid max-w-xl gap-2">
+                        <Label htmlFor="program-pathway-selector">
+                            Program
+                        </Label>
+                        <Select
+                            value={selectedProgramId}
+                            onValueChange={selectProgram}
+                        >
+                            <SelectTrigger
+                                id="program-pathway-selector"
+                                className="w-full"
+                            >
+                                <SelectValue placeholder="Choose a Program" />
+                            </SelectTrigger>
+                            <SelectContent align="start">
+                                {programs.map((program) => (
+                                    <SelectItem
+                                        key={program.id}
+                                        value={program.id.toString()}
+                                    >
+                                        {program.name}
+                                    </SelectItem>
+                                ))}
+                            </SelectContent>
+                        </Select>
+                        <p className="text-muted-foreground text-sm">
+                            Choose one Program to review or update its pathway.
+                        </p>
+                    </div>
+                ) : null}
+                {selectedProgram ? (
+                    <ProgramEditor
+                        key={selectedProgram.id}
+                        program={selectedProgram}
+                        organisation={organisation.slug}
+                        onDirtyChange={setHasUnsavedChanges}
+                    />
+                ) : (
+                    <Card>
+                        <CardContent className="text-muted-foreground py-8 text-sm">
+                            No Programs are available for this Organisation.
+                        </CardContent>
+                    </Card>
+                )}
             </div>
         </>
     );
