@@ -23,7 +23,7 @@ class OrganisationConfigurationController extends Controller
         Gate::authorize('viewAny', [OrganisationConfiguration::class, $currentOrganisation]);
 
         return Inertia::render('organisation-configurations/index', [
-            'configurations' => OrganisationConfiguration::query()->latest()->get()->map(fn (OrganisationConfiguration $configuration): array => [
+            'configurations' => OrganisationConfiguration::query()->where('area', '!=', OrganisationConfigurationArea::MessageTemplate)->latest()->get()->map(fn (OrganisationConfiguration $configuration): array => [
                 'id' => $configuration->id,
                 'area' => $configuration->area->value,
                 'key' => $configuration->configuration_key,
@@ -32,7 +32,10 @@ class OrganisationConfigurationController extends Controller
                 'definition' => $configuration->definition,
                 'activatedAt' => $configuration->activated_at?->toAtomString(),
             ]),
-            'areas' => collect(OrganisationConfigurationArea::cases())->map(fn (OrganisationConfigurationArea $area): array => ['value' => $area->value, 'label' => $area->label()]),
+            'areas' => collect(OrganisationConfigurationArea::cases())
+                ->reject(fn (OrganisationConfigurationArea $area): bool => $area === OrganisationConfigurationArea::MessageTemplate)
+                ->map(fn (OrganisationConfigurationArea $area): array => ['value' => $area->value, 'label' => $area->label()])
+                ->values(),
         ]);
     }
 
@@ -56,6 +59,7 @@ class OrganisationConfigurationController extends Controller
     public function activate(Organisation $currentOrganisation, string $configuration, ActivateOrganisationConfiguration $activate): RedirectResponse
     {
         $version = OrganisationConfiguration::query()->findOrFail($configuration);
+        abort_if($version->area === OrganisationConfigurationArea::MessageTemplate, 404);
         Gate::authorize('update', $version);
         $activate->handle($version, request()->user());
 

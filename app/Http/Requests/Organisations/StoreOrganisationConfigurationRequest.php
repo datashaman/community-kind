@@ -18,7 +18,7 @@ class StoreOrganisationConfigurationRequest extends FormRequest
     public function rules(): array
     {
         return [
-            'area' => ['required', Rule::enum(OrganisationConfigurationArea::class)],
+            'area' => ['required', Rule::enum(OrganisationConfigurationArea::class), Rule::notIn([OrganisationConfigurationArea::MessageTemplate->value])],
             'configuration_key' => ['required', 'string', 'alpha_dash:ascii', 'max:100'],
             'definition_json' => ['required', 'string', 'json', 'max:20000'],
         ];

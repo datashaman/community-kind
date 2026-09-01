@@ -23,16 +23,6 @@ const examples: Record<string, string> = {
         null,
         2,
     ),
-    message_template: JSON.stringify(
-        {
-            channel: 'sms',
-            subject: null,
-            body: 'Thanks {{ supporter_name }}',
-            journey_kind: 're_engagement',
-        },
-        null,
-        2,
-    ),
     supporter_journey: JSON.stringify(
         {
             default_kind: 're_engagement',
