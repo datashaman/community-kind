@@ -11,15 +11,21 @@ class MetricRegistry
     /** @return list<string> */
     public function ids(): array
     {
-        $ids = [];
+        return array_column($this->all(), 'id');
+    }
+
+    /** @return list<array{id: string, version: string, category: string, domain: string, label: string, description: string, formula: string, unit: string, dimensions: list<string>}> */
+    public function all(): array
+    {
+        $definitions = [];
 
         foreach (OrganisationRole::cases() as $role) {
             foreach ($this->forRole($role) as $definition) {
-                $ids[$definition['id']] = true;
+                $definitions[$definition['id']] = $definition;
             }
         }
 
-        return array_keys($ids);
+        return array_values($definitions);
     }
 
     /** @return list<array{id: string, version: string, category: string, domain: string, label: string, description: string, formula: string, unit: string, dimensions: list<string>}> */
