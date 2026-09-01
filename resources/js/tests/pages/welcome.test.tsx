@@ -25,11 +25,35 @@ vi.mock('@/components/source-and-licence-link', () => ({
 }));
 
 describe('Welcome', () => {
-    it('offers public evaluators a direct path to the demo', () => {
+    it('explains the connected operating model and offers evaluation paths', () => {
         render(<Welcome />);
 
         expect(
+            screen.getByRole('heading', {
+                name: 'One shared thread from first contact to visible impact.',
+            }),
+        ).toBeVisible();
+        expect(
+            screen.getByRole('heading', {
+                name: 'The work makes more sense when the thread stays intact.',
+            }),
+        ).toBeVisible();
+        expect(screen.getByText('Service delivery')).toBeVisible();
+        expect(screen.getByText('Community engagement')).toBeVisible();
+        expect(screen.getByText('Supporter stewardship')).toBeVisible();
+        expect(screen.getByText('Impact evidence')).toBeVisible();
+        expect(
             screen.getByRole('link', { name: 'Explore the demo' }),
         ).toHaveAttribute('href', '/demo');
+        expect(
+            screen.getAllByRole('link', { name: 'Read the documentation' })[0],
+        ).toHaveAttribute(
+            'href',
+            'https://github.com/datashaman/community-kind/tree/main/docs',
+        );
+        expect(
+            screen.getAllByRole('link', { name: 'Staff log in' })[0],
+        ).toHaveAttribute('href', '/login');
+        expect(screen.getByText(/not yet a production service/i)).toBeVisible();
     });
 });
