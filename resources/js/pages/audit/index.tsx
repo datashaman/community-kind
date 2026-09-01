@@ -22,7 +22,9 @@ export default function AuditIndex({
             <Head title="Audit history" />
             <main className="space-y-6 p-4 md:p-6">
                 <header className="space-y-1">
-                    <h1 className="text-2xl font-semibold">Audit history</h1>
+                    <h1 className="font-display text-2xl font-semibold">
+                        Audit history
+                    </h1>
                     <p className="text-muted-foreground text-sm">
                         A policy-filtered projection for {role}. Event payloads
                         and identifiers are intentionally excluded.

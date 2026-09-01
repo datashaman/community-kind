@@ -32,7 +32,7 @@ export default function DemoPersonas({ personas }: { personas: Persona[] }) {
                         className="mx-auto size-10 text-amber-600"
                         aria-hidden="true"
                     />
-                    <h1 className="text-3xl font-semibold">
+                    <h1 className="font-display text-3xl font-semibold">
                         Choose a synthetic demo persona
                     </h1>
                     <p className="text-muted-foreground">

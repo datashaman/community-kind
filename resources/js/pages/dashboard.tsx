@@ -105,7 +105,7 @@ export default function Dashboard({
                 {impact ? <ImpactMetrics impact={impact} /> : null}
                 <div className="flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
                     <div>
-                        <h1 className="text-3xl font-semibold tracking-tight">
+                        <h1 className="font-display text-3xl font-semibold tracking-[-0.015em]">
                             Service operations
                         </h1>
                         <p className="text-muted-foreground mt-1 text-sm">
@@ -292,7 +292,7 @@ function ImpactMetrics({ impact }: { impact: ImpactDashboard }) {
                     <div className="flex items-center gap-2">
                         <h1
                             id="impact-heading"
-                            className="text-2xl font-semibold"
+                            className="font-display text-2xl font-semibold"
                         >
                             Reconciled impact
                         </h1>
@@ -407,7 +407,7 @@ function ImpactMetrics({ impact }: { impact: ImpactDashboard }) {
                                         </CardTitle>
                                     </CardHeader>
                                     <CardContent className="space-y-2">
-                                        <p className="text-3xl font-semibold">
+                                        <p className="font-display text-3xl font-semibold tabular-nums">
                                             {metricValue(
                                                 metric,
                                                 impact.currency,

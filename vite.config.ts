@@ -16,6 +16,13 @@ export default defineConfig({
                 bunny('Instrument Sans', {
                     weights: [400, 500, 600],
                 }),
+                // Display face for page titles and impact headlines. See
+                // `.impeccable.md`; body/UI type stays Instrument Sans.
+                bunny('Petrona', {
+                    weights: [500, 600],
+                    styles: ['normal', 'italic'],
+                    preload: [{ weight: 600 }],
+                }),
             ],
         }),
         inertia(),

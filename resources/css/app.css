@@ -13,6 +13,19 @@
         'Apple Color Emoji', 'Segoe UI Emoji', 'Segoe UI Symbol',
         'Noto Color Emoji';
 
+    /*
+     * Display face. Page titles and impact headlines only; body, UI, forms,
+     * and in-page section headings stay on --font-sans. See `.impeccable.md`.
+     *
+     * --font-petrona is emitted by the `@fonts` directive and carries the
+     * fontaine metric-matched fallback, which keeps the hero from shifting
+     * while the webfont loads. The literal is the belt-and-braces path for a
+     * view that renders app.css without `@fonts`.
+     */
+    --font-display:
+        var(--font-petrona, 'Petrona'), ui-serif, Georgia, 'Times New Roman',
+        serif;
+
     --color-civic: #173b57;
     --color-service: #1e7a70;
     --color-service-bright: #71c6bc;

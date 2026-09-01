@@ -32,7 +32,7 @@ export default function DemoStart({
                         </p>
                         <h1
                             id="demo-heading"
-                            className="text-4xl font-semibold tracking-tight text-balance sm:text-6xl"
+                            className="font-display text-4xl font-semibold tracking-[-0.015em] text-balance sm:text-6xl"
                         >
                             Follow the work from first contact to community
                             impact.
@@ -83,7 +83,7 @@ export default function DemoStart({
                                     aria-hidden="true"
                                 />
                             </div>
-                            <h2 className="text-2xl font-semibold tracking-tight">
+                            <h2 className="font-display text-2xl font-semibold">
                                 Your isolated evaluation space
                             </h2>
                             <p className="text-muted-foreground leading-7">

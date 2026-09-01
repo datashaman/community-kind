@@ -108,9 +108,9 @@ export default function Welcome() {
                                     />
                                     Community operations for human services
                                 </p>
-                                <h1 className="text-5xl leading-[0.98] font-semibold tracking-[-0.055em] text-balance sm:text-7xl lg:text-[4.6rem]">
+                                <h1 className="font-display text-5xl leading-[1.04] font-semibold tracking-[-0.02em] text-balance sm:text-7xl lg:text-[4.6rem]">
                                     One shared thread from first contact to{' '}
-                                    <span className="text-service font-serif font-normal italic dark:text-[#71C6BC]">
+                                    <span className="text-service font-medium italic dark:text-[#71C6BC]">
                                         visible impact.
                                     </span>
                                 </h1>
@@ -234,7 +234,7 @@ export default function Welcome() {
                                 </p>
                                 <h2
                                     id="operating-model-heading"
-                                    className="mt-4 text-4xl leading-tight font-semibold tracking-[-0.035em] text-balance sm:text-5xl"
+                                    className="font-display mt-4 text-4xl leading-tight font-semibold tracking-[-0.015em] text-balance sm:text-5xl"
                                 >
                                     The work makes more sense when the thread
                                     stays intact.
@@ -269,7 +269,7 @@ export default function Welcome() {
                                                 </p>
                                             </div>
                                             <div>
-                                                <h3 className="text-xl font-semibold tracking-tight">
+                                                <h3 className="font-display text-xl font-semibold">
                                                     {title}
                                                 </h3>
                                                 <p className="text-civic/70 dark:text-cloud/70 mt-2 leading-7">
@@ -290,7 +290,7 @@ export default function Welcome() {
                                     className="size-9 text-[#71C6BC]"
                                     aria-hidden="true"
                                 />
-                                <h2 className="mt-6 text-4xl leading-tight font-semibold tracking-[-0.035em] sm:text-5xl">
+                                <h2 className="font-display mt-6 text-4xl leading-tight font-semibold tracking-[-0.015em] sm:text-5xl">
                                     Privacy is part of the operating model.
                                 </h2>
                                 <p className="text-cloud/70 mt-6 max-w-xl text-lg leading-8">
@@ -328,7 +328,7 @@ export default function Welcome() {
                                 <p className="text-service text-sm font-semibold tracking-[0.14em] uppercase dark:text-[#71C6BC]">
                                     Open by design
                                 </p>
-                                <h2 className="mt-4 max-w-3xl text-4xl leading-tight font-semibold tracking-[-0.035em] sm:text-5xl">
+                                <h2 className="font-display mt-4 max-w-3xl text-4xl leading-tight font-semibold tracking-[-0.015em] sm:text-5xl">
                                     Inspect the decisions, not just the demo.
                                 </h2>
                                 <p className="text-civic/70 dark:text-cloud/70 mt-6 max-w-2xl text-lg leading-8">
@@ -367,7 +367,7 @@ export default function Welcome() {
                                 <p className="text-coral text-sm font-semibold tracking-[0.14em] uppercase dark:text-[#F29A88]">
                                     Honest about readiness
                                 </p>
-                                <h2 className="mt-4 max-w-3xl text-4xl leading-tight font-semibold tracking-[-0.035em] sm:text-5xl">
+                                <h2 className="font-display mt-4 max-w-3xl text-4xl leading-tight font-semibold tracking-[-0.015em] sm:text-5xl">
                                     Evaluate the shape of the work—safely.
                                 </h2>
                                 <p className="text-civic/70 dark:text-cloud/70 mt-6 max-w-3xl leading-7">
