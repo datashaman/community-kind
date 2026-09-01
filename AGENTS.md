@@ -14,6 +14,35 @@ The repository uses the five canonical triage labels without renaming. See `docs
 
 This is a single-context repository using root `CONTEXT.md` and `docs/adr/`. See `docs/agents/domain.md`.
 
+### Design context
+
+Full design context is in root `.impeccable.md`. Read it before any UI work. The
+non-negotiables:
+
+- **Aesthetic:** calm institutional care. Quiet, dignified, unhurried — a well-designed
+  civic service, not a SaaS dashboard. Hierarchy comes from type and space, not colour
+  and ornament.
+- **Theme:** light is the designed default on every surface, staff and public. Dark mode
+  stays correct and supported but is never the showcase.
+- **Type:** Instrument Sans (`--font-sans`) for body, UI, forms, tables, and section
+  headings inside a page — retained deliberately. Petrona (`--font-display`, utility
+  `font-display`) for page-level `h1` titles, marketing and report headlines, and impact
+  figures only; when in doubt it stays sans. Tracking in this codebase was tuned for a
+  sans — loosen it to about `-0.02em` when applying the serif at display sizes. Fixed
+  `rem` scales in the staff app, `clamp()` only on public content pages.
+- **Colour:** the `civic`/`service`/`leaf`/`saffron`/`coral`/`cloud` palette in
+  `resources/css/app.css` is settled. Accents stay rare; saffron and coral carry meaning
+  and are never decorative.
+- **Accessibility:** WCAG 2.2 AA, enforced. Contrast failures, missing keyboard paths,
+  invisible focus, and unhonoured `prefers-reduced-motion` block a change.
+- **Never ship:** coloured side-stripes on cards, list items, or alerts (`border-left`/
+  `border-right` over 1px); gradient text; glassmorphism or decorative glow; uniform
+  icon-heading-text card grids; nested cards; the hero-metric template on impact reporting;
+  modals where an alternative exists.
+- **Client dignity is a visual property.** Screens holding sensitive client information get
+  calmer treatment than anything else — more space, less colour, no motion. Demo and seeded
+  content must always read as visibly synthetic.
+
 ===
 
 <laravel-boost-guidelines>
