@@ -19,7 +19,15 @@ final class ValidateConfigurationDefinition
     public function handle(OrganisationConfigurationArea $area, array $definition): array
     {
         $rules = match ($area) {
-            OrganisationConfigurationArea::PublicForm => ['form' => ['required', Rule::in(['event_registration', 'volunteer_registration', 'in_kind_offer', 'supporter_profile'])], 'required_fields' => ['required', 'array', 'min:1'], 'required_fields.*' => ['required', 'string', 'distinct']],
+            OrganisationConfigurationArea::PublicForm => [
+                'form' => ['required', Rule::in(PublicFormDefinition::purposes())],
+                'required_fields' => ['required', 'array', 'min:1'],
+                'required_fields.*' => ['required', 'string', 'distinct'],
+                'fields' => ['sometimes', 'array', 'min:1'],
+                'fields.*.key' => ['required', 'string', 'distinct'],
+                'fields.*.type' => ['required', 'string'],
+                'fields.*.required' => ['required', 'boolean'],
+            ],
             OrganisationConfigurationArea::MessageTemplate => ['channel' => ['required', Rule::in(['email', 'sms'])], 'subject' => ['nullable', 'string', 'max:160'], 'body' => ['required', 'string', 'max:4000'], 'journey_kind' => ['required', Rule::enum(SupporterJourneyKind::class)]],
             OrganisationConfigurationArea::SupporterJourney => ['default_kind' => ['required', Rule::enum(SupporterJourneyKind::class)], 'default_channel' => ['required', Rule::in(['email', 'sms'])], 'default_message_template_id' => ['nullable', 'uuid'], 'require_approval' => ['required', 'accepted'], 'dispatch_rechecks_consent' => ['required', 'accepted'], 'frequency_cap_days' => ['required', 'integer', 'min:'.config('engagement.frequency_cap_days'), 'max:365']],
             OrganisationConfigurationArea::IntakeRules => ['required_fields' => ['required', 'array', 'min:2'], 'required_fields.*' => ['required', Rule::in(['party_uuid', 'email', 'telephone', 'source', 'narrative', 'presenting_needs', 'program_id']), 'distinct'], 'default_urgency' => ['required', Rule::in(['routine', 'priority', 'urgent'])], 'allow_restricted_access_bypass' => ['required', 'declined']],
@@ -36,15 +44,34 @@ final class ValidateConfigurationDefinition
                 if ($required->intersect(['organisation_id', 'party_id', 'status', 'consent_decision'])->isNotEmpty()) {
                     $validator->errors()->add('required_fields', 'System and consent safeguards cannot be configured as form fields.');
                 }
-                $allowed = match ($definition['form'] ?? null) {
-                    'event_registration' => ['name', 'email'],
-                    'volunteer_registration' => ['name', 'email', 'interests', 'availability'],
-                    'in_kind_offer' => ['name', 'email', 'category', 'description', 'quantity', 'unit', 'estimated_value_minor', 'currency', 'condition'],
-                    'supporter_profile' => ['name', 'email', 'telephone'],
-                    default => [],
-                };
+                $purpose = is_string($definition['form'] ?? null) ? $definition['form'] : '';
+                $allowed = PublicFormDefinition::fieldKeys($purpose);
                 if ($required->diff($allowed)->isNotEmpty()) {
                     $validator->errors()->add('required_fields', 'The form contains unsupported fields.');
+                }
+                if (array_key_exists('fields', $definition) && is_array($definition['fields'])) {
+                    $fields = collect($definition['fields']);
+                    $fieldKeys = $fields->pluck('key');
+                    if ($fieldKeys->count() !== count($allowed) || $fieldKeys->diff($allowed)->isNotEmpty() || collect($allowed)->diff($fieldKeys)->isNotEmpty()) {
+                        $validator->errors()->add('fields', 'The form must contain every supported field exactly once.');
+                    }
+                    $catalogue = collect(PublicFormDefinition::fields($purpose))->keyBy('key');
+                    foreach ($fields as $index => $field) {
+                        if (! is_array($field) || ! is_string($field['key'] ?? null) || ! $catalogue->has($field['key'])) {
+                            continue;
+                        }
+                        $catalogueField = $catalogue->get($field['key']);
+                        if (($field['type'] ?? null) !== $catalogueField['type']) {
+                            $validator->errors()->add("fields.{$index}.type", 'The field type cannot be changed.');
+                        }
+                        $isRequired = filter_var($field['required'] ?? false, FILTER_VALIDATE_BOOL);
+                        if ($catalogueField['fixed_required'] && ! $isRequired) {
+                            $validator->errors()->add("fields.{$index}.required", 'This field must remain required.');
+                        }
+                        if ($isRequired !== $required->contains($field['key'])) {
+                            $validator->errors()->add("fields.{$index}.required", 'The required state must match the form definition.');
+                        }
+                    }
                 }
             }
             if ($area === OrganisationConfigurationArea::MessageTemplate && ($definition['channel'] ?? null) === 'sms' && mb_strlen((string) ($definition['body'] ?? '')) > 480) {
