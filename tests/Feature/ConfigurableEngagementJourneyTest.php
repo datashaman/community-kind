@@ -92,14 +92,14 @@ it('versions, previews, audits, and protects organisation configuration', functi
         expect($publicFormValidator->errors()->has('interests'))->toBeTrue();
     });
 
-    $this->actingAs($administrator)->get(route('organisation-configurations.index', $organisation))
+    $this->actingAs($administrator)->get(route('public-forms.index', $organisation))
         ->assertOk()
         ->assertSee('interests');
     $this->actingAs($administrator)->post(route('organisation-configurations.store', $organisation), [
         'area' => OrganisationConfigurationArea::PublicForm->value,
         'configuration_key' => 'volunteer_registration',
         'definition_json' => json_encode(['form' => 'volunteer_registration', 'required_fields' => ['name']], JSON_THROW_ON_ERROR),
-    ])->assertSessionHasErrors('definition_json');
+    ])->assertSessionHasErrors('area');
     $this->actingAs($officer)->get(route('organisation-configurations.index', $organisation))->assertForbidden();
 });
 

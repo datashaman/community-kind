@@ -30,6 +30,7 @@ use App\Http\Controllers\Organisations\PartyRelationshipController;
 use App\Http\Controllers\Organisations\PartySafeContactInstructionController;
 use App\Http\Controllers\Organisations\PortalAccessGrantController as OrganisationPortalAccessGrantController;
 use App\Http\Controllers\Organisations\ProgramController;
+use App\Http\Controllers\Organisations\PublicFormController;
 use App\Http\Controllers\Organisations\PublishedImpactSnapshotController;
 use App\Http\Controllers\Organisations\ServiceCaseController;
 use App\Http\Controllers\Organisations\ServiceOperationsExportController;
@@ -174,6 +175,9 @@ Route::prefix('{current_organisation}')
         Route::get('intake-rules', [IntakeRulesController::class, 'index'])->name('intake-rules.index');
         Route::post('intake-rules', [IntakeRulesController::class, 'store'])->name('intake-rules.store');
         Route::post('intake-rules/{intakeRule}/activate', [IntakeRulesController::class, 'activate'])->name('intake-rules.activate');
+        Route::get('public-forms', [PublicFormController::class, 'index'])->name('public-forms.index');
+        Route::post('public-forms', [PublicFormController::class, 'store'])->name('public-forms.store');
+        Route::post('public-forms/{publicForm}/activate', [PublicFormController::class, 'activate'])->name('public-forms.activate');
         Route::get('impact-snapshots', [PublishedImpactSnapshotController::class, 'index'])->name('impact-snapshots.index');
         Route::post('impact-snapshots', [PublishedImpactSnapshotController::class, 'store'])->name('impact-snapshots.store');
         Route::get('impact-snapshots/{snapshot}/download', [PublishedImpactSnapshotController::class, 'download'])->name('impact-snapshots.download');

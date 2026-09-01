@@ -18,11 +18,6 @@ type Configuration = {
 type Area = { value: string; label: string };
 
 const examples: Record<string, string> = {
-    public_form: JSON.stringify(
-        { form: 'event_registration', required_fields: ['name', 'email'] },
-        null,
-        2,
-    ),
     reporting: JSON.stringify(
         {
             public_metric_ids: ['engagement.event_attendance'],
@@ -92,10 +87,7 @@ export default function OrganisationConfigurationsIndex({
                                         message={errors.configuration_key}
                                     />
                                     <small className="text-muted-foreground">
-                                        Use impact for reporting and the form
-                                        name (for example
-                                        volunteer_registration) for public
-                                        forms.
+                                        Use impact for reporting definitions.
                                     </small>
                                 </label>
                                 <label className="grid gap-1">
