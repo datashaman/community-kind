@@ -153,13 +153,13 @@ function VersionMetricMatrix({ version }: { version: ReportingVersion }) {
                         </th>
                         <th
                             scope="col"
-                            className="w-28 px-4 py-2 text-center font-medium"
+                            className="w-40 px-4 py-2 text-center font-medium whitespace-nowrap"
                         >
                             Public page
                         </th>
                         <th
                             scope="col"
-                            className="w-28 px-4 py-2 text-center font-medium"
+                            className="w-40 px-4 py-2 text-center font-medium whitespace-nowrap"
                         >
                             Reporting pack
                         </th>
@@ -329,13 +329,13 @@ export default function ReportingPublicationIndex({
                                                 </th>
                                                 <th
                                                     scope="col"
-                                                    className="w-28 px-4 py-2 text-center font-medium"
+                                                    className="w-40 px-4 py-2 text-center font-medium whitespace-nowrap"
                                                 >
                                                     Public page
                                                 </th>
                                                 <th
                                                     scope="col"
-                                                    className="w-28 px-4 py-2 text-center font-medium"
+                                                    className="w-40 px-4 py-2 text-center font-medium whitespace-nowrap"
                                                 >
                                                     Reporting pack
                                                 </th>
