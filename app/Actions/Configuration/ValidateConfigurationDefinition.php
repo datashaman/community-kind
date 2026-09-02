@@ -35,18 +35,6 @@ final class ValidateConfigurationDefinition
         };
         $validator = Validator::make($definition, $rules);
         $validator->after(function ($validator) use ($area, $definition): void {
-            /*
-             * A destination may be empty: publishing a funder pack without a
-             * public page, or the reverse, is an ordinary choice. Publishing
-             * nowhere is the one combination that cannot mean anything.
-             */
-            if ($area === OrganisationConfigurationArea::Reporting) {
-                $public = is_array($definition['public_metric_ids'] ?? null) ? $definition['public_metric_ids'] : [];
-                $pack = is_array($definition['pack_metric_ids'] ?? null) ? $definition['pack_metric_ids'] : [];
-                if ($public === [] && $pack === []) {
-                    $validator->errors()->add('public_metric_ids', 'Select at least one metric for the public page or the reporting pack.');
-                }
-            }
             $requiredFields = is_array($definition['required_fields'] ?? null) ? $definition['required_fields'] : [];
             if ($area === OrganisationConfigurationArea::PublicForm) {
                 $required = collect($requiredFields);

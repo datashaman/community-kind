@@ -101,7 +101,7 @@ it('shows retired metrics in immutable legacy versions without making them selec
  * publish a funder pack without also publishing a public page, or the reverse.
  * Nothing in the product asks for that.
  */
-it('accepts a version that publishes to one destination only', function () {
+it('accepts a version that publishes to one destination, or to none', function () {
     extract(reportingPublicationEditorFixture());
 
     $this->actingAs($administrator)
@@ -120,13 +120,34 @@ it('accepts a version that publishes to one destination only', function () {
         ->assertRedirect()
         ->assertSessionHasNoErrors();
 
-    /* Publishing nowhere is the one combination that cannot mean anything. */
+    /*
+     * Publishing nothing is how an Organisation stops publishing. Refusing it
+     * meant the last metric could never be withdrawn once it was approved.
+     */
     $this->actingAs($administrator)
         ->post(route('reporting-publication.store', $organisation), [
             'public_metric_ids' => [],
             'pack_metric_ids' => [],
         ])
-        ->assertSessionHasErrors('public_metric_ids');
+        ->assertRedirect()
+        ->assertSessionHasNoErrors();
+
+    /*
+     * Activation runs ValidateConfigurationDefinition, which enforced the same
+     * minimum separately. Fixing only the form request would have moved the
+     * refusal from submit to activate.
+     */
+    $empty = app(OrganisationContext::class)->run($organisation, fn (): OrganisationConfiguration => OrganisationConfiguration::query()
+        ->where('area', OrganisationConfigurationArea::Reporting)
+        ->where('configuration_key', 'impact')
+        ->latest('version')
+        ->firstOrFail());
+    expect($empty->definition)->toBe(['public_metric_ids' => [], 'pack_metric_ids' => []]);
+
+    $this->actingAs($administrator)
+        ->post(route('reporting-publication.activate', [$organisation, $empty]))
+        ->assertRedirect()
+        ->assertSessionHasNoErrors();
 });
 
 it('rejects unavailable metrics and removes reporting from the generic JSON workflow', function () {

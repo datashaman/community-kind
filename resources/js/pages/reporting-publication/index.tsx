@@ -430,6 +430,20 @@ export default function ReportingPublicationIndex({
                                     : 'Create reporting draft'}
                             </Button>
                         </div>
+                        {/*
+                         * Selecting nothing is allowed and is the way to stop
+                         * publishing, so it has to be stated rather than
+                         * refused. Withdrawing the last metric used to fail
+                         * validation, which left no way back out of publishing.
+                         */}
+                        {editor.data.public_metric_ids.length === 0 &&
+                        editor.data.pack_metric_ids.length === 0 ? (
+                            <p className="text-muted-foreground text-sm">
+                                This version publishes nothing. Activating it
+                                withdraws every metric from the public page and
+                                from reporting packs.
+                            </p>
+                        ) : null}
                     </form>
                 </CardContent>
             </Card>
