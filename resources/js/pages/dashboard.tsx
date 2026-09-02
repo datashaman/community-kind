@@ -271,10 +271,31 @@ export default function Dashboard({
     );
 }
 
-const categories = ['input', 'activity', 'output', 'outcome'] as const;
+/*
+ * The logic-model sequence, in order. Labels are spelled out rather than
+ * derived from the key: the heading used to append "s", which rendered
+ * "activitys", and the next category added would hit the same problem.
+ */
+const categories = [
+    { key: 'input', label: 'Input' },
+    { key: 'activity', label: 'Activity' },
+    { key: 'output', label: 'Output' },
+    { key: 'outcome', label: 'Outcome' },
+] as const;
 
 function ImpactMetrics({ impact }: { impact: ImpactDashboard }) {
     const organisation = usePage().props.currentOrganisation!;
+
+    /*
+     * Ordered by the logic model — inputs cause activities cause outputs cause
+     * outcomes — so the row reads left to right in the order the theory of
+     * change runs, rather than in whatever order the registry returned.
+     */
+    const orderedMetrics = categories.flatMap(({ key, label }) =>
+        impact.metrics
+            .filter((metric) => metric.definition.category === key)
+            .map((metric) => ({ metric, categoryLabel: label })),
+    );
 
     if (impact.metrics.length === 0) return null;
 
@@ -380,60 +401,86 @@ function ImpactMetrics({ impact }: { impact: ImpactDashboard }) {
                 />
                 <Button className="self-end">Apply reporting filters</Button>
             </Form>
-            {categories.map((category) => {
-                const metrics = impact.metrics.filter(
-                    (metric) => metric.definition.category === category,
-                );
-                if (metrics.length === 0) return null;
-
-                return (
-                    <div key={category} className="space-y-2">
-                        <h3 className="text-sm font-semibold tracking-wide uppercase">
-                            {category}s
-                        </h3>
-                        <div className="grid gap-3 md:grid-cols-2 xl:grid-cols-4">
-                            {metrics.map((metric) => (
-                                <Card key={metric.definition.id}>
-                                    <CardHeader className="pb-2">
-                                        <CardTitle className="text-sm">
-                                            {metric.definition.label}
-                                        </CardTitle>
-                                    </CardHeader>
-                                    <CardContent className="space-y-2">
-                                        <p className="font-display text-3xl font-semibold tabular-nums">
-                                            {metricValue(
-                                                metric,
-                                                impact.currency,
-                                            )}
-                                        </p>
-                                        <p className="text-muted-foreground text-xs">
-                                            {metric.definition.description}
-                                        </p>
-                                        <p className="text-muted-foreground text-xs">
-                                            Definition {metric.definition.id}@
-                                            {metric.definition.version} ·{' '}
-                                            {metric.definition.formula}
-                                        </p>
-                                        {metric.comparison ? (
-                                            <p className="text-xs">
-                                                Prior-period change:{' '}
-                                                {metric.comparison.change > 0
-                                                    ? '+'
-                                                    : ''}
-                                                {metric.comparison.change}
-                                            </p>
-                                        ) : null}
-                                    </CardContent>
-                                </Card>
-                            ))}
+            {/*
+             * A card carries a label and a figure. Its category is an overline
+             * rather than a heading above the column, because the reader is
+             * looking at one metric, not opening a section. Everything else the
+             * card used to carry — description, registry code, formula — is in
+             * the disclosure below, where a reader who wants provenance can
+             * find it without four cards restating it.
+             */}
+            <ol className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
+                {orderedMetrics.map(({ metric, categoryLabel }) => (
+                    <li key={metric.definition.id}>
+                        {/*
+                         * `display: contents` on the item would drop list
+                         * semantics in several browsers, so the item stays a
+                         * real grid cell and the card fills it.
+                         */}
+                        <Card className="h-full justify-between gap-3">
+                            <CardHeader className="gap-1">
+                                <p className="text-muted-foreground text-xs font-medium tracking-wide uppercase">
+                                    {categoryLabel}
+                                </p>
+                                <CardTitle className="text-sm">
+                                    {metric.definition.label}
+                                </CardTitle>
+                            </CardHeader>
+                            <CardContent>
+                                <p className="font-display text-3xl font-semibold tabular-nums">
+                                    {metricValue(metric, impact.currency)}
+                                </p>
+                                {metric.comparison ? (
+                                    <p className="text-muted-foreground mt-1 text-xs tabular-nums">
+                                        {metric.comparison.change > 0
+                                            ? '+'
+                                            : ''}
+                                        {metric.comparison.change} on the prior
+                                        period
+                                    </p>
+                                ) : null}
+                            </CardContent>
+                        </Card>
+                    </li>
+                ))}
+            </ol>
+            <details className="text-sm">
+                <summary className="cursor-pointer font-medium">
+                    How these figures are calculated
+                </summary>
+                <dl className="mt-3 grid gap-3 sm:grid-cols-2">
+                    {orderedMetrics.map(({ metric, categoryLabel }) => (
+                        <div key={metric.definition.id}>
+                            <dt className="font-medium">
+                                {metric.definition.label}
+                                <span className="text-muted-foreground font-normal">
+                                    {' '}
+                                    · {categoryLabel}
+                                </span>
+                            </dt>
+                            <dd className="text-muted-foreground">
+                                {metric.definition.description} Counted as{' '}
+                                {metric.definition.formula}, from registry
+                                definition {metric.definition.id}@
+                                {metric.definition.version}.
+                            </dd>
                         </div>
-                    </div>
-                );
-            })}
+                    ))}
+                </dl>
+            </details>
             <MetricChart metrics={impact.metrics} currency={impact.currency} />
+            {/*
+             * Suppression only applies once a service area, location or cohort
+             * filter is set — see BuildImpactDashboard's `sensitiveSlice`. The
+             * old wording named neither the trigger nor the reason, so a reader
+             * could not tell whether it applied to what they were looking at.
+             */}
             <p className="text-muted-foreground text-xs">
-                Slices with 1–{impact.minimumCohort - 1} people are suppressed.
-                Aggregates do not provide person or case drill-down.
+                Filtering by service area, location, or cohort can narrow a
+                figure to fewer than {impact.minimumCohort} people. Those
+                figures are withheld rather than shown, because a count that
+                small can identify the people in it. No figure here opens onto
+                the people or cases behind it.
             </p>
         </section>
     );
@@ -450,16 +497,23 @@ function MetricChart({
         (metric) =>
             metric.availability === 'available' && metric.value !== null,
     );
-    const maximumByUnit = available.reduce<Record<string, number>>(
-        (maximums, metric) => ({
-            ...maximums,
-            [metric.definition.unit]: Math.max(
-                maximums[metric.definition.unit] ?? 1,
-                Math.abs(metric.value ?? 0),
-            ),
-        }),
-        {},
-    );
+
+    /*
+     * Grouped by unit, in the order the units first appear. A bar is only
+     * meaningful against other bars on the same scale, and the groups now say
+     * that structurally instead of the description warning about it in prose.
+     */
+    const unitGroups = available.reduce<
+        Array<{ unit: string; metrics: Metric[] }>
+    >((groups, metric) => {
+        const group = groups.find(
+            (candidate) => candidate.unit === metric.definition.unit,
+        );
+        if (group) group.metrics.push(metric);
+        else groups.push({ unit: metric.definition.unit, metrics: [metric] });
+
+        return groups;
+    }, []);
 
     return (
         <figure
@@ -475,51 +529,110 @@ function MetricChart({
                     id="impact-chart-description"
                     className="text-muted-foreground text-sm"
                 >
-                    Relative bars for available aggregate values, scaled
-                    separately by unit. Units are retained in each label;
-                    suppressed and unavailable values have no bar.
+                    A bar shows a value against the largest on its own scale.
+                    Values that are suppressed, unavailable, or alone on their
+                    scale have none.
                 </p>
             </figcaption>
-            <div className="space-y-3" aria-hidden="true">
-                {available.map((metric) => (
-                    <div key={metric.definition.id} className="grid gap-1">
-                        <div className="flex justify-between gap-3 text-sm">
-                            <span>{metric.definition.label}</span>
-                            <strong>{metricValue(metric, currency)}</strong>
+            <div className="space-y-5" aria-hidden="true">
+                {unitGroups.map(({ unit, metrics: unitMetrics }) => {
+                    const maximum = Math.max(
+                        ...unitMetrics.map((metric) =>
+                            Math.abs(metric.value ?? 0),
+                        ),
+                    );
+                    /*
+                     * One metric on a scale would draw a full-width bar
+                     * whatever its value, which reads as "the most" and means
+                     * nothing. Net raised is the only currency metric, so it
+                     * did exactly that.
+                     */
+                    const comparable = unitMetrics.length > 1 && maximum > 0;
+                    const largest = unitMetrics.find(
+                        (metric) => Math.abs(metric.value ?? 0) === maximum,
+                    );
+
+                    return (
+                        <div key={unit} className="space-y-3">
+                            <p className="text-muted-foreground text-xs font-medium tracking-wide uppercase">
+                                {unitLabel(unit, currency)}
+                                {comparable && largest
+                                    ? ` · scaled to ${metricValue(largest, currency)}`
+                                    : null}
+                            </p>
+                            {unitMetrics.map((metric) => (
+                                <div
+                                    key={metric.definition.id}
+                                    className="grid gap-1"
+                                >
+                                    <div className="flex justify-between gap-3 text-sm">
+                                        <span>{metric.definition.label}</span>
+                                        <strong>
+                                            {metricValue(metric, currency)}
+                                        </strong>
+                                    </div>
+                                    {comparable ? (
+                                        <div className="bg-muted h-4 rounded-sm">
+                                            {/*
+                                             * A zero gets no sliver. The old
+                                             * `min-w-1` floor made a true zero
+                                             * and a true near-zero identical.
+                                             */}
+                                            {Math.abs(metric.value ?? 0) > 0 ? (
+                                                <div
+                                                    className="bg-primary h-4 min-w-1 rounded-sm"
+                                                    style={{
+                                                        width: `${(Math.abs(metric.value ?? 0) / maximum) * 100}%`,
+                                                    }}
+                                                />
+                                            ) : null}
+                                        </div>
+                                    ) : null}
+                                </div>
+                            ))}
                         </div>
-                        <div className="bg-muted h-4 rounded-sm">
-                            <div
-                                className="bg-primary h-4 min-w-1 rounded-sm"
-                                style={{
-                                    width: `${(Math.abs(metric.value ?? 0) / maximumByUnit[metric.definition.unit]) * 100}%`,
-                                }}
-                            />
-                        </div>
-                    </div>
-                ))}
+                    );
+                })}
             </div>
-            <table className="sr-only">
-                <caption>Nonvisual equivalent of the impact chart</caption>
-                <thead>
-                    <tr>
-                        <th scope="col">Metric</th>
-                        <th scope="col">Value</th>
-                        <th scope="col">Status</th>
-                    </tr>
-                </thead>
-                <tbody>
-                    {metrics.map((metric) => (
-                        <tr key={metric.definition.id}>
-                            <th scope="row">{metric.definition.label}</th>
-                            <td>{metricValue(metric, currency)}</td>
-                            <td>{metric.availability}</td>
+            {/*
+             * `sr-only` clips an absolutely positioned box, but a table's
+             * caption is laid out outside that box and escapes the clip, so
+             * the caption was showing through beneath the bars. Hiding the
+             * wrapper instead takes the caption with it.
+             */}
+            <div className="sr-only">
+                <table>
+                    <caption>Nonvisual equivalent of the impact chart</caption>
+                    <thead>
+                        <tr>
+                            <th scope="col">Metric</th>
+                            <th scope="col">Value</th>
+                            <th scope="col">Status</th>
                         </tr>
-                    ))}
-                </tbody>
-            </table>
+                    </thead>
+                    <tbody>
+                        {metrics.map((metric) => (
+                            <tr key={metric.definition.id}>
+                                <th scope="row">{metric.definition.label}</th>
+                                <td>{metricValue(metric, currency)}</td>
+                                <td>{metric.availability}</td>
+                            </tr>
+                        ))}
+                    </tbody>
+                </table>
+            </div>
         </figure>
     );
 }
+
+const unitLabels: Record<string, string> = {
+    count: 'Counts',
+    percent: 'Percentages',
+};
+
+/* Currency names the Organisation's own currency rather than the word. */
+const unitLabel = (unit: string, currency: string) =>
+    unit === 'currency' ? currency : (unitLabels[unit] ?? unit);
 
 function metricValue(metric: Metric, currency: string) {
     if (metric.availability === 'suppressed') return 'Suppressed';
