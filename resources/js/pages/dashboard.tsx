@@ -271,7 +271,17 @@ export default function Dashboard({
     );
 }
 
-const categories = ['input', 'activity', 'output', 'outcome'] as const;
+/*
+ * The logic-model sequence, in order. Plurals are spelled out because
+ * appending "s" to the key rendered "activitys", and the next category added
+ * would hit the same problem.
+ */
+const categories = [
+    { key: 'input', label: 'Inputs' },
+    { key: 'activity', label: 'Activities' },
+    { key: 'output', label: 'Outputs' },
+    { key: 'outcome', label: 'Outcomes' },
+] as const;
 
 function ImpactMetrics({ impact }: { impact: ImpactDashboard }) {
     const organisation = usePage().props.currentOrganisation!;
@@ -380,56 +390,74 @@ function ImpactMetrics({ impact }: { impact: ImpactDashboard }) {
                 />
                 <Button className="self-end">Apply reporting filters</Button>
             </Form>
-            {categories.map((category) => {
-                const metrics = impact.metrics.filter(
-                    (metric) => metric.definition.category === category,
-                );
-                if (metrics.length === 0) return null;
+            {/*
+             * Each category is a column, so inputs, activities, outputs and
+             * outcomes read left to right in the order they cause one another.
+             * Categories used to be full-width blocks stacked down the page,
+             * which put one card per screenful and lost the sequence.
+             */}
+            <div className="grid gap-5 sm:grid-cols-2 xl:grid-cols-4">
+                {categories.map(({ key, label }) => {
+                    const metrics = impact.metrics.filter(
+                        (metric) => metric.definition.category === key,
+                    );
+                    if (metrics.length === 0) return null;
 
-                return (
-                    <div key={category} className="space-y-2">
-                        <h3 className="text-sm font-semibold tracking-wide uppercase">
-                            {category}s
-                        </h3>
-                        <div className="grid gap-3 md:grid-cols-2 xl:grid-cols-4">
-                            {metrics.map((metric) => (
-                                <Card key={metric.definition.id}>
-                                    <CardHeader className="pb-2">
-                                        <CardTitle className="text-sm">
-                                            {metric.definition.label}
-                                        </CardTitle>
-                                    </CardHeader>
-                                    <CardContent className="space-y-2">
-                                        <p className="font-display text-3xl font-semibold tabular-nums">
-                                            {metricValue(
-                                                metric,
-                                                impact.currency,
-                                            )}
-                                        </p>
-                                        <p className="text-muted-foreground text-xs">
-                                            {metric.definition.description}
-                                        </p>
-                                        <p className="text-muted-foreground text-xs">
-                                            Definition {metric.definition.id}@
-                                            {metric.definition.version} ·{' '}
-                                            {metric.definition.formula}
-                                        </p>
-                                        {metric.comparison ? (
-                                            <p className="text-xs">
-                                                Prior-period change:{' '}
-                                                {metric.comparison.change > 0
-                                                    ? '+'
-                                                    : ''}
-                                                {metric.comparison.change}
+                    return (
+                        <div key={key} className="flex flex-col gap-2">
+                            <h3 className="text-sm font-semibold tracking-wide uppercase">
+                                {label}
+                            </h3>
+                            {/*
+                             * The column stretches to the tallest in the row,
+                             * so the cards inside have to grow with it or a
+                             * category with less to say ends up visibly short.
+                             */}
+                            <div className="flex flex-1 flex-col gap-3">
+                                {metrics.map((metric) => (
+                                    <Card
+                                        key={metric.definition.id}
+                                        className="flex-1"
+                                    >
+                                        <CardHeader className="pb-2">
+                                            <CardTitle className="text-sm">
+                                                {metric.definition.label}
+                                            </CardTitle>
+                                        </CardHeader>
+                                        <CardContent className="space-y-2">
+                                            <p className="font-display text-3xl font-semibold tabular-nums">
+                                                {metricValue(
+                                                    metric,
+                                                    impact.currency,
+                                                )}
                                             </p>
-                                        ) : null}
-                                    </CardContent>
-                                </Card>
-                            ))}
+                                            <p className="text-muted-foreground text-xs">
+                                                {metric.definition.description}
+                                            </p>
+                                            <p className="text-muted-foreground text-xs">
+                                                Definition{' '}
+                                                {metric.definition.id}@
+                                                {metric.definition.version} ·{' '}
+                                                {metric.definition.formula}
+                                            </p>
+                                            {metric.comparison ? (
+                                                <p className="text-xs">
+                                                    Prior-period change:{' '}
+                                                    {metric.comparison.change >
+                                                    0
+                                                        ? '+'
+                                                        : ''}
+                                                    {metric.comparison.change}
+                                                </p>
+                                            ) : null}
+                                        </CardContent>
+                                    </Card>
+                                ))}
+                            </div>
                         </div>
-                    </div>
-                );
-            })}
+                    );
+                })}
+            </div>
             <MetricChart metrics={impact.metrics} currency={impact.currency} />
             <p className="text-muted-foreground text-xs">
                 Slices with 1–{impact.minimumCohort - 1} people are suppressed.
@@ -498,25 +526,33 @@ function MetricChart({
                     </div>
                 ))}
             </div>
-            <table className="sr-only">
-                <caption>Nonvisual equivalent of the impact chart</caption>
-                <thead>
-                    <tr>
-                        <th scope="col">Metric</th>
-                        <th scope="col">Value</th>
-                        <th scope="col">Status</th>
-                    </tr>
-                </thead>
-                <tbody>
-                    {metrics.map((metric) => (
-                        <tr key={metric.definition.id}>
-                            <th scope="row">{metric.definition.label}</th>
-                            <td>{metricValue(metric, currency)}</td>
-                            <td>{metric.availability}</td>
+            {/*
+             * `sr-only` clips an absolutely positioned box, but a table's
+             * caption is laid out outside that box and escapes the clip, so
+             * the caption was showing through beneath the bars. Hiding the
+             * wrapper instead takes the caption with it.
+             */}
+            <div className="sr-only">
+                <table>
+                    <caption>Nonvisual equivalent of the impact chart</caption>
+                    <thead>
+                        <tr>
+                            <th scope="col">Metric</th>
+                            <th scope="col">Value</th>
+                            <th scope="col">Status</th>
                         </tr>
-                    ))}
-                </tbody>
-            </table>
+                    </thead>
+                    <tbody>
+                        {metrics.map((metric) => (
+                            <tr key={metric.definition.id}>
+                                <th scope="row">{metric.definition.label}</th>
+                                <td>{metricValue(metric, currency)}</td>
+                                <td>{metric.availability}</td>
+                            </tr>
+                        ))}
+                    </tbody>
+                </table>
+            </div>
         </figure>
     );
 }
