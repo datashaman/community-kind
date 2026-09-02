@@ -74,11 +74,11 @@ type ServiceOperations = {
 };
 
 const queueDefinitions = [
-    { key: 'caseload', label: 'Active caseload', accent: 'border-t-service' },
-    { key: 'waitlist', label: 'Waitlist', accent: 'border-t-saffron' },
-    { key: 'overdue', label: 'Overdue actions', accent: 'border-t-coral' },
-    { key: 'risks', label: 'Unresolved risks', accent: 'border-t-coral' },
-    { key: 'referrals', label: 'External referrals', accent: 'border-t-leaf' },
+    { key: 'caseload', label: 'Active caseload' },
+    { key: 'waitlist', label: 'Waitlist' },
+    { key: 'overdue', label: 'Overdue actions' },
+    { key: 'risks', label: 'Unresolved risks' },
+    { key: 'referrals', label: 'External referrals' },
 ] as const;
 
 type QueueKey = (typeof queueDefinitions)[number]['key'];
@@ -168,36 +168,22 @@ export default function Dashboard({
                 </div>
 
                 <section
-                    aria-label="Work queue counts"
-                    className="grid gap-3 sm:grid-cols-2 xl:grid-cols-5"
+                    aria-label="Work queues"
+                    className="grid gap-5 xl:grid-cols-2"
                 >
-                    {queueDefinitions.map(({ key, label, accent }) => (
-                        <Card key={key} className={`border-t-4 ${accent}`}>
-                            <CardHeader className="pb-2">
-                                <CardTitle className="text-sm font-medium">
-                                    {label}
-                                </CardTitle>
-                            </CardHeader>
-                            <CardContent>
-                                <p
-                                    className="text-3xl font-semibold"
-                                    aria-live="polite"
-                                >
-                                    {serviceOperations.counts[key]}
-                                </p>
-                            </CardContent>
-                        </Card>
-                    ))}
-                </section>
-
-                <div className="grid gap-5 xl:grid-cols-2">
                     {queueDefinitions.map(({ key, label }) => {
                         const rows = serviceOperations[key] ?? [];
 
                         return (
                             <Card key={key}>
-                                <CardHeader>
+                                <CardHeader className="flex-row items-baseline justify-between gap-3 space-y-0">
                                     <CardTitle>{label}</CardTitle>
+                                    <p
+                                        className="text-muted-foreground text-sm tabular-nums"
+                                        aria-live="polite"
+                                    >
+                                        {serviceOperations.counts[key]} open
+                                    </p>
                                 </CardHeader>
                                 <CardContent>
                                     {rows.length === 0 ? (
@@ -279,7 +265,7 @@ export default function Dashboard({
                             </Card>
                         );
                     })}
-                </div>
+                </section>
             </div>
         </>
     );
