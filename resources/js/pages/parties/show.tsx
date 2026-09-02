@@ -384,19 +384,26 @@ export default function PartyShow({
                         <CardHeader>
                             <CardTitle>Timeline</CardTitle>
                         </CardHeader>
-                        <CardContent className="space-y-3">
-                            {party.timeline.map((event: any) => (
-                                <div key={event.id} className="border-l-2 pl-3">
-                                    <p className="text-sm font-medium">
-                                        {event.summary}
-                                    </p>
-                                    <p className="text-muted-foreground text-xs">
-                                        {new Date(
-                                            event.occurredAt,
-                                        ).toLocaleString()}
-                                    </p>
-                                </div>
-                            ))}
+                        <CardContent>
+                            <ul className="divide-y">
+                                {party.timeline.map((event: any) => (
+                                    <li
+                                        key={event.id}
+                                        className="py-3 first:pt-0 last:pb-0"
+                                    >
+                                        <p className="text-sm font-medium">
+                                            {event.summary}
+                                        </p>
+                                        <p className="text-muted-foreground text-xs">
+                                            <time dateTime={event.occurredAt}>
+                                                {new Date(
+                                                    event.occurredAt,
+                                                ).toLocaleString()}
+                                            </time>
+                                        </p>
+                                    </li>
+                                ))}
+                            </ul>
                         </CardContent>
                     </Card>
                 </div>
