@@ -93,9 +93,13 @@ function VersionDetail({
     organisationSlug: string;
     onNewVersion: () => void;
 }) {
+    const optionalCount = version.fields.filter(
+        (field) => !field.required,
+    ).length;
+
     return (
-        <div className="grid gap-3 lg:grid-cols-[1fr_auto]">
-            <div className="space-y-2">
+        <div className="space-y-2">
+            <div className="flex flex-wrap items-center justify-between gap-3">
                 <div className="flex flex-wrap items-center gap-2">
                     <strong>v{version.version}</strong>
                     <Badge>{version.status}</Badge>
@@ -109,25 +113,58 @@ function VersionDetail({
                         </time>
                     ) : null}
                 </div>
-                <ol className="grid gap-1 text-sm sm:grid-cols-2">
-                    {version.fields.map((field, fieldIndex) => (
-                        <li key={field.key}>
-                            {fieldIndex + 1}. {field.label}
-                            {field.required ? ' · required' : ' · optional'}
-                        </li>
-                    ))}
-                </ol>
+                <div className="flex flex-wrap gap-2">
+                    <Button
+                        type="button"
+                        variant="outline"
+                        onClick={onNewVersion}
+                    >
+                        New version
+                    </Button>
+                    {version.canActivate ? (
+                        <Form
+                            {...activate.form([organisationSlug, version.id])}
+                        >
+                            <Button>Activate</Button>
+                        </Form>
+                    ) : null}
+                </div>
             </div>
-            <div className="flex flex-wrap items-start gap-2">
-                <Button type="button" variant="outline" onClick={onNewVersion}>
-                    New version
-                </Button>
-                {version.canActivate ? (
-                    <Form {...activate.form([organisationSlug, version.id])}>
-                        <Button>Activate</Button>
-                    </Form>
-                ) : null}
-            </div>
+            {/*
+             * The fields were a two-column grid, so a list whose whole point is
+             * the order the fields appear in read 1,2 then 3,4 across — and
+             * stretched two short columns over the full card width. They now
+             * run in one wrapped sequence at reading width, in form order.
+             *
+             * "required" was printed against every field, which says nothing
+             * when it is the common case. Only the exception is marked, and the
+             * count is stated once.
+             */}
+            <ol className="text-muted-foreground flex max-w-prose flex-wrap items-center text-sm">
+                {version.fields.map((field, fieldIndex) => (
+                    <li key={field.key} className="flex items-center">
+                        {fieldIndex > 0 ? (
+                            <span
+                                aria-hidden="true"
+                                className="mx-2 opacity-50"
+                            >
+                                ·
+                            </span>
+                        ) : null}
+                        <span className="text-foreground">{field.label}</span>
+                        {field.required ? null : (
+                            <span className="ml-1">(optional)</span>
+                        )}
+                    </li>
+                ))}
+            </ol>
+            <p className="text-muted-foreground text-xs">
+                {version.fields.length}{' '}
+                {version.fields.length === 1 ? 'field' : 'fields'}
+                {optionalCount > 0
+                    ? `, ${optionalCount} optional`
+                    : ', all required'}
+            </p>
         </div>
     );
 }
@@ -402,7 +439,12 @@ export default function PublicFormsIndex({
 
                     return (
                         <Card key={form.purpose}>
-                            <CardHeader className="flex-row items-baseline justify-between gap-3 space-y-0">
+                            {/*
+                             * The status sits beside the name it describes.
+                             * Pushed to the far edge of a full-width card it
+                             * read as unrelated to anything.
+                             */}
+                            <CardHeader className="flex-row flex-wrap items-baseline space-y-0 gap-x-3 gap-y-1">
                                 <CardTitle>{form.purposeLabel}</CardTitle>
                                 <p className="text-muted-foreground text-sm">
                                     {form.activeVersion === null
