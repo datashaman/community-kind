@@ -96,6 +96,39 @@ it('shows retired metrics in immutable legacy versions without making them selec
     ]);
 });
 
+/*
+ * Both destinations were `required|array|min:1`, so an Organisation could not
+ * publish a funder pack without also publishing a public page, or the reverse.
+ * Nothing in the product asks for that.
+ */
+it('accepts a version that publishes to one destination only', function () {
+    extract(reportingPublicationEditorFixture());
+
+    $this->actingAs($administrator)
+        ->post(route('reporting-publication.store', $organisation), [
+            'public_metric_ids' => ['engagement.event_attendance'],
+            'pack_metric_ids' => [],
+        ])
+        ->assertRedirect()
+        ->assertSessionHasNoErrors();
+
+    $this->actingAs($administrator)
+        ->post(route('reporting-publication.store', $organisation), [
+            'public_metric_ids' => [],
+            'pack_metric_ids' => ['engagement.event_attendance'],
+        ])
+        ->assertRedirect()
+        ->assertSessionHasNoErrors();
+
+    /* Publishing nowhere is the one combination that cannot mean anything. */
+    $this->actingAs($administrator)
+        ->post(route('reporting-publication.store', $organisation), [
+            'public_metric_ids' => [],
+            'pack_metric_ids' => [],
+        ])
+        ->assertSessionHasErrors('public_metric_ids');
+});
+
 it('rejects unavailable metrics and removes reporting from the generic JSON workflow', function () {
     extract(reportingPublicationEditorFixture());
 
@@ -104,7 +137,8 @@ it('rejects unavailable metrics and removes reporting from the generic JSON work
             'public_metric_ids' => ['legacy.people_reached'],
             'pack_metric_ids' => [],
         ])
-        ->assertSessionHasErrors(['public_metric_ids.0', 'pack_metric_ids']);
+        ->assertSessionHasErrors('public_metric_ids.0')
+        ->assertSessionDoesntHaveErrors('pack_metric_ids');
     $this->actingAs($administrator)
         ->post("/{$organisation->slug}/organisation-configurations", [
             'area' => 'reporting',

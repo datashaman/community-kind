@@ -86,13 +86,13 @@ describe('public forms index', () => {
         expect(
             within(list)
                 .getAllByRole('listitem')
-                .map((item) => item.textContent?.replace(/^·\s*/, '')),
+                .map((item) => item.textContent),
         ).toEqual([
-            'Name',
-            'Email address',
-            'Category',
-            'Estimated value(optional)',
-            'Currency(optional)',
+            '1.Name',
+            '2.Email address',
+            '3.Category',
+            '4.Estimated valueoptional',
+            '5.Currencyoptional',
         ]);
     });
 
@@ -100,10 +100,10 @@ describe('public forms index', () => {
      * "required" against every field says nothing when it is the common case,
      * and it was printed five times on a five-field form.
      */
-    it('marks only the exception and states the count once', () => {
+    it('marks only the exception', () => {
         render(<PublicFormsIndex purposes={purposes} forms={forms} />);
 
         expect(screen.queryByText(/· required/)).not.toBeInTheDocument();
-        expect(screen.getByText('5 fields, 2 optional')).toBeVisible();
+        expect(screen.getAllByText('optional')).toHaveLength(2);
     });
 });

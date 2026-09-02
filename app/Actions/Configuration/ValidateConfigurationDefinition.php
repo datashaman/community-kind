@@ -31,10 +31,22 @@ final class ValidateConfigurationDefinition
             OrganisationConfigurationArea::MessageTemplate => ['channel' => ['required', Rule::in(['email', 'sms'])], 'subject' => ['nullable', 'string', 'max:160'], 'body' => ['required', 'string', 'max:4000'], 'journey_kind' => ['required', Rule::enum(SupporterJourneyKind::class)]],
             OrganisationConfigurationArea::SupporterJourney => ['default_kind' => ['required', Rule::enum(SupporterJourneyKind::class)], 'default_channel' => ['required', Rule::in(['email', 'sms'])], 'default_message_template_id' => ['nullable', 'uuid'], 'require_approval' => ['required', 'accepted'], 'dispatch_rechecks_consent' => ['required', 'accepted'], 'frequency_cap_days' => ['required', 'integer', 'min:'.config('engagement.frequency_cap_days'), 'max:365']],
             OrganisationConfigurationArea::IntakeRules => ['required_fields' => ['required', 'array', 'min:2'], 'required_fields.*' => ['required', Rule::in(['party_uuid', 'email', 'telephone', 'source', 'narrative', 'presenting_needs', 'program_id']), 'distinct'], 'default_urgency' => ['required', Rule::in(['routine', 'priority', 'urgent'])], 'allow_restricted_access_bypass' => ['required', 'declined']],
-            OrganisationConfigurationArea::Reporting => ['public_metric_ids' => ['required', 'array'], 'public_metric_ids.*' => ['required', Rule::in($this->metrics->ids()), 'distinct'], 'pack_metric_ids' => ['required', 'array', 'min:1'], 'pack_metric_ids.*' => ['required', Rule::in($this->metrics->ids()), 'distinct']],
+            OrganisationConfigurationArea::Reporting => ['public_metric_ids' => ['present', 'array'], 'public_metric_ids.*' => ['required', Rule::in($this->metrics->ids()), 'distinct'], 'pack_metric_ids' => ['present', 'array'], 'pack_metric_ids.*' => ['required', Rule::in($this->metrics->ids()), 'distinct']],
         };
         $validator = Validator::make($definition, $rules);
         $validator->after(function ($validator) use ($area, $definition): void {
+            /*
+             * A destination may be empty: publishing a funder pack without a
+             * public page, or the reverse, is an ordinary choice. Publishing
+             * nowhere is the one combination that cannot mean anything.
+             */
+            if ($area === OrganisationConfigurationArea::Reporting) {
+                $public = is_array($definition['public_metric_ids'] ?? null) ? $definition['public_metric_ids'] : [];
+                $pack = is_array($definition['pack_metric_ids'] ?? null) ? $definition['pack_metric_ids'] : [];
+                if ($public === [] && $pack === []) {
+                    $validator->errors()->add('public_metric_ids', 'Select at least one metric for the public page or the reporting pack.');
+                }
+            }
             $requiredFields = is_array($definition['required_fields'] ?? null) ? $definition['required_fields'] : [];
             if ($area === OrganisationConfigurationArea::PublicForm) {
                 $required = collect($requiredFields);

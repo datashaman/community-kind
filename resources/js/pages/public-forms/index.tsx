@@ -93,10 +93,6 @@ function VersionDetail({
     organisationSlug: string;
     onNewVersion: () => void;
 }) {
-    const optionalCount = version.fields.filter(
-        (field) => !field.required,
-    ).length;
-
     return (
         <div className="space-y-2">
             <div className="flex flex-wrap items-center justify-between gap-3">
@@ -131,40 +127,28 @@ function VersionDetail({
                 </div>
             </div>
             {/*
-             * The fields were a two-column grid, so a list whose whole point is
-             * the order the fields appear in read 1,2 then 3,4 across — and
-             * stretched two short columns over the full card width. They now
-             * run in one wrapped sequence at reading width, in form order.
+             * A form is read top to bottom, so its fields are listed the same
+             * way. They were a two-column grid, which made a list whose whole
+             * point is the order read 1,2 then 3,4 across the card.
              *
              * "required" was printed against every field, which says nothing
-             * when it is the common case. Only the exception is marked, and the
-             * count is stated once.
+             * when it is the common case. Only the exception is marked.
              */}
-            <ol className="text-muted-foreground flex max-w-prose flex-wrap items-center text-sm">
+            <ol className="max-w-sm space-y-1 text-sm">
                 {version.fields.map((field, fieldIndex) => (
-                    <li key={field.key} className="flex items-center">
-                        {fieldIndex > 0 ? (
-                            <span
-                                aria-hidden="true"
-                                className="mx-2 opacity-50"
-                            >
-                                ·
-                            </span>
-                        ) : null}
-                        <span className="text-foreground">{field.label}</span>
+                    <li key={field.key} className="flex gap-2">
+                        <span className="text-muted-foreground tabular-nums">
+                            {fieldIndex + 1}.
+                        </span>
+                        <span>{field.label}</span>
                         {field.required ? null : (
-                            <span className="ml-1">(optional)</span>
+                            <span className="text-muted-foreground">
+                                optional
+                            </span>
                         )}
                     </li>
                 ))}
             </ol>
-            <p className="text-muted-foreground text-xs">
-                {version.fields.length}{' '}
-                {version.fields.length === 1 ? 'field' : 'fields'}
-                {optionalCount > 0
-                    ? `, ${optionalCount} optional`
-                    : ', all required'}
-            </p>
         </div>
     );
 }
