@@ -21,7 +21,7 @@ vi.mock('@/components/pending-invitations-modal', () => ({
     default: ({ children }: { children?: ReactNode }) => children ?? null,
 }));
 
-const metric = (category: string, id: string, label: string) => ({
+const countMetric = (category: string, id: string, label: string) => ({
     definition: {
         id,
         version: '2026.4',
@@ -47,10 +47,18 @@ const impact = {
     filters: {},
     minimumCohort: 5,
     metrics: [
-        metric('input', 'service.requests_received', 'Requests received'),
-        metric('activity', 'service.case_interactions', 'Case interactions'),
-        metric('output', 'service.cases_closed', 'Cases closed'),
-        metric('outcome', 'service.outcomes_improved', 'Outcomes improved'),
+        countMetric('input', 'service.requests_received', 'Requests received'),
+        countMetric(
+            'activity',
+            'service.case_interactions',
+            'Case interactions',
+        ),
+        countMetric('output', 'service.cases_closed', 'Cases closed'),
+        countMetric(
+            'outcome',
+            'service.outcomes_improved',
+            'Outcomes improved',
+        ),
     ],
     options: {
         programs: [],
@@ -217,6 +225,75 @@ describe('Service operations dashboard', () => {
         expect(definitions).toHaveTextContent('count(things)');
         expect(definitions).toHaveTextContent('2026.4');
         expect(definitions).toHaveTextContent('A fictional figure.');
+    });
+
+    /*
+     * Net raised is the only currency metric, so it used to draw a full-width
+     * bar whatever its value — R50 and R5,000,000 rendered identically.
+     */
+    it('draws no bar for a value with nothing on its scale to compare against', () => {
+        render(
+            <Dashboard
+                serviceOperations={emptyOperations}
+                impact={{
+                    ...impact,
+                    metrics: [
+                        { ...countMetric('input', 'a', 'Alpha'), value: 40 },
+                        { ...countMetric('output', 'b', 'Beta'), value: 10 },
+                        {
+                            ...countMetric('output', 'c', 'Net raised'),
+                            value: 5000,
+                            definition: {
+                                ...countMetric('output', 'c', 'Net raised')
+                                    .definition,
+                                unit: 'currency',
+                            },
+                        },
+                    ],
+                }}
+            />,
+        );
+
+        const chart = screen
+            .getByRole('heading', { name: 'Presentation chart' })
+            .closest('figure');
+        const bars = [...(chart?.querySelectorAll('.bg-primary') ?? [])];
+
+        /* Two counts share a scale; the lone currency value does not. */
+        expect(bars).toHaveLength(2);
+        expect(bars[0]).toHaveStyle({ width: '100%' });
+        expect(bars[1]).toHaveStyle({ width: '25%' });
+        expect(chart).toHaveTextContent('Counts · scaled to 40');
+        expect(chart).toHaveTextContent('ZAR');
+        expect(chart).not.toHaveTextContent('ZAR · scaled to');
+    });
+
+    it('draws no bar for a zero rather than a misleading sliver', () => {
+        render(
+            <Dashboard serviceOperations={emptyOperations} impact={impact} />,
+        );
+
+        const chart = screen
+            .getByRole('heading', { name: 'Presentation chart' })
+            .closest('figure');
+        expect(chart?.querySelectorAll('.bg-primary')).toHaveLength(0);
+    });
+
+    /*
+     * Suppression only applies once a service area, location or cohort filter
+     * is set. The old wording named neither the trigger nor the reason.
+     */
+    it('says what triggers suppression and why', () => {
+        render(
+            <Dashboard serviceOperations={emptyOperations} impact={impact} />,
+        );
+
+        const section = impactSection();
+        expect(section).toHaveTextContent(
+            'Filtering by service area, location, or cohort',
+        );
+        expect(section).toHaveTextContent('can identify the people in it');
+        expect(section).not.toHaveTextContent('drill-down');
     });
 
     /*
