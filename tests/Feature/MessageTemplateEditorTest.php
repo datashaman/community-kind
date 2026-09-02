@@ -54,9 +54,10 @@ it('creates previews activates and versions message templates without JSON', fun
         ->assertInertia(fn (Assert $page) => $page
             ->component('message-templates/index')
             ->where('templates.0.name', 'Donor Re Engagement')
-            ->where('templates.0.version', 1)
-            ->where('templates.0.body', 'Hello {{ supporter_name }}, thank you for your {{ donation_count }} gifts.')
-            ->where('templates.0.status', 'draft'));
+            ->where('templates.0.retired', false)
+            ->where('templates.0.versions.0.version', 1)
+            ->where('templates.0.versions.0.body', 'Hello {{ supporter_name }}, thank you for your {{ donation_count }} gifts.')
+            ->where('templates.0.versions.0.status', 'draft'));
 
     $this->actingAs($administrator)
         ->post(route('message-templates.activate', [$organisation, $first]))
@@ -133,8 +134,8 @@ it('only offers activation for the latest template draft', function () {
     $this->actingAs($administrator)
         ->get(route('message-templates.index', $organisation))
         ->assertInertia(fn (Assert $page) => $page
-            ->where('templates.0.canActivate', true)
-            ->where('templates.1.canActivate', false));
+            ->where('templates.0.versions.0.canActivate', true)
+            ->where('templates.0.versions.1.canActivate', false));
     $this->actingAs($administrator)
         ->post(route('message-templates.activate', [$organisation, $drafts->first()]))
         ->assertStatus(409);

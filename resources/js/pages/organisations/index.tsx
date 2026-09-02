@@ -35,8 +35,6 @@ export default function OrganisationsIndex({ organisations }: Props) {
         <>
             <Head title="Organisations" />
 
-            <h1 className="sr-only">Organisations</h1>
-
             <div className="flex flex-col space-y-6">
                 <div className="flex items-center justify-between">
                     <Heading

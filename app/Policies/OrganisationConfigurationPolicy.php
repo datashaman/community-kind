@@ -29,6 +29,11 @@ class OrganisationConfigurationPolicy
         return $this->view($user, $configuration);
     }
 
+    public function retire(User $user, OrganisationConfiguration $configuration): bool
+    {
+        return $this->update($user, $configuration);
+    }
+
     public function delete(User $user, OrganisationConfiguration $configuration): bool
     {
         return false;
