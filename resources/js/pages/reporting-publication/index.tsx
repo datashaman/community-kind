@@ -78,6 +78,39 @@ function DestinationCell({
     );
 }
 
+function MetricToggleCell({
+    checked,
+    onChange,
+    label,
+}: {
+    checked: boolean;
+    onChange: (checked: boolean) => void;
+    label: string;
+}) {
+    return (
+        <td className="p-0 align-top">
+            {/*
+             * A bare `size-4` checkbox is a 16px target centred in a column
+             * five times its width, so almost every click in the cell lands on
+             * nothing. WCAG 2.2 AA 2.5.8 wants 24px; this gives the whole
+             * padded cell.
+             *
+             * The hit area is a pseudo-element on the checkbox rather than a
+             * wrapping label, so there is exactly one target and no question
+             * of a label forwarding a second click to the control inside it.
+             */}
+            <div className="hover:bg-muted/60 relative flex justify-center px-4 py-3">
+                <Checkbox
+                    className="after:absolute after:inset-0 after:cursor-pointer"
+                    checked={checked}
+                    onCheckedChange={(state) => onChange(state === true)}
+                    aria-label={label}
+                />
+            </div>
+        </td>
+    );
+}
+
 function VersionMetricMatrix({ version }: { version: ReportingVersion }) {
     const rows = new Map<
         string,
@@ -331,44 +364,32 @@ export default function ReportingPublicationIndex({
                                                             {metric.description}
                                                         </span>
                                                     </th>
-                                                    <td className="px-4 py-3 text-center align-top">
-                                                        <Checkbox
-                                                            className="mx-auto"
-                                                            checked={editor.data.public_metric_ids.includes(
+                                                    <MetricToggleCell
+                                                        checked={editor.data.public_metric_ids.includes(
+                                                            metric.id,
+                                                        )}
+                                                        onChange={(checked) =>
+                                                            toggle(
+                                                                'public_metric_ids',
                                                                 metric.id,
-                                                            )}
-                                                            onCheckedChange={(
                                                                 checked,
-                                                            ) =>
-                                                                toggle(
-                                                                    'public_metric_ids',
-                                                                    metric.id,
-                                                                    checked ===
-                                                                        true,
-                                                                )
-                                                            }
-                                                            aria-label={`Publish ${metric.label} on the ${PUBLIC_LABEL}`}
-                                                        />
-                                                    </td>
-                                                    <td className="px-4 py-3 text-center align-top">
-                                                        <Checkbox
-                                                            className="mx-auto"
-                                                            checked={editor.data.pack_metric_ids.includes(
+                                                            )
+                                                        }
+                                                        label={`Publish ${metric.label} on the ${PUBLIC_LABEL}`}
+                                                    />
+                                                    <MetricToggleCell
+                                                        checked={editor.data.pack_metric_ids.includes(
+                                                            metric.id,
+                                                        )}
+                                                        onChange={(checked) =>
+                                                            toggle(
+                                                                'pack_metric_ids',
                                                                 metric.id,
-                                                            )}
-                                                            onCheckedChange={(
                                                                 checked,
-                                                            ) =>
-                                                                toggle(
-                                                                    'pack_metric_ids',
-                                                                    metric.id,
-                                                                    checked ===
-                                                                        true,
-                                                                )
-                                                            }
-                                                            aria-label={`Include ${metric.label} in ${PACK_LABEL}`}
-                                                        />
-                                                    </td>
+                                                            )
+                                                        }
+                                                        label={`Include ${metric.label} in ${PACK_LABEL}`}
+                                                    />
                                                 </tr>
                                             ))}
                                         </tbody>
