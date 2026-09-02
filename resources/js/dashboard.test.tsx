@@ -54,9 +54,25 @@ describe('Service operations dashboard', () => {
             screen.getByRole('combobox', { name: 'Filter by program' }),
         ).toHaveAccessibleName('Filter by program');
         expect(
-            screen.getByRole('region', { name: 'Work queue counts' }),
+            screen.getByRole('region', { name: 'Work queues' }),
         ).toBeVisible();
         expect(screen.getAllByText('Queue clear')).toHaveLength(4);
+
+        /*
+         * Each queue was listed twice: once as a count card, then again as the
+         * card holding its rows. The count now sits in the row card's header,
+         * so every queue name must appear exactly once.
+         */
+        for (const label of [
+            'Active caseload',
+            'Waitlist',
+            'Overdue actions',
+            'Unresolved risks',
+            'External referrals',
+        ]) {
+            expect(screen.getAllByText(label)).toHaveLength(1);
+        }
+        expect(screen.getByText('1 open')).toBeVisible();
 
         const interactiveElements = [
             ...screen.getAllByRole('button'),

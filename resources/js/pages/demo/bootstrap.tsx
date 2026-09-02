@@ -32,7 +32,12 @@ export default function DemoBootstrap({
                     />
                     <div className="space-y-2">
                         <CardTitle className="text-2xl">
-                            Explore a synthetic CommunityKind workspace
+                            {/*
+                             * CardTitle is a div. Tailwind's preflight unstyles
+                             * headings, so the h1 inherits its appearance and
+                             * only adds the semantics this page was missing.
+                             */}
+                            <h1>Explore a synthetic CommunityKind workspace</h1>
                         </CardTitle>
                         <CardDescription className="text-base">
                             Choose from several staff perspectives and explore

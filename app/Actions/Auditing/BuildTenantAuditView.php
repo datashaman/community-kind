@@ -134,6 +134,7 @@ class BuildTenantAuditView
             TenantAuditEventType::PartnerCommitmentRecorded,
             TenantAuditEventType::OrganisationConfigurationCreated,
             TenantAuditEventType::OrganisationConfigurationActivated,
+            TenantAuditEventType::OrganisationConfigurationRetired,
             TenantAuditEventType::ImpactSnapshotPublished,
             TenantAuditEventType::SupporterJourneyTransitioned => 'engagement',
             default => 'service',

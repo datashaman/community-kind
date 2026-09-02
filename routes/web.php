@@ -166,6 +166,7 @@ Route::prefix('{current_organisation}')
         Route::get('message-templates', [MessageTemplateController::class, 'index'])->name('message-templates.index');
         Route::post('message-templates', [MessageTemplateController::class, 'store'])->name('message-templates.store');
         Route::post('message-templates/{messageTemplate}/activate', [MessageTemplateController::class, 'activate'])->name('message-templates.activate');
+        Route::post('message-templates/{templateKey}/retire', [MessageTemplateController::class, 'retire'])->name('message-templates.retire');
         Route::get('supporter-journey-policy', [SupporterJourneyPolicyController::class, 'index'])->name('supporter-journey-policy.index');
         Route::post('supporter-journey-policy', [SupporterJourneyPolicyController::class, 'store'])->name('supporter-journey-policy.store');
         Route::post('supporter-journey-policy/{supporterJourneyPolicy}/activate', [SupporterJourneyPolicyController::class, 'activate'])->name('supporter-journey-policy.activate');

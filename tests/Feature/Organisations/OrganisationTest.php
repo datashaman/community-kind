@@ -236,6 +236,12 @@ class OrganisationTest extends TestCase
     public function test_deleting_current_organisation_switches_to_alphabetically_first_remaining_organisation()
     {
         $user = User::factory()->create(['name' => 'Mike']);
+        /*
+         * The user factory also creates an organisation for its user, named from
+         * faker. Name it explicitly, or a generated name sorting before "Alpha
+         * Organisation" silently becomes the expected fallback.
+         */
+        $user->currentOrganisation->update(['name' => 'Original Organisation']);
 
         $zuluOrganisation = Organisation::factory()->create(['name' => 'Zulu Organisation']);
         $zuluOrganisation->members()->attach($user, ['is_owner' => true]);
@@ -331,6 +337,12 @@ class OrganisationTest extends TestCase
     {
         $owner = User::factory()->create();
         $member = User::factory()->create(['name' => 'Mike']);
+        /*
+         * The user factory also creates an organisation for its user, named from
+         * faker. Name it explicitly, or a generated name sorting before "Alpha
+         * Organisation" silently becomes the expected fallback.
+         */
+        $member->currentOrganisation->update(['name' => 'Original Organisation']);
 
         $zuluOrganisation = Organisation::factory()->create(['name' => 'Zulu Organisation']);
         $zuluOrganisation->members()->attach($owner, ['is_owner' => true]);

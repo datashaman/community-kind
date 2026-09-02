@@ -74,11 +74,11 @@ type ServiceOperations = {
 };
 
 const queueDefinitions = [
-    { key: 'caseload', label: 'Active caseload', accent: 'border-t-service' },
-    { key: 'waitlist', label: 'Waitlist', accent: 'border-t-saffron' },
-    { key: 'overdue', label: 'Overdue actions', accent: 'border-t-coral' },
-    { key: 'risks', label: 'Unresolved risks', accent: 'border-t-coral' },
-    { key: 'referrals', label: 'External referrals', accent: 'border-t-leaf' },
+    { key: 'caseload', label: 'Active caseload' },
+    { key: 'waitlist', label: 'Waitlist' },
+    { key: 'overdue', label: 'Overdue actions' },
+    { key: 'risks', label: 'Unresolved risks' },
+    { key: 'referrals', label: 'External referrals' },
 ] as const;
 
 type QueueKey = (typeof queueDefinitions)[number]['key'];
@@ -101,13 +101,20 @@ export default function Dashboard({
                 open={pendingInvitations.length > 0 && showInvitations}
                 onOpenChange={setShowInvitations}
             />
-            <main className="flex h-full flex-1 flex-col gap-6 overflow-x-auto rounded-xl p-4 sm:p-6">
+            <div className="flex h-full flex-1 flex-col gap-6 overflow-x-auto rounded-xl p-4 sm:p-6">
+                {/*
+                 * Both visible headings below name a section rather than the
+                 * page, and the impact section renders first, so the page
+                 * title is carried non-visually to avoid restating the
+                 * breadcrumb.
+                 */}
+                <h1 className="sr-only">Dashboard</h1>
                 {impact ? <ImpactMetrics impact={impact} /> : null}
                 <div className="flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
                     <div>
-                        <h1 className="font-display text-3xl font-semibold tracking-[-0.015em]">
+                        <h2 className="font-display text-3xl font-semibold tracking-[-0.015em]">
                             Service operations
-                        </h1>
+                        </h2>
                         <p className="text-muted-foreground mt-1 text-sm">
                             Work requiring attention within your current scope.
                         </p>
@@ -161,36 +168,22 @@ export default function Dashboard({
                 </div>
 
                 <section
-                    aria-label="Work queue counts"
-                    className="grid gap-3 sm:grid-cols-2 xl:grid-cols-5"
+                    aria-label="Work queues"
+                    className="grid gap-5 xl:grid-cols-2"
                 >
-                    {queueDefinitions.map(({ key, label, accent }) => (
-                        <Card key={key} className={`border-t-4 ${accent}`}>
-                            <CardHeader className="pb-2">
-                                <CardTitle className="text-sm font-medium">
-                                    {label}
-                                </CardTitle>
-                            </CardHeader>
-                            <CardContent>
-                                <p
-                                    className="text-3xl font-semibold"
-                                    aria-live="polite"
-                                >
-                                    {serviceOperations.counts[key]}
-                                </p>
-                            </CardContent>
-                        </Card>
-                    ))}
-                </section>
-
-                <div className="grid gap-5 xl:grid-cols-2">
                     {queueDefinitions.map(({ key, label }) => {
                         const rows = serviceOperations[key] ?? [];
 
                         return (
                             <Card key={key}>
-                                <CardHeader>
+                                <CardHeader className="flex-row items-baseline justify-between gap-3 space-y-0">
                                     <CardTitle>{label}</CardTitle>
+                                    <p
+                                        className="text-muted-foreground text-sm tabular-nums"
+                                        aria-live="polite"
+                                    >
+                                        {serviceOperations.counts[key]} open
+                                    </p>
                                 </CardHeader>
                                 <CardContent>
                                     {rows.length === 0 ? (
@@ -272,8 +265,8 @@ export default function Dashboard({
                             </Card>
                         );
                     })}
-                </div>
-            </main>
+                </section>
+            </div>
         </>
     );
 }
@@ -290,12 +283,12 @@ function ImpactMetrics({ impact }: { impact: ImpactDashboard }) {
             <div className="flex flex-col gap-2 sm:flex-row sm:items-end sm:justify-between">
                 <div>
                     <div className="flex items-center gap-2">
-                        <h1
+                        <h2
                             id="impact-heading"
                             className="font-display text-2xl font-semibold"
                         >
                             Reconciled impact
-                        </h1>
+                        </h2>
                         <Badge variant="outline">Fictional data</Badge>
                     </div>
                     <p className="text-muted-foreground mt-1 text-sm">
@@ -395,9 +388,9 @@ function ImpactMetrics({ impact }: { impact: ImpactDashboard }) {
 
                 return (
                     <div key={category} className="space-y-2">
-                        <h2 className="text-sm font-semibold tracking-wide uppercase">
+                        <h3 className="text-sm font-semibold tracking-wide uppercase">
                             {category}s
-                        </h2>
+                        </h3>
                         <div className="grid gap-3 md:grid-cols-2 xl:grid-cols-4">
                             {metrics.map((metric) => (
                                 <Card key={metric.definition.id}>
@@ -475,9 +468,9 @@ function MetricChart({
             aria-describedby="impact-chart-description"
         >
             <figcaption>
-                <h2 id="impact-chart-title" className="font-semibold">
+                <h3 id="impact-chart-title" className="font-semibold">
                     Presentation chart
-                </h2>
+                </h3>
                 <p
                     id="impact-chart-description"
                     className="text-muted-foreground text-sm"

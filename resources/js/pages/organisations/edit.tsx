@@ -113,8 +113,6 @@ export default function OrganisationEdit({
         <>
             <Head title={pageTitle} />
 
-            <h1 className="sr-only">{pageTitle}</h1>
-
             <div className="flex flex-col space-y-10">
                 <div className="space-y-6">
                     <div className="flex items-center gap-3">
