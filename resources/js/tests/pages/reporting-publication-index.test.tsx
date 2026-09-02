@@ -132,6 +132,29 @@ describe('reporting publication editor', () => {
             '1 selected metric hidden by the current search',
         );
     });
+
+    /*
+     * The checkbox is a 16px square in a column five times its width, so almost
+     * every click in the cell used to land on nothing — reported from the
+     * running app as needing five or six attempts. WCAG 2.2 AA 2.5.8 asks for a
+     * 24px target.
+     *
+     * jsdom has no layout, so the hit area cannot be measured or clicked here.
+     * What is asserted is the contract that produces it: the checkbox carries a
+     * pseudo-element pinned to its cell, and the cell is a positioned ancestor
+     * for it to pin to. Either half missing puts the target back at 16px.
+     */
+    it('gives each matrix checkbox the whole cell as its target', () => {
+        render(<ReportingPublicationIndex metrics={metrics} versions={[]} />);
+
+        const checkboxes = screen.getAllByRole('checkbox');
+        expect(checkboxes.length).toBeGreaterThan(0);
+
+        for (const checkbox of checkboxes) {
+            expect(checkbox).toHaveClass('after:absolute', 'after:inset-0');
+            expect(checkbox.parentElement).toHaveClass('relative');
+        }
+    });
 });
 
 describe('reporting publication version history', () => {
