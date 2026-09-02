@@ -16,8 +16,75 @@ import { store as storeSafeContact } from '@/routes/parties/safe-contact-instruc
 
 type Program = { id: number; name: string };
 type Option = { value: string; label: string };
+
+type PartyAddress = {
+    id: string;
+    label: string;
+    address: string;
+    serviceArea: string | null;
+    countryCode: string;
+};
+
+type PartyRelationship = {
+    id: number;
+    type: string;
+    relatedParty: { uuid: string; displayName: string };
+    startedAt: string | null;
+    endedAt: string | null;
+};
+
+type PartyConsent = {
+    id: string;
+    purpose: string;
+    channel: string;
+    decision: string;
+    wordingVersion: string;
+    wording: string;
+    source: string;
+    occurredAt: string;
+    supersedesId: string | null;
+};
+
+type SafeContactInstruction = {
+    id: string;
+    instruction: string;
+    source: string;
+    effectiveAt: string;
+    endedAt: string | null;
+};
+
+type PartyTimelineEvent = {
+    id: string;
+    type: string;
+    summary: string;
+    occurredAt: string;
+};
+
+/*
+ * Mirrors the `party` payload in PartyController::show. Every collection is
+ * emptied rather than omitted when the viewer lacks the projection, so the
+ * arrays are always present and never optional.
+ */
+type Party = {
+    uuid: string;
+    kind: string;
+    displayName: string;
+    email: string | null;
+    telephone: string | null;
+    programIds: number[];
+    roles: string[];
+    interests: string[];
+    addresses: PartyAddress[];
+    relationships: PartyRelationship[];
+    consents: PartyConsent[];
+    safeContactInstructions: SafeContactInstruction[];
+    timeline: PartyTimelineEvent[];
+    supporterSafe: boolean;
+    administrativeMetadata: boolean;
+};
+
 type Props = {
-    party: any;
+    party: Party;
     canUpdate: boolean;
     canRecordConsent: boolean;
     canManageSafeContact: boolean;
@@ -109,7 +176,7 @@ export default function PartyShow({
                             <CardTitle>Addresses and relationships</CardTitle>
                         </CardHeader>
                         <CardContent className="space-y-3 text-sm">
-                            {party.addresses.map((address: any) => (
+                            {party.addresses.map((address) => (
                                 <div key={address.id}>
                                     <strong>{address.label}</strong>
                                     <p>{address.address}</p>
@@ -123,7 +190,7 @@ export default function PartyShow({
                                     </p>
                                 </div>
                             ))}
-                            {party.relationships.map((relationship: any) => (
+                            {party.relationships.map((relationship) => (
                                 <div key={relationship.id}>
                                     <strong>
                                         {relationship.relatedParty.displayName}
@@ -352,7 +419,7 @@ export default function PartyShow({
                             <CardTitle>Consent history</CardTitle>
                         </CardHeader>
                         <CardContent className="space-y-3">
-                            {party.consents.map((consent: any) => (
+                            {party.consents.map((consent) => (
                                 <div
                                     key={consent.id}
                                     className="rounded border p-3"
@@ -386,7 +453,7 @@ export default function PartyShow({
                         </CardHeader>
                         <CardContent>
                             <ul className="divide-y">
-                                {party.timeline.map((event: any) => (
+                                {party.timeline.map((event) => (
                                     <li
                                         key={event.id}
                                         className="py-3 first:pt-0 last:pb-0"
@@ -596,7 +663,7 @@ export default function PartyShow({
                         </CardHeader>
                         <CardContent className="space-y-4">
                             {party.safeContactInstructions.map(
-                                (instruction: any) => (
+                                (instruction) => (
                                     <div
                                         key={instruction.id}
                                         className="rounded border p-3 text-sm"
