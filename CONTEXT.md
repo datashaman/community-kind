@@ -172,6 +172,18 @@ _Avoid_: Organisation status, Hosted Access
 The effective level of access the official hosted service permits after considering Organisation Status, Subscription Status, and Access Holds: full, read-only, recovery-only, or denied. Restriction leaves Memberships and Roles intact and follows a defined recovery policy rather than deleting the Organisation; Hosted Access has no meaning for a self-hosted Organisation.
 _Avoid_: Organisation status, Subscription
 
+**Organisation Configuration**:
+An Organisation-owned, versioned definition of how one configurable area behaves for that tenant: Public Forms, Message Templates, Supporter Journeys, Intake Rules, and Reporting. It is tenant data inside the Organisation boundary and is never Installation or deployment configuration.
+_Avoid_: Setting, preference, environment configuration, feature flag
+
+**Configuration Version**:
+One immutable revision of an Organisation Configuration, numbered within its configuration key. A version is never edited after it is written; changing behaviour means adding the next version. Earlier versions stay readable so a decision recorded under them can still be explained.
+_Avoid_: Draft record, edit, revision history entry
+
+**Configuration Status**:
+The lifecycle state of a single Configuration Version: draft, active, superseded, or retired. At most one version of a configuration key is active. Activating a version supersedes the one it replaces; retiring withdraws the configuration itself so it stops being offered, without deleting what it governed.
+_Avoid_: Deleted configuration, archived, disabled
+
 ## Example dialogue
 
 > **Domain expert:** Sam belongs to both HarbourKind and NeighbourLink.
@@ -201,3 +213,7 @@ _Avoid_: Organisation status, Subscription
 > **Domain expert:** HarbourKind's invoice is overdue, but the nonprofit is still operating.
 >
 > **Developer:** HarbourKind remains an active Organisation. Its Subscription is past due, and Hosted Access applies the agreed grace-period policy.
+>
+> **Domain expert:** HarbourKind has stopped sending the re-engagement message and wants it gone.
+>
+> **Developer:** That Message Template is an Organisation Configuration. Its versions stay as written, so the messages already sent can still be explained; the configuration moves to retired and stops being offered.
