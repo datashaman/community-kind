@@ -371,12 +371,17 @@ function Safeguard({
     description: string;
 }) {
     return (
-        <div className="bg-background rounded-lg border p-4">
-            <div className="flex items-center gap-2">
-                <input type="checkbox" checked disabled readOnly />
-                <span className="font-medium">{title}</span>
-            </div>
-            <p className="text-muted-foreground mt-2 text-sm">{description}</p>
+        <div className="bg-background rounded-lg border p-4 text-sm">
+            {/*
+             * A safeguard is a statement of what the platform guarantees, not
+             * a setting. It used to be drawn as a disabled checkbox, which no
+             * one could operate.
+             */}
+            <p className="font-medium">
+                <span aria-hidden="true">✓ </span>
+                {title}
+            </p>
+            <p className="text-muted-foreground mt-2">{description}</p>
         </div>
     );
 }
