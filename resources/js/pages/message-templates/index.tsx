@@ -1,4 +1,4 @@
-import { Form, Head, useForm, usePage } from '@inertiajs/react';
+import { Form, Head, Link, useForm, usePage } from '@inertiajs/react';
 import type { FormEvent } from 'react';
 import Heading from '@/components/heading';
 import InputError from '@/components/input-error';
@@ -8,20 +8,31 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
-import { activate, index, store } from '@/routes/message-templates';
+import { activate, index, retire, store } from '@/routes/message-templates';
 
-type MessageTemplate = {
+type TemplateVersion = {
     id: string;
-    key: string;
-    name: string;
     version: number;
     status: string;
     channel: 'email' | 'sms';
     subject: string;
     body: string;
-    journeyKind: string;
     activatedAt: string | null;
     canActivate: boolean;
+};
+
+/*
+ * One template, newest revision first. configuration_key identifies the
+ * template; version is a revision of it.
+ */
+type MessageTemplate = {
+    key: string;
+    name: string;
+    channel: 'email' | 'sms';
+    journeyKind: string;
+    retired: boolean;
+    activeVersion: number | null;
+    versions: TemplateVersion[];
 };
 
 type JourneyKind = { value: string; label: string };
@@ -43,9 +54,13 @@ function preview(template: string) {
 
 export default function MessageTemplatesIndex({
     templates,
+    retiredCount,
+    showRetired,
     journeyKinds,
 }: {
     templates: MessageTemplate[];
+    retiredCount: number;
+    showRetired: boolean;
     journeyKinds: JourneyKind[];
 }) {
     const organisation = usePage().props.currentOrganisation!;
@@ -66,13 +81,16 @@ export default function MessageTemplatesIndex({
         });
     };
 
-    const useAsStartingPoint = (template: MessageTemplate) => {
+    const useAsStartingPoint = (
+        template: MessageTemplate,
+        version: TemplateVersion,
+    ) => {
         form.setData({
             template_key: template.key,
             name: template.name,
-            channel: template.channel,
-            subject: template.subject,
-            body: template.body,
+            channel: version.channel,
+            subject: version.subject,
+            body: version.body,
             journey_kind: template.journeyKind,
         });
         window.scrollTo({ top: 0, behavior: 'smooth' });
@@ -246,57 +264,157 @@ export default function MessageTemplatesIndex({
             </Card>
 
             <section className="space-y-3">
-                <h2 className="text-xl font-semibold">Version history</h2>
-                {templates.map((template) => (
-                    <Card key={template.id}>
-                        <CardContent className="grid gap-4 pt-6 lg:grid-cols-[1fr_auto]">
-                            <div className="space-y-3">
-                                <div className="flex flex-wrap items-center gap-2">
-                                    <strong>
-                                        {template.name} · v{template.version}
-                                    </strong>
-                                    <Badge>{template.status}</Badge>
-                                    <Badge variant="outline">
-                                        {template.channel.toUpperCase()}
-                                    </Badge>
-                                    <Badge variant="secondary">
-                                        {template.journeyKind.replaceAll(
-                                            '_',
-                                            ' ',
-                                        )}
-                                    </Badge>
-                                </div>
-                                {template.channel === 'email' ? (
-                                    <p className="font-semibold">
-                                        {preview(template.subject)}
+                <div className="flex flex-wrap items-center justify-between gap-3">
+                    <h2 className="text-xl font-semibold">
+                        {showRetired
+                            ? 'All templates, including retired'
+                            : 'All templates'}
+                    </h2>
+                    {retiredCount > 0 || showRetired ? (
+                        <Button asChild variant="ghost" size="sm">
+                            <Link
+                                href={
+                                    showRetired
+                                        ? index(organisation.slug)
+                                        : index(organisation.slug, {
+                                              query: { retired: 1 },
+                                          })
+                                }
+                            >
+                                {showRetired
+                                    ? 'Hide retired'
+                                    : `Show ${retiredCount} retired`}
+                            </Link>
+                        </Button>
+                    ) : null}
+                </div>
+
+                {templates.length === 0 ? (
+                    <p className="text-muted-foreground rounded-lg border border-dashed p-6 text-sm">
+                        No message templates yet. Create one above and it will
+                        appear here with every revision you make to it.
+                    </p>
+                ) : null}
+
+                {templates.map((template) => {
+                    const latest = template.versions[0]!;
+
+                    return (
+                        <Card key={template.key}>
+                            <CardContent className="grid gap-4 pt-6 lg:grid-cols-[1fr_auto]">
+                                <div className="space-y-3">
+                                    <div className="flex flex-wrap items-center gap-2">
+                                        <strong>{template.name}</strong>
+                                        {template.retired ? (
+                                            <Badge variant="outline">
+                                                Retired
+                                            </Badge>
+                                        ) : null}
+                                        <Badge variant="outline">
+                                            {template.channel.toUpperCase()}
+                                        </Badge>
+                                        <Badge variant="secondary">
+                                            {template.journeyKind.replaceAll(
+                                                '_',
+                                                ' ',
+                                            )}
+                                        </Badge>
+                                    </div>
+
+                                    <p className="text-muted-foreground text-sm">
+                                        {template.retired
+                                            ? 'Retired, so no version is in use. Create a new version to put it back into service.'
+                                            : template.activeVersion !== null
+                                              ? `Journeys use v${template.activeVersion}.`
+                                              : 'No version is active yet, so journeys will not use this template.'}
                                     </p>
-                                ) : null}
-                                <p className="text-muted-foreground text-sm whitespace-pre-wrap">
-                                    {preview(template.body)}
-                                </p>
-                            </div>
-                            <div className="flex flex-wrap items-start gap-2">
-                                <Button
-                                    type="button"
-                                    variant="outline"
-                                    onClick={() => useAsStartingPoint(template)}
-                                >
-                                    New version
-                                </Button>
-                                {template.canActivate ? (
-                                    <Form
-                                        {...activate.form([
-                                            organisation.slug,
-                                            template.id,
-                                        ])}
+
+                                    {latest.channel === 'email' ? (
+                                        <p className="font-semibold">
+                                            {preview(latest.subject)}
+                                        </p>
+                                    ) : null}
+                                    <p className="text-muted-foreground text-sm whitespace-pre-wrap">
+                                        {preview(latest.body)}
+                                    </p>
+
+                                    <details className="text-sm">
+                                        <summary className="cursor-pointer font-medium">
+                                            {template.versions.length}{' '}
+                                            {template.versions.length === 1
+                                                ? 'version'
+                                                : 'versions'}
+                                        </summary>
+                                        <ul className="mt-2 divide-y border-t">
+                                            {template.versions.map(
+                                                (version) => (
+                                                    <li
+                                                        key={version.id}
+                                                        className="flex flex-wrap items-center gap-2 py-2"
+                                                    >
+                                                        <span className="font-medium">
+                                                            v{version.version}
+                                                        </span>
+                                                        <Badge>
+                                                            {version.status}
+                                                        </Badge>
+                                                        {version.activatedAt ? (
+                                                            <span className="text-muted-foreground">
+                                                                activated{' '}
+                                                                {new Date(
+                                                                    version.activatedAt,
+                                                                ).toLocaleDateString()}
+                                                            </span>
+                                                        ) : null}
+                                                        {version.canActivate ? (
+                                                            <Form
+                                                                {...activate.form(
+                                                                    [
+                                                                        organisation.slug,
+                                                                        version.id,
+                                                                    ],
+                                                                )}
+                                                                className="ml-auto"
+                                                            >
+                                                                <Button size="sm">
+                                                                    Activate
+                                                                </Button>
+                                                            </Form>
+                                                        ) : null}
+                                                    </li>
+                                                ),
+                                            )}
+                                        </ul>
+                                    </details>
+                                </div>
+
+                                <div className="flex flex-wrap items-start gap-2">
+                                    <Button
+                                        type="button"
+                                        variant="outline"
+                                        onClick={() =>
+                                            useAsStartingPoint(template, latest)
+                                        }
                                     >
-                                        <Button>Activate</Button>
-                                    </Form>
-                                ) : null}
-                            </div>
-                        </CardContent>
-                    </Card>
-                ))}
+                                        New version
+                                    </Button>
+                                    {template.retired ? null : (
+                                        <Form
+                                            {...retire.form([
+                                                organisation.slug,
+                                                template.key,
+                                            ])}
+                                        >
+                                            <Button variant="ghost">
+                                                Retire
+                                            </Button>
+                                        </Form>
+                                    )}
+                                </div>
+                            </CardContent>
+                        </Card>
+                    );
+                })}
             </section>
         </div>
     );
