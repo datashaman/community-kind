@@ -469,9 +469,18 @@ function ImpactMetrics({ impact }: { impact: ImpactDashboard }) {
                 </dl>
             </details>
             <MetricChart metrics={impact.metrics} currency={impact.currency} />
+            {/*
+             * Suppression only applies once a service area, location or cohort
+             * filter is set — see BuildImpactDashboard's `sensitiveSlice`. The
+             * old wording named neither the trigger nor the reason, so a reader
+             * could not tell whether it applied to what they were looking at.
+             */}
             <p className="text-muted-foreground text-xs">
-                Slices with 1–{impact.minimumCohort - 1} people are suppressed.
-                Aggregates do not provide person or case drill-down.
+                Filtering by service area, location, or cohort can narrow a
+                figure to fewer than {impact.minimumCohort} people. Those
+                figures are withheld rather than shown, because a count that
+                small can identify the people in it. No figure here opens onto
+                the people or cases behind it.
             </p>
         </section>
     );
@@ -488,16 +497,23 @@ function MetricChart({
         (metric) =>
             metric.availability === 'available' && metric.value !== null,
     );
-    const maximumByUnit = available.reduce<Record<string, number>>(
-        (maximums, metric) => ({
-            ...maximums,
-            [metric.definition.unit]: Math.max(
-                maximums[metric.definition.unit] ?? 1,
-                Math.abs(metric.value ?? 0),
-            ),
-        }),
-        {},
-    );
+
+    /*
+     * Grouped by unit, in the order the units first appear. A bar is only
+     * meaningful against other bars on the same scale, and the groups now say
+     * that structurally instead of the description warning about it in prose.
+     */
+    const unitGroups = available.reduce<
+        Array<{ unit: string; metrics: Metric[] }>
+    >((groups, metric) => {
+        const group = groups.find(
+            (candidate) => candidate.unit === metric.definition.unit,
+        );
+        if (group) group.metrics.push(metric);
+        else groups.push({ unit: metric.definition.unit, metrics: [metric] });
+
+        return groups;
+    }, []);
 
     return (
         <figure
@@ -513,28 +529,70 @@ function MetricChart({
                     id="impact-chart-description"
                     className="text-muted-foreground text-sm"
                 >
-                    Relative bars for available aggregate values, scaled
-                    separately by unit. Units are retained in each label;
-                    suppressed and unavailable values have no bar.
+                    A bar shows a value against the largest on its own scale.
+                    Values that are suppressed, unavailable, or alone on their
+                    scale have none.
                 </p>
             </figcaption>
-            <div className="space-y-3" aria-hidden="true">
-                {available.map((metric) => (
-                    <div key={metric.definition.id} className="grid gap-1">
-                        <div className="flex justify-between gap-3 text-sm">
-                            <span>{metric.definition.label}</span>
-                            <strong>{metricValue(metric, currency)}</strong>
+            <div className="space-y-5" aria-hidden="true">
+                {unitGroups.map(({ unit, metrics: unitMetrics }) => {
+                    const maximum = Math.max(
+                        ...unitMetrics.map((metric) =>
+                            Math.abs(metric.value ?? 0),
+                        ),
+                    );
+                    /*
+                     * One metric on a scale would draw a full-width bar
+                     * whatever its value, which reads as "the most" and means
+                     * nothing. Net raised is the only currency metric, so it
+                     * did exactly that.
+                     */
+                    const comparable = unitMetrics.length > 1 && maximum > 0;
+                    const largest = unitMetrics.find(
+                        (metric) => Math.abs(metric.value ?? 0) === maximum,
+                    );
+
+                    return (
+                        <div key={unit} className="space-y-3">
+                            <p className="text-muted-foreground text-xs font-medium tracking-wide uppercase">
+                                {unitLabel(unit, currency)}
+                                {comparable && largest
+                                    ? ` · scaled to ${metricValue(largest, currency)}`
+                                    : null}
+                            </p>
+                            {unitMetrics.map((metric) => (
+                                <div
+                                    key={metric.definition.id}
+                                    className="grid gap-1"
+                                >
+                                    <div className="flex justify-between gap-3 text-sm">
+                                        <span>{metric.definition.label}</span>
+                                        <strong>
+                                            {metricValue(metric, currency)}
+                                        </strong>
+                                    </div>
+                                    {comparable ? (
+                                        <div className="bg-muted h-4 rounded-sm">
+                                            {/*
+                                             * A zero gets no sliver. The old
+                                             * `min-w-1` floor made a true zero
+                                             * and a true near-zero identical.
+                                             */}
+                                            {Math.abs(metric.value ?? 0) > 0 ? (
+                                                <div
+                                                    className="bg-primary h-4 min-w-1 rounded-sm"
+                                                    style={{
+                                                        width: `${(Math.abs(metric.value ?? 0) / maximum) * 100}%`,
+                                                    }}
+                                                />
+                                            ) : null}
+                                        </div>
+                                    ) : null}
+                                </div>
+                            ))}
                         </div>
-                        <div className="bg-muted h-4 rounded-sm">
-                            <div
-                                className="bg-primary h-4 min-w-1 rounded-sm"
-                                style={{
-                                    width: `${(Math.abs(metric.value ?? 0) / maximumByUnit[metric.definition.unit]) * 100}%`,
-                                }}
-                            />
-                        </div>
-                    </div>
-                ))}
+                    );
+                })}
             </div>
             {/*
              * `sr-only` clips an absolutely positioned box, but a table's
@@ -566,6 +624,15 @@ function MetricChart({
         </figure>
     );
 }
+
+const unitLabels: Record<string, string> = {
+    count: 'Counts',
+    percent: 'Percentages',
+};
+
+/* Currency names the Organisation's own currency rather than the word. */
+const unitLabel = (unit: string, currency: string) =>
+    unit === 'currency' ? currency : (unitLabels[unit] ?? unit);
 
 function metricValue(metric: Metric, currency: string) {
     if (metric.availability === 'suppressed') return 'Suppressed';
