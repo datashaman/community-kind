@@ -174,19 +174,18 @@ export default function IntakeRulesIndex({
                                     </div>
                                 ))}
                             </div>
-                            <div className="bg-background rounded-lg border p-4">
-                                <div className="flex items-center gap-2">
-                                    <input
-                                        type="checkbox"
-                                        checked={false}
-                                        disabled
-                                        readOnly
-                                    />
-                                    <span className="font-medium">
-                                        Restricted-access bypass disabled
-                                    </span>
-                                </div>
-                                <p className="text-muted-foreground mt-2 text-sm">
+                            {/*
+                             * This was a disabled, permanently unchecked
+                             * checkbox. Nothing could ever tick it, and an
+                             * empty box reads as "safeguard off" when it means
+                             * the exact opposite.
+                             */}
+                            <div className="bg-background rounded-lg border p-4 text-sm">
+                                <p className="font-medium">
+                                    <span aria-hidden="true">✓ </span>
+                                    Restricted-access bypass unavailable
+                                </p>
+                                <p className="text-muted-foreground mt-2">
                                     Intake settings cannot weaken restricted
                                     case access or staff authorization.
                                 </p>
