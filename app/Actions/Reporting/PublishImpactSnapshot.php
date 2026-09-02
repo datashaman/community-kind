@@ -6,6 +6,7 @@ use App\Actions\Auditing\RecordTenantAuditEvent;
 use App\Enums\OrganisationConfigurationArea;
 use App\Enums\OrganisationConfigurationStatus;
 use App\Enums\TenantAuditEventType;
+use App\Exceptions\ImpactSnapshotNotApprovable;
 use App\Models\Organisation;
 use App\Models\OrganisationConfiguration;
 use App\Models\PublishedImpactSnapshot;
@@ -27,7 +28,7 @@ final class PublishImpactSnapshot
         }
         $configuration = OrganisationConfiguration::query()->where('area', OrganisationConfigurationArea::Reporting)->where('configuration_key', 'impact')->where('status', OrganisationConfigurationStatus::Active)->latest('version')->first();
         if ($configuration === null) {
-            throw new LogicException('An active impact reporting configuration is required.');
+            throw new ImpactSnapshotNotApprovable('No impact reporting configuration is active yet. Activate one under Reporting publication before approving a snapshot.');
         }
         $configuredIds = $configuration->definition[$audience === 'public' ? 'public_metric_ids' : 'pack_metric_ids'] ?? null;
         $allowedIds = collect(is_array($configuredIds) ? array_values(array_filter($configuredIds, is_string(...))) : []);
@@ -39,7 +40,7 @@ final class PublishImpactSnapshot
         }
         $metrics = collect($reconciledMetrics)->filter(fn (mixed $metric): bool => is_array($metric) && is_array($metric['definition'] ?? null) && $allowedIds->contains($metric['definition']['id'] ?? null))->values();
         if ($metrics->isEmpty()) {
-            throw new LogicException('The active reporting configuration does not approve any available metrics for this audience.');
+            throw new ImpactSnapshotNotApprovable('The active reporting configuration approves no metric that is available for this audience and period.');
         }
         $cohorts = collect($reconciledCohorts)->filter(fn (mixed $cohort): bool => is_array($cohort))->map(function (array $cohort) use ($allowedIds): array {
             $cohortMetrics = is_array($cohort['metrics'] ?? null) ? $cohort['metrics'] : [];
