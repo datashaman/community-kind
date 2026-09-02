@@ -430,6 +430,20 @@ export default function ReportingPublicationIndex({
                                     : 'Create reporting draft'}
                             </Button>
                         </div>
+                        {/*
+                         * Selecting nothing is allowed and is the way to stop
+                         * publishing, so it has to be stated rather than
+                         * refused. Withdrawing the last metric used to fail
+                         * validation, which left no way back out of publishing.
+                         */}
+                        {editor.data.public_metric_ids.length === 0 &&
+                        editor.data.pack_metric_ids.length === 0 ? (
+                            <p className="text-muted-foreground text-sm">
+                                This version publishes nothing. Activating it
+                                withdraws every metric from the public page and
+                                from reporting packs.
+                            </p>
+                        ) : null}
                     </form>
                 </CardContent>
             </Card>
@@ -443,42 +457,51 @@ export default function ReportingPublicationIndex({
                 ) : null}
                 {versions.map((version) => (
                     <Card key={version.id}>
-                        <CardContent className="grid gap-4 pt-6 lg:grid-cols-[1fr_auto]">
-                            <div className="space-y-3">
+                        <CardContent className="space-y-3 pt-6">
+                            {/*
+                             * The actions sat in a column of their own, so they
+                             * floated at the far right of a narrow table. They
+                             * now share a line with the version they act on.
+                             *
+                             * Every row was titled "Reporting publication · v1",
+                             * restating the page title once per version. There
+                             * is only one reporting publication, so the version
+                             * is the only part that varies.
+                             */}
+                            <div className="flex flex-wrap items-center justify-between gap-3">
                                 <div className="flex items-center gap-2">
-                                    <strong>
-                                        Reporting publication · v
-                                        {version.version}
-                                    </strong>
+                                    <strong>v{version.version}</strong>
                                     <Badge>{version.status}</Badge>
                                 </div>
-                                <VersionMetricMatrix version={version} />
-                                {version.hasUnavailableMetrics ? (
-                                    <p className="text-muted-foreground text-sm">
-                                        Create a new version to replace retired
-                                        metrics before activation.
-                                    </p>
-                                ) : null}
-                            </div>
-                            <div className="flex flex-wrap items-start gap-2">
-                                <Button
-                                    type="button"
-                                    variant="outline"
-                                    onClick={() => useAsStartingPoint(version)}
-                                >
-                                    New version
-                                </Button>
-                                {version.canActivate ? (
-                                    <Form
-                                        {...activate.form([
-                                            organisation.slug,
-                                            version.id,
-                                        ])}
+                                <div className="flex flex-wrap gap-2">
+                                    <Button
+                                        type="button"
+                                        variant="outline"
+                                        onClick={() =>
+                                            useAsStartingPoint(version)
+                                        }
                                     >
-                                        <Button>Activate</Button>
-                                    </Form>
-                                ) : null}
+                                        New version
+                                    </Button>
+                                    {version.canActivate ? (
+                                        <Form
+                                            {...activate.form([
+                                                organisation.slug,
+                                                version.id,
+                                            ])}
+                                        >
+                                            <Button>Activate</Button>
+                                        </Form>
+                                    ) : null}
+                                </div>
                             </div>
+                            <VersionMetricMatrix version={version} />
+                            {version.hasUnavailableMetrics ? (
+                                <p className="text-muted-foreground text-sm">
+                                    Create a new version to replace retired
+                                    metrics before activation.
+                                </p>
+                            ) : null}
                         </CardContent>
                     </Card>
                 ))}
