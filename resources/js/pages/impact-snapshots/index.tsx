@@ -93,9 +93,11 @@ function ApprovalPanel({ onDismiss }: { onDismiss: () => void }) {
 export default function ImpactSnapshotsIndex({
     snapshots,
     canApprove,
+    canConfigureReporting,
 }: {
     snapshots: Snapshot[];
     canApprove: boolean;
+    canConfigureReporting: boolean;
 }) {
     const organisation = usePage().props.currentOrganisation!;
     const [approving, setApproving] = useState(false);
@@ -150,14 +152,26 @@ export default function ImpactSnapshotsIndex({
                     </p>
                     <p className="text-muted-foreground mt-1 text-sm">
                         A snapshot can only carry metrics an active reporting
-                        configuration has approved for release. Activate one,
-                        then come back to approve a snapshot.
+                        configuration has approved for release.
+                        {canConfigureReporting
+                            ? ' Activate one, then come back to approve a snapshot.'
+                            : ' An organisation administrator activates one under Reporting publication.'}
                     </p>
-                    <Button asChild variant="outline" className="mt-3">
-                        <Link href={reportingPublication(organisation.slug)}>
-                            Open Reporting publication
-                        </Link>
-                    </Button>
+                    {/*
+                     * Reporting publication needs OrganisationAdministrator,
+                     * which the Executive Viewer approving snapshots does not
+                     * have. Offering the link regardless would replace a failing
+                     * button with a link to a 403.
+                     */}
+                    {canConfigureReporting ? (
+                        <Button asChild variant="outline" className="mt-3">
+                            <Link
+                                href={reportingPublication(organisation.slug)}
+                            >
+                                Open Reporting publication
+                            </Link>
+                        </Button>
+                    ) : null}
                 </div>
             )}
 

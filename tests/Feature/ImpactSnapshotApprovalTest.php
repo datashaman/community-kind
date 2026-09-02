@@ -47,6 +47,31 @@ it('tells the page that a snapshot cannot be approved without an active configur
         ->assertInertia(fn (Assert $page) => $page->where('canApprove', true));
 });
 
+/*
+ * Approving a snapshot needs ExecutiveViewer; activating the configuration it
+ * depends on needs OrganisationAdministrator. The person blocked is usually not
+ * the person who can unblock, so the page must not send them to a 403.
+ */
+it('offers the configuration link only to a reader the reporting page will admit', function () {
+    extract(impactSnapshotFixture());
+
+    $this->actingAs($executive)
+        ->get(route('impact-snapshots.index', $organisation))
+        ->assertInertia(fn (Assert $page) => $page->where('canConfigureReporting', false));
+    $this->actingAs($executive)
+        ->get(route('reporting-publication.index', $organisation))
+        ->assertForbidden();
+
+    /* One membership per user, so the second role is another assignment on it. */
+    $administrator = User::factory()->create();
+    $membership = $organisation->memberships()->create(['user_id' => $administrator->id, 'role' => OrganisationRole::OrganisationAdministrator]);
+    app(OrganisationContext::class)->run($organisation, fn () => $membership->roleAssignments()->create(['role' => OrganisationRole::ExecutiveViewer]));
+
+    $this->actingAs($administrator)
+        ->get(route('impact-snapshots.index', $organisation))
+        ->assertInertia(fn (Assert $page) => $page->where('canConfigureReporting', true));
+});
+
 it('reports a missing configuration on the form rather than as a server error', function () {
     extract(impactSnapshotFixture());
 

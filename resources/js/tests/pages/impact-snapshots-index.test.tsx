@@ -45,7 +45,13 @@ describe('Impact packs index', () => {
      * a form nobody had asked for.
      */
     it('shows the records first and the approval form only when asked for', () => {
-        render(<ImpactSnapshotsIndex snapshots={[snapshot]} canApprove />);
+        render(
+            <ImpactSnapshotsIndex
+                snapshots={[snapshot]}
+                canApprove
+                canConfigureReporting
+            />,
+        );
 
         expect(
             screen.getByRole('heading', { name: 'Approved snapshots' }),
@@ -62,7 +68,13 @@ describe('Impact packs index', () => {
     });
 
     it('moves focus into the panel and back out again on cancel', () => {
-        render(<ImpactSnapshotsIndex snapshots={[snapshot]} canApprove />);
+        render(
+            <ImpactSnapshotsIndex
+                snapshots={[snapshot]}
+                canApprove
+                canConfigureReporting
+            />,
+        );
 
         const open = screen.getByRole('button', { name: 'Approve snapshot' });
         fireEvent.click(open);
@@ -79,7 +91,13 @@ describe('Impact packs index', () => {
      * on submit with a 500 naming a LogicException.
      */
     it('explains the missing configuration instead of offering an action that fails', () => {
-        render(<ImpactSnapshotsIndex snapshots={[]} canApprove={false} />);
+        render(
+            <ImpactSnapshotsIndex
+                snapshots={[]}
+                canApprove={false}
+                canConfigureReporting
+            />,
+        );
 
         expect(
             screen.queryByRole('button', { name: 'Approve snapshot' }),
@@ -92,8 +110,41 @@ describe('Impact packs index', () => {
         ).toHaveAttribute('href', '/harbour-kind/reporting-publication');
     });
 
+    /*
+     * Approving a snapshot needs ExecutiveViewer; Reporting publication needs
+     * OrganisationAdministrator. Offering the link to everyone replaced a
+     * button that 500s with a link that 403s.
+     */
+    it('names who can activate a configuration rather than linking a reader to a 403', () => {
+        render(
+            <ImpactSnapshotsIndex
+                snapshots={[]}
+                canApprove={false}
+                canConfigureReporting={false}
+            />,
+        );
+
+        expect(
+            screen.getByText('No reporting configuration is active'),
+        ).toBeVisible();
+        expect(
+            screen.queryByRole('link', {
+                name: 'Open Reporting publication',
+            }),
+        ).not.toBeInTheDocument();
+        expect(
+            screen.getByText(/An organisation administrator activates one/),
+        ).toBeVisible();
+    });
+
     it('teaches the interface when nothing has been approved', () => {
-        render(<ImpactSnapshotsIndex snapshots={[]} canApprove />);
+        render(
+            <ImpactSnapshotsIndex
+                snapshots={[]}
+                canApprove
+                canConfigureReporting
+            />,
+        );
 
         expect(screen.getByText('No snapshots approved yet')).toBeVisible();
         expect(

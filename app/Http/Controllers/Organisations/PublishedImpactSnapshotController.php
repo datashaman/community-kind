@@ -38,6 +38,13 @@ class PublishedImpactSnapshotController extends Controller
 
         return Inertia::render('impact-snapshots/index', [
             'canApprove' => $hasActiveConfiguration,
+            /*
+             * Approving a snapshot needs ExecutiveViewer; activating the
+             * configuration it depends on needs OrganisationAdministrator. The
+             * person blocked here is usually not the person who can unblock it,
+             * so only offer the link to someone the gate will actually admit.
+             */
+            'canConfigureReporting' => Gate::allows('viewAny', [OrganisationConfiguration::class, $currentOrganisation]),
             'snapshots' => PublishedImpactSnapshot::query()->latest()->get()->map(fn (PublishedImpactSnapshot $snapshot): array => ['id' => $snapshot->id, 'audience' => $snapshot->audience, 'registryVersion' => $snapshot->registry_version, 'metricCount' => count($snapshot->metrics), 'approvedAt' => $snapshot->approved_at->toAtomString(), 'publishedAt' => $snapshot->published_at?->toAtomString()]),
         ]);
     }
