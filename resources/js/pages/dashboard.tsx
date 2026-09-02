@@ -272,19 +272,30 @@ export default function Dashboard({
 }
 
 /*
- * The logic-model sequence, in order. Plurals are spelled out because
- * appending "s" to the key rendered "activitys", and the next category added
- * would hit the same problem.
+ * The logic-model sequence, in order. Labels are spelled out rather than
+ * derived from the key: the heading used to append "s", which rendered
+ * "activitys", and the next category added would hit the same problem.
  */
 const categories = [
-    { key: 'input', label: 'Inputs' },
-    { key: 'activity', label: 'Activities' },
-    { key: 'output', label: 'Outputs' },
-    { key: 'outcome', label: 'Outcomes' },
+    { key: 'input', label: 'Input' },
+    { key: 'activity', label: 'Activity' },
+    { key: 'output', label: 'Output' },
+    { key: 'outcome', label: 'Outcome' },
 ] as const;
 
 function ImpactMetrics({ impact }: { impact: ImpactDashboard }) {
     const organisation = usePage().props.currentOrganisation!;
+
+    /*
+     * Ordered by the logic model — inputs cause activities cause outputs cause
+     * outcomes — so the row reads left to right in the order the theory of
+     * change runs, rather than in whatever order the registry returned.
+     */
+    const orderedMetrics = categories.flatMap(({ key, label }) =>
+        impact.metrics
+            .filter((metric) => metric.definition.category === key)
+            .map((metric) => ({ metric, categoryLabel: label })),
+    );
 
     if (impact.metrics.length === 0) return null;
 
@@ -391,73 +402,72 @@ function ImpactMetrics({ impact }: { impact: ImpactDashboard }) {
                 <Button className="self-end">Apply reporting filters</Button>
             </Form>
             {/*
-             * Each category is a column, so inputs, activities, outputs and
-             * outcomes read left to right in the order they cause one another.
-             * Categories used to be full-width blocks stacked down the page,
-             * which put one card per screenful and lost the sequence.
+             * A card carries a label and a figure. Its category is an overline
+             * rather than a heading above the column, because the reader is
+             * looking at one metric, not opening a section. Everything else the
+             * card used to carry — description, registry code, formula — is in
+             * the disclosure below, where a reader who wants provenance can
+             * find it without four cards restating it.
              */}
-            <div className="grid gap-5 sm:grid-cols-2 xl:grid-cols-4">
-                {categories.map(({ key, label }) => {
-                    const metrics = impact.metrics.filter(
-                        (metric) => metric.definition.category === key,
-                    );
-                    if (metrics.length === 0) return null;
-
-                    return (
-                        <div key={key} className="flex flex-col gap-2">
-                            <h3 className="text-sm font-semibold tracking-wide uppercase">
-                                {label}
-                            </h3>
-                            {/*
-                             * The column stretches to the tallest in the row,
-                             * so the cards inside have to grow with it or a
-                             * category with less to say ends up visibly short.
-                             */}
-                            <div className="flex flex-1 flex-col gap-3">
-                                {metrics.map((metric) => (
-                                    <Card
-                                        key={metric.definition.id}
-                                        className="flex-1"
-                                    >
-                                        <CardHeader className="pb-2">
-                                            <CardTitle className="text-sm">
-                                                {metric.definition.label}
-                                            </CardTitle>
-                                        </CardHeader>
-                                        <CardContent className="space-y-2">
-                                            <p className="font-display text-3xl font-semibold tabular-nums">
-                                                {metricValue(
-                                                    metric,
-                                                    impact.currency,
-                                                )}
-                                            </p>
-                                            <p className="text-muted-foreground text-xs">
-                                                {metric.definition.description}
-                                            </p>
-                                            <p className="text-muted-foreground text-xs">
-                                                Definition{' '}
-                                                {metric.definition.id}@
-                                                {metric.definition.version} ·{' '}
-                                                {metric.definition.formula}
-                                            </p>
-                                            {metric.comparison ? (
-                                                <p className="text-xs">
-                                                    Prior-period change:{' '}
-                                                    {metric.comparison.change >
-                                                    0
-                                                        ? '+'
-                                                        : ''}
-                                                    {metric.comparison.change}
-                                                </p>
-                                            ) : null}
-                                        </CardContent>
-                                    </Card>
-                                ))}
-                            </div>
+            <ol className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
+                {orderedMetrics.map(({ metric, categoryLabel }) => (
+                    <li key={metric.definition.id}>
+                        {/*
+                         * `display: contents` on the item would drop list
+                         * semantics in several browsers, so the item stays a
+                         * real grid cell and the card fills it.
+                         */}
+                        <Card className="h-full justify-between gap-3">
+                            <CardHeader className="gap-1">
+                                <p className="text-muted-foreground text-xs font-medium tracking-wide uppercase">
+                                    {categoryLabel}
+                                </p>
+                                <CardTitle className="text-sm">
+                                    {metric.definition.label}
+                                </CardTitle>
+                            </CardHeader>
+                            <CardContent>
+                                <p className="font-display text-3xl font-semibold tabular-nums">
+                                    {metricValue(metric, impact.currency)}
+                                </p>
+                                {metric.comparison ? (
+                                    <p className="text-muted-foreground mt-1 text-xs tabular-nums">
+                                        {metric.comparison.change > 0
+                                            ? '+'
+                                            : ''}
+                                        {metric.comparison.change} on the prior
+                                        period
+                                    </p>
+                                ) : null}
+                            </CardContent>
+                        </Card>
+                    </li>
+                ))}
+            </ol>
+            <details className="text-sm">
+                <summary className="cursor-pointer font-medium">
+                    How these figures are calculated
+                </summary>
+                <dl className="mt-3 grid gap-3 sm:grid-cols-2">
+                    {orderedMetrics.map(({ metric, categoryLabel }) => (
+                        <div key={metric.definition.id}>
+                            <dt className="font-medium">
+                                {metric.definition.label}
+                                <span className="text-muted-foreground font-normal">
+                                    {' '}
+                                    · {categoryLabel}
+                                </span>
+                            </dt>
+                            <dd className="text-muted-foreground">
+                                {metric.definition.description} Counted as{' '}
+                                {metric.definition.formula}, from registry
+                                definition {metric.definition.id}@
+                                {metric.definition.version}.
+                            </dd>
                         </div>
-                    );
-                })}
-            </div>
+                    ))}
+                </dl>
+            </details>
             <MetricChart metrics={impact.metrics} currency={impact.currency} />
             <p className="text-muted-foreground text-xs">
                 Slices with 1–{impact.minimumCohort - 1} people are suppressed.

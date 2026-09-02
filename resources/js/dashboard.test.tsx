@@ -1,7 +1,7 @@
 import '@testing-library/jest-dom/vitest';
-import { render, screen } from '@testing-library/react';
+import { cleanup, render, screen, within } from '@testing-library/react';
 import type { ComponentProps, ReactNode } from 'react';
-import { describe, expect, it, vi } from 'vitest';
+import { afterEach, describe, expect, it, vi } from 'vitest';
 import Dashboard from './pages/dashboard';
 
 vi.mock('@inertiajs/react', () => ({
@@ -78,7 +78,12 @@ const emptyOperations = {
     referrals: [],
 };
 
+const impactSection = () =>
+    screen.getByRole('region', { name: 'Reconciled impact' });
+
 describe('Service operations dashboard', () => {
+    afterEach(cleanup);
+
     it('exposes labelled, keyboard-focusable controls and work links', () => {
         render(
             <Dashboard
@@ -145,41 +150,73 @@ describe('Service operations dashboard', () => {
     });
 
     /*
-     * The four categories are a sequence — inputs cause activities cause
-     * outputs cause outcomes — and the registry currently holds one metric
-     * each. Rendering each category as a full-width block put one card per
-     * screenful and lost the ordering.
+     * A card is a label and a figure. It used to also carry a description, the
+     * registry code, the formula and a prior-period sentence, under a heading
+     * naming the category — five things where two were wanted.
      */
-    it('lays the logic-model categories out as columns with real plurals', () => {
+    it('shows a label and a figure on each card, nothing else', () => {
         render(
             <Dashboard serviceOperations={emptyOperations} impact={impact} />,
         );
 
-        const categoryGrid = screen.getByRole('heading', { name: 'Inputs' })
-            .parentElement?.parentElement;
-        expect(categoryGrid).toHaveClass('xl:grid-cols-4');
-        expect(categoryGrid?.children).toHaveLength(4);
+        const cards = within(impactSection()).getAllByRole('listitem');
+        expect(cards).toHaveLength(4);
 
-        const headings = [...(categoryGrid?.querySelectorAll('h3') ?? [])].map(
-            (heading) => heading.textContent,
-        );
-        expect(headings).toEqual([
-            'Inputs',
-            'Activities',
-            'Outputs',
-            'Outcomes',
-        ]);
+        const card = cards[0];
+        expect(card).toHaveTextContent('Requests received');
+        expect(card).toHaveTextContent('0');
+        expect(card).not.toHaveTextContent('service.requests_received');
+        expect(card).not.toHaveTextContent('count(requests)');
+        expect(card).not.toHaveTextContent('2026.4');
+        expect(card).not.toHaveTextContent('A fictional figure.');
 
         /*
-         * The columns stretch to the tallest card in the row, so a category
-         * with a shorter description must not leave a visibly short card.
+         * The category names the metric on its own card rather than heading a
+         * column, so the section keeps its one h2 and gains no h3s.
          */
-        for (const column of categoryGrid?.children ?? []) {
-            expect(column).toHaveClass('flex-col');
-            expect(column.querySelector('[data-slot="card"]')).toHaveClass(
-                'flex-1',
-            );
+        expect(card).toHaveTextContent('Input');
+        for (const category of ['Input', 'Activity', 'Output', 'Outcome']) {
+            expect(
+                within(impactSection()).queryByRole('heading', {
+                    name: category,
+                }),
+            ).toBeNull();
         }
+    });
+
+    it('orders the cards by the logic model', () => {
+        render(
+            <Dashboard serviceOperations={emptyOperations} impact={impact} />,
+        );
+
+        expect(
+            within(impactSection())
+                .getAllByRole('listitem')
+                .map((card) => card.textContent),
+        ).toEqual([
+            expect.stringContaining('Input'),
+            expect.stringContaining('Activity'),
+            expect.stringContaining('Output'),
+            expect.stringContaining('Outcome'),
+        ]);
+    });
+
+    /*
+     * The provenance the PRD requires on the dashboard is still here, once,
+     * behind a disclosure — not restated on every card.
+     */
+    it('keeps the definitions reachable without putting them on the cards', () => {
+        render(
+            <Dashboard serviceOperations={emptyOperations} impact={impact} />,
+        );
+
+        const definitions = within(impactSection())
+            .getByText('How these figures are calculated')
+            .closest('details');
+        expect(definitions).toHaveTextContent('service.requests_received');
+        expect(definitions).toHaveTextContent('count(things)');
+        expect(definitions).toHaveTextContent('2026.4');
+        expect(definitions).toHaveTextContent('A fictional figure.');
     });
 
     /*
