@@ -4,9 +4,13 @@ namespace App\Http\Controllers\Organisations;
 
 use App\Actions\Reporting\BuildImpactReportPack;
 use App\Actions\Reporting\PublishImpactSnapshot;
+use App\Enums\OrganisationConfigurationArea;
+use App\Enums\OrganisationConfigurationStatus;
+use App\Exceptions\ImpactSnapshotNotApprovable;
 use App\Http\Controllers\Controller;
 use App\Http\Requests\Organisations\StoreImpactSnapshotRequest;
 use App\Models\Organisation;
+use App\Models\OrganisationConfiguration;
 use App\Models\PublishedImpactSnapshot;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Support\Facades\Gate;
@@ -20,14 +24,39 @@ class PublishedImpactSnapshotController extends Controller
     {
         Gate::authorize('viewAny', [PublishedImpactSnapshot::class, $currentOrganisation]);
 
-        return Inertia::render('impact-snapshots/index', ['snapshots' => PublishedImpactSnapshot::query()->latest()->get()->map(fn (PublishedImpactSnapshot $snapshot): array => ['id' => $snapshot->id, 'audience' => $snapshot->audience, 'registryVersion' => $snapshot->registry_version, 'metricCount' => count($snapshot->metrics), 'approvedAt' => $snapshot->approved_at->toAtomString(), 'publishedAt' => $snapshot->published_at?->toAtomString()])]);
+        /*
+         * Approving a snapshot needs an active impact reporting configuration.
+         * Without this the page offered the action, took the form, and failed
+         * in the action with a 500 that told the person nothing they could act
+         * on.
+         */
+        $hasActiveConfiguration = OrganisationConfiguration::query()
+            ->where('area', OrganisationConfigurationArea::Reporting)
+            ->where('configuration_key', 'impact')
+            ->where('status', OrganisationConfigurationStatus::Active)
+            ->exists();
+
+        return Inertia::render('impact-snapshots/index', [
+            'canApprove' => $hasActiveConfiguration,
+            'snapshots' => PublishedImpactSnapshot::query()->latest()->get()->map(fn (PublishedImpactSnapshot $snapshot): array => ['id' => $snapshot->id, 'audience' => $snapshot->audience, 'registryVersion' => $snapshot->registry_version, 'metricCount' => count($snapshot->metrics), 'approvedAt' => $snapshot->approved_at->toAtomString(), 'publishedAt' => $snapshot->published_at?->toAtomString()]),
+        ]);
     }
 
     public function store(StoreImpactSnapshotRequest $request, Organisation $currentOrganisation, PublishImpactSnapshot $publish): RedirectResponse
     {
         Gate::authorize('create', [PublishedImpactSnapshot::class, $currentOrganisation]);
         $validated = $request->validated();
-        $publish->handle($currentOrganisation, $request->user(), (string) $validated['audience'], collect($validated)->except('audience')->all());
+
+        /*
+         * The page hides the action when no configuration is active, but the
+         * configuration can be retired between loading the page and submitting
+         * it. Report that on the form rather than as a 500.
+         */
+        try {
+            $publish->handle($currentOrganisation, $request->user(), (string) $validated['audience'], collect($validated)->except('audience')->all());
+        } catch (ImpactSnapshotNotApprovable $exception) {
+            return back()->withErrors(['audience' => $exception->getMessage()]);
+        }
 
         return back();
     }

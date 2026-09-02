@@ -1,4 +1,4 @@
-import { Form, Head, usePage } from '@inertiajs/react';
+import { Form, Head, Link, usePage } from '@inertiajs/react';
 import { useEffect, useRef, useState } from 'react';
 import Heading from '@/components/heading';
 import { Badge } from '@/components/ui/badge';
@@ -6,6 +6,7 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
 import { Label } from '@/components/ui/label';
 import { download, index, store } from '@/routes/impact-snapshots';
+import { index as reportingPublication } from '@/routes/reporting-publication';
 
 type Snapshot = {
     id: string;
@@ -91,8 +92,10 @@ function ApprovalPanel({ onDismiss }: { onDismiss: () => void }) {
 
 export default function ImpactSnapshotsIndex({
     snapshots,
+    canApprove,
 }: {
     snapshots: Snapshot[];
+    canApprove: boolean;
 }) {
     const organisation = usePage().props.currentOrganisation!;
     const [approving, setApproving] = useState(false);
@@ -123,15 +126,40 @@ export default function ImpactSnapshotsIndex({
                     title="Impact packs"
                     description="Immutable board, funder, and public snapshots approved from the reconciled metric registry."
                 />
-                <Button
-                    ref={approveButton}
-                    type="button"
-                    onClick={() => setApproving(true)}
-                    disabled={approving}
-                >
-                    Approve snapshot
-                </Button>
+                {canApprove ? (
+                    <Button
+                        ref={approveButton}
+                        type="button"
+                        onClick={() => setApproving(true)}
+                        disabled={approving}
+                    >
+                        Approve snapshot
+                    </Button>
+                ) : null}
             </div>
+
+            {/*
+             * Approving needs an active impact reporting configuration to say
+             * which metrics may leave the dashboard. The page used to offer the
+             * action anyway and fail on submit with a 500.
+             */}
+            {canApprove ? null : (
+                <div className="bg-muted/30 rounded-xl border p-5">
+                    <p className="font-medium">
+                        No reporting configuration is active
+                    </p>
+                    <p className="text-muted-foreground mt-1 text-sm">
+                        A snapshot can only carry metrics an active reporting
+                        configuration has approved for release. Activate one,
+                        then come back to approve a snapshot.
+                    </p>
+                    <Button asChild variant="outline" className="mt-3">
+                        <Link href={reportingPublication(organisation.slug)}>
+                            Open Reporting publication
+                        </Link>
+                    </Button>
+                </div>
+            )}
 
             {approving ? <ApprovalPanel onDismiss={dismiss} /> : null}
 
